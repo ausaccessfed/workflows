@@ -287,8 +287,8 @@ jobs:
         run: |
           ${{ inputs.task_3 }}
   push-images:
-    needs: [run-tests, run-task-1, run-task-2, run-task-3]
-    if: needs.run-tests.result == 'success' && needs.run-task-1.result == 'success' && needs.run-task-2.result == 'success' && needs.run-task-3.result == 'success'
+    needs: [build-production, run-tests, run-task-1, run-task-2, run-task-3]
+    if: needs.build-production.result == 'success' && needs.run-tests.result == 'success' && needs.run-task-1.result == 'success' && needs.run-task-2.result == 'success' && needs.run-task-3.result == 'success'
     runs-on: ubuntu-latest
     name: push images
     steps:
