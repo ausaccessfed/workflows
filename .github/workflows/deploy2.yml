@@ -328,7 +328,7 @@ jobs:
           ${{ inputs.task_3 }}
   push-images:
     needs: [build-production, run-tests, run-task-1, run-task-2, run-task-3]
-    if: ((github.event_name == 'push' && needs.build-base.outputs.BRANCH_NAME == '${{ inputs.default_branch }}') || github.event_name == 'issue_comment') && needs.build-production.result == 'success' && needs.run-tests.result == 'success' && needs.run-task-1.result == 'success' && needs.run-task-2.result == 'success' && needs.run-task-3.result == 'success'
+    if: ((github.event_name == 'push' && needs.build-base.outputs.BRANCH_NAME == inputs.default_branch) || github.event_name == 'issue_comment') && needs.build-production.result == 'success' && needs.run-tests.result == 'success' && needs.run-task-1.result == 'success' && needs.run-task-2.result == 'success' && needs.run-task-3.result == 'success'
     runs-on: ubuntu-latest
     name: push images
     steps:
@@ -354,7 +354,7 @@ jobs:
           echo "IMAGE_ID=$IMAGE_ID" >> $GITHUB_OUTPUT
 
       - name: Push to ECR
-        if: (github.event_name == 'push' && needs.build-base.outputs.BRANCH_NAME == '${{ inputs.default_branch }}') || github.event_name == 'issue_comment'
+        if: (github.event_name == 'push' && needs.build-base.outputs.BRANCH_NAME == inputs.default_branch) || github.event_name == 'issue_comment'
         run: |
           docker pull ${{ steps.env2.outputs.IMAGE_ID }}:adhoc-production
           #todo retag ^ make above image more uniquie per commit
@@ -362,7 +362,7 @@ jobs:
           docker push ${{ steps.env2.outputs.IMAGE_ID }}:${{ needs.build-base.outputs.IMAGE_TAG }}
 
       - name: Push cache to ECR
-        if: (github.event_name == 'push' && needs.build-base.outputs.BRANCH_NAME == '${{ inputs.default_branch }}')
+        if: (github.event_name == 'push' && needs.build-base.outputs.BRANCH_NAME == inputs.default_branch)
         run: |
           docker pull ${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache
           docker tag ${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache ${{ steps.env2.outputs.IMAGE_ID }}:cache
@@ -370,7 +370,7 @@ jobs:
           docker push ${{ steps.env2.outputs.IMAGE_ID }}:cache
 
       - name: Update GitOps Repo to trigger deploys
-        if: needs.build-base.outputs.BRANCH_NAME == '${{ inputs.default_branch }}' && github.event_name == 'push'
+        if: needs.build-base.outputs.BRANCH_NAME == inputs.default_branch && github.event_name == 'push'
         run: |
           printenv > .envs
            docker run --env-file .envs \
