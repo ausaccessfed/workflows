@@ -128,11 +128,11 @@ jobs:
 
       - name: Build Test OCI Image
         run: |
-          docker pull ${{ needs.envs.outputs.$IMAGE_ID }}:cache || echo "true"
+          docker pull ${{ needs.envs.outputs.IMAGE_ID }}:cache || echo "true"
           DOCKER_BUILDKIT=1 docker build --target development \
           --build-arg BASE_IMAGE=${{ needs.envs.outputs.BASE_IMAGE }} \
           --build-arg BUILDKIT_INLINE_CACHE=1 \
-          --cache-from ${{ needs.envs.outputs.$IMAGE_ID }}:cache -t ${{ inputs.app }}:cache .
+          --cache-from ${{ needs.envs.outputs.IMAGE_ID }}:cache -t ${{ inputs.app }}:cache .
           docker image save ${{ inputs.app }}:cache -o /tmp/image.tar
 
       - name: Upload artifact
@@ -166,13 +166,13 @@ jobs:
           DOCKER_BUILDKIT=1 docker build --cache-from ${{ inputs.app }}:cache \
           --build-arg BASE_IMAGE=${{ needs.envs.outputs.BASE_IMAGE }} \
           --build-arg RELEASE_VERSION=${{ needs.envs.outputs.IMAGE_TAG }} \
-          -t ${{ needs.envs.outputs.$IMAGE_ID }}:${{ needs.envs.outputs.IMAGE_TAG }} .
-          docker image save ${{ needs.envs.outputs.$IMAGE_ID }}:${{ needs.envs.outputs.IMAGE_TAG }} -o /tmp/image-stable.tar
+          -t ${{ needs.envs.outputs.IMAGE_ID }}:${{ needs.envs.outputs.IMAGE_TAG }} .
+          docker image save ${{ needs.envs.outputs.IMAGE_ID }}:${{ needs.envs.outputs.IMAGE_TAG }} -o /tmp/image-stable.tar
 
       - name: Upload artifact
         uses: actions/upload-artifact@v2
         with:
-          name: ${{ needs.envs.outputs.$IMAGE_ID }}-stable
+          name: ${{ needs.envs.outputs.IMAGE_ID }}-stable
           path: /tmp/image-stable.tar
   run-tests:
     needs: [envs, build-base]
@@ -297,7 +297,7 @@ jobs:
       - name: Download artifacts (Docker images) from previous workflows
         uses: actions/download-artifact@v2
         with:
-          name: ${{ needs.envs.outputs.$IMAGE_ID }}-stable
+          name: ${{ needs.envs.outputs.IMAGE_ID }}-stable
           path: /tmp/image-stable.tar
 
       - name: Load Docker images from previous workflows
@@ -308,7 +308,7 @@ jobs:
       - name: Push to ECR
         if: (github.event_name == 'push' && env.BRANCH_NAME == '${{ inputs.default_branch }}') || github.event_name == 'issue_comment'
         run: |
-          docker push ${{ needs.envs.outputs.$IMAGE_ID }}:${{ needs.envs.outputs.IMAGE_TAG }}
+          docker push ${{ needs.envs.outputs.IMAGE_ID }}:${{ needs.envs.outputs.IMAGE_TAG }}
 
       - name: Push cache to ECR
         if: (github.event_name == 'push' && env.BRANCH_NAME == '${{ inputs.default_branch }}')
