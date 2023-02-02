@@ -18,25 +18,25 @@ on:
         required: true
         type: string
       test_command:
-        required: true
+        default: ""
         type: string
       task_1_name:
         default: "N/A"
         type: string
       task_1:
-        default: 'echo "no command"'
+        default: ""
         type: string
       task_2_name:
         default: "N/A"
         type: string
       task_2:
-        default: 'echo "no command"'
+        default: ""
         type: string
       task_3_name:
         default: "N/A"
         type: string
       task_3:
-        default: 'echo "no command"'
+        default: ""
         type: string
       production_environments:
         required: true
@@ -126,11 +126,13 @@ jobs:
 
       - name: Build Test OCI Image
         run: |
+          # TODO: this should pull the more unique image then fallback to :cache
           docker pull ${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache || echo "true"
           DOCKER_BUILDKIT=1 docker build --target development \
           --build-arg BASE_IMAGE=${{ steps.env2.outputs.BASE_IMAGE }} \
           --build-arg BUILDKIT_INLINE_CACHE=1 \
           --cache-from ${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache -t ${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache  .
+          # TODO: this push should be more unquie
           docker push ${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache
 
   build-production:
@@ -326,7 +328,7 @@ jobs:
           ${{ inputs.task_3 }}
   push-images:
     needs: [build-production, run-tests, run-task-1, run-task-2, run-task-3]
-    if: needs.build-production.result == 'success' && needs.run-tests.result == 'success' && needs.run-task-1.result == 'success' && needs.run-task-2.result == 'success' && needs.run-task-3.result == 'success'
+    if: ((github.event_name == 'push' && needs.build-base.outputs.BRANCH_NAME == '${{ inputs.default_branch }}') || github.event_name == 'issue_comment') && needs.build-production.result == 'success' && needs.run-tests.result == 'success' && needs.run-task-1.result == 'success' && needs.run-task-2.result == 'success' && needs.run-task-3.result == 'success'
     runs-on: ubuntu-latest
     name: push images
     steps:
@@ -346,10 +348,6 @@ jobs:
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         run: |
-          DOCKER_ECR=${{ secrets.DOCKER_ECR }}
-          VERSION=$(${{ inputs.version_command }})
-          BASE_IMAGE="${DOCKER_ECR}ruby-base:${VERSION}"
-          echo "BASE_IMAGE=$BASE_IMAGE" >> $GITHUB_OUTPUT
           # Strip git ref prefix from version
           IMAGE_ID=$(echo "$ECR_REGISTRY/${{ inputs.ecr_repository }}" | tr '[A-Z]' '[a-z]')
           echo "ECR_REGISTRY=$ECR_REGISTRY" >> $GITHUB_OUTPUT
@@ -367,9 +365,9 @@ jobs:
         if: (github.event_name == 'push' && needs.build-base.outputs.BRANCH_NAME == '${{ inputs.default_branch }}')
         run: |
           docker pull ${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache
-          docker tag ${{ steps.env2.outputs.IMAGE_ID }}:adhoc-production ${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache
+          docker tag ${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache ${{ steps.env2.outputs.IMAGE_ID }}:cache
           #todo retag ^ make above image more uniquie per commit
-          docker push ${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache
+          docker push ${{ steps.env2.outputs.IMAGE_ID }}:cache
 
       - name: Update GitOps Repo to trigger deploys
         if: needs.build-base.outputs.BRANCH_NAME == '${{ inputs.default_branch }}' && github.event_name == 'push'
