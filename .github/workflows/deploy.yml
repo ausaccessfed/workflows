@@ -49,9 +49,7 @@ on:
 jobs:
   run:
     runs-on: ubuntu-latest
-    name: Build base
-    outputs:
-      ISSUE_COMMENT_HEAD_SHA: ${{ steps.comment-branch.outputs.head_sha }}
+    name: run
     services:
       mysql:
         image: mysql:5.7
@@ -200,13 +198,9 @@ jobs:
            -e PROJECTS="${{ inputs.app }}" \
            -e ENVIRONMENTS="development" \
            ${{ steps.env2.outputs.ECR_REGISTRY }}/publish_app:latest
-  notify:
-    needs: [run]
-    if: github.event_name == 'issue_comment' && always()
-    runs-on: ubuntu-latest
-    name: notify
-    steps:
+
       - name: check for failures
+        if: github.event_name == 'issue_comment' && always()
         run: |
           output=
           status="failure"
@@ -222,9 +216,10 @@ jobs:
           echo "ADHOC_STATUS=$status" >> $GITHUB_ENV
 
       - name: Set final commit status
+        if: github.event_name == 'issue_comment' && always()
         uses: myrotvorets/set-commit-status-action@master
         with:
-          sha: ${{ needs.run.outputs.ISSUE_COMMENT_HEAD_SHA }}
+          sha: ${{ steps.comment-branch.outputs.head_ref }}
           token: ${{ secrets.GITHUB_TOKEN }}
           status: ${{ env.ADHOC_STATUS }}
           targetUrl: https://${{ inputs.app }}.dev.aaf.edu.au
