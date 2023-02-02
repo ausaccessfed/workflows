@@ -141,7 +141,7 @@ jobs:
             BUILDKIT_INLINE_CACHE=1
           context: .
           tags: ${{ inputs.app }}:cache
-          outputs: type=docker,dest=${{ env.IMAGE_CACHE_DIR }}${{ env.IMAGE_CACHE_KEY }}.tar
+          outputs: type=docker,dest=${{ env.IMAGE_CACHE_DIR }}/${{ env.IMAGE_CACHE_KEY }}.tar
 
   build-production:
     needs: [build-base]
