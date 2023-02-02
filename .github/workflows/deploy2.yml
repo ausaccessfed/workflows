@@ -20,11 +20,20 @@ on:
       test_command:
         required: true
         type: string
+      task_1_name:
+        default: "N/A"
+        type: string
       task_1:
         default: 'echo "no command"'
         type: string
+      task_2_name:
+        default: "N/A"
+        type: string
       task_2:
         default: 'echo "no command"'
+        type: string
+      task_3_name:
+        default: "N/A"
         type: string
       task_3:
         default: 'echo "no command"'
