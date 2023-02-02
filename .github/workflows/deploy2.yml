@@ -5,7 +5,7 @@ on:
       ecr_repository:
         required: true
         type: string
-      url:
+      dev_url:
         required: true
         type: string
       event_name:
@@ -131,7 +131,7 @@ jobs:
           --build-arg BASE_IMAGE=${{ steps.env2.outputs.BASE_IMAGE }} \
           --build-arg BUILDKIT_INLINE_CACHE=1 \
           --cache-from ${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache -t ${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache  .
-          docker push ${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache 
+          docker push ${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache
 
   build-production:
     needs: [build-base]
@@ -150,7 +150,7 @@ jobs:
           --build-arg BASE_IMAGE=${{ needs.build-base.outputs.BASE_IMAGE }} \
           --build-arg RELEASE_VERSION=${{ needs.build-base.outputs.IMAGE_TAG }} \
           -t ${{ needs.build-base.outputs.IMAGE_ID }}:adhoc-production .
-          docker push ${{ needs.build-base.outputs.IMAGE_ID }}:adhoc-production 
+          docker push ${{ needs.build-base.outputs.IMAGE_ID }}:adhoc-production
   run-tests:
     needs: [build-base]
     if: inputs.test_command != '' && needs.build-base.result == 'success'
@@ -324,7 +324,7 @@ jobs:
           status="failure"
 
           if [ "$output" == ""]; then 
-            output="Manifest updated, Deploying to ${{ inputs.url }} (may take up to 5 minutes)"
+            output="Manifest updated, Deploying to ${{ inputs.dev_url }} (may take up to 5 minutes)"
             status="success"
           fi
           echo "ADHOC_OUTPUT=$output" >> $GITHUB_ENV
@@ -336,6 +336,6 @@ jobs:
           sha: ${{ needs.build-base.outputs.ISSUE_COMMENT_HEAD_SHA }}
           token: ${{ secrets.GITHUB_TOKEN }}
           status: ${{ env.ADHOC_STATUS }}
-          targetUrl: ${{ inputs.url }}
+          targetUrl: ${{ inputs.dev_url }}
           description: ${{ env.ADHOC_OUTPUT }}
           context: "Dev federation deploy"

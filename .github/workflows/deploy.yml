@@ -5,7 +5,7 @@ on:
       ecr_repository:
         required: true
         type: string
-      url:
+      dev_url:
         required: true
         type: string
       event_name:
@@ -182,7 +182,6 @@ jobs:
         if: (github.event_name == 'push' &&  steps.env1.outputs.BRANCH_NAME == '${{ inputs.default_branch }}')
         run: |
           docker push ${{ steps.env2.outputs.IMAGE_ID }}:cache
-          #todo: retag to ecr
 
       - name: Update GitOps Repo to trigger deploys
         if: steps.env1.outputs.BRANCH_NAME == '${{ inputs.default_branch }}' && github.event_name == 'push'
@@ -213,7 +212,7 @@ jobs:
           fi
 
           if [ "$output" == ""]; then 
-            output="Manifest updated, Deploying to ${{ inputs.url }} (may take up to 5 minutes)"
+            output="Manifest updated, Deploying to ${{ inputs.dev_url }} (may take up to 5 minutes)"
             status="success"
           fi
           echo "ADHOC_OUTPUT=$output" >> $GITHUB_OUTPUT
@@ -226,6 +225,6 @@ jobs:
           sha: ${{ steps.comment-branch.outputs.head_ref }}
           token: ${{ secrets.GITHUB_TOKEN }}
           status: ${{ steps.failure-check.outputs.ADHOC_STATUS }}
-          targetUrl: ${{ inputs.url }}
+          targetUrl: ${{ inputs.dev_url }}
           description: ${{ steps.failure-check.outputs.ADHOC_OUTPUT }}
           context: "Dev federation deploy"
