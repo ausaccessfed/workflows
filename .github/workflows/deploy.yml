@@ -122,7 +122,7 @@ jobs:
           --build-arg BASE_IMAGE=${{ steps.env2.outputs.BASE_IMAGE }} \
           --build-arg BUILDKIT_INLINE_CACHE=1 \
           --cache-from ${{ steps.env2.outputs.IMAGE_ID }}:cache -t ${{ inputs.app }}:cache .
-          docker image save ${{ inputs.app }}:cache -o /tmp/image.tar
+          docker image save ${{ inputs.app }}:cache -o /tmp/image-cache.tar
 
       - name: Upload artifact
         uses: actions/upload-artifact@v2
