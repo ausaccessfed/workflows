@@ -101,7 +101,7 @@ jobs:
           BASE_IMAGE="${DOCKER_ECR}ruby-base:${VERSION}"
           echo "BASE_IMAGE=$BASE_IMAGE" >> $GITHUB_ENV
           # Strip git ref prefix from version
-          IMAGE_ID=$(echo "$ECR_REGISTRY/$ECR_REPOSITORY" | tr '[A-Z]' '[a-z]')
+          IMAGE_ID=$(echo "$ECR_REGISTRY/${{ inputs.ecr_repository }}" | tr '[A-Z]' '[a-z]')
           echo "ECR_REGISTRY=$ECR_REGISTRY" >> $GITHUB_ENV
           echo "IMAGE_ID=$IMAGE_ID" >> $GITHUB_ENV
 
@@ -163,7 +163,7 @@ jobs:
           BASE_IMAGE="${DOCKER_ECR}ruby-base:${VERSION}"
           echo "BASE_IMAGE=$BASE_IMAGE" >> $GITHUB_ENV
           # Strip git ref prefix from version
-          IMAGE_ID=$(echo "$ECR_REGISTRY/$ECR_REPOSITORY" | tr '[A-Z]' '[a-z]')
+          IMAGE_ID=$(echo "$ECR_REGISTRY/${{ inputs.ecr_repository }}" | tr '[A-Z]' '[a-z]')
           echo "ECR_REGISTRY=$ECR_REGISTRY" >> $GITHUB_ENV
           echo "IMAGE_ID=$IMAGE_ID" >> $GITHUB_ENV
 
