@@ -57,4 +57,5 @@ jobs:
            -e PROJECTS="${{ inputs.app }}" \
            -e IMAGE_TAG=stable-${{ inputs.sha }} \
            -e ENVIRONMENTS="development" \
+           -e ECR_REPOSITORY="${{ inputs.ecr_repository }}" \
            $ECR_REGISTRY/publish_app:latest
