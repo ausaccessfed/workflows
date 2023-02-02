@@ -124,7 +124,7 @@ jobs:
     needs: [build-base]
     if: needs.build-base.result == 'success'
     runs-on: ubuntu-latest
-    name: Build base
+    name: Build production
     steps:
       - uses: xt0rted/pull-request-comment-branch@v1
         if: inputs.event_name == 'issue_comment'
