@@ -141,7 +141,7 @@ jobs:
             BUILDKIT_INLINE_CACHE=1
           context: .
           tags: ${{ inputs.app }}:cache
-          outputs: type=docker,dest=${{ env.IMAGE_CACHE_DIR }}/${{ env.IMAGE_CACHE_KEY }}.tar
+          outputs: type=local,dest=${{ env.IMAGE_CACHE_DIR }}/${{ env.IMAGE_CACHE_KEY }}.tar
 
   build-production:
     needs: [build-base]
@@ -175,7 +175,7 @@ jobs:
             RELEASE_VERSION=${{ needs.build-base.outputs.IMAGE_TAG }}
           context: .
           tags: ${{ needs.build-base.outputs.IMAGE_ID }}:${{ needs.build-base.outputs.IMAGE_TAG }}
-          outputs: type=docker,dest=${{ env.IMAGE_CACHE_DIR }}/${{ env.IMAGE_STABLE_KEY }}.tar
+          outputs: type=local,dest=${{ env.IMAGE_CACHE_DIR }}/${{ env.IMAGE_STABLE_KEY }}.tar
 
   run-tests:
     needs: [build-base]
