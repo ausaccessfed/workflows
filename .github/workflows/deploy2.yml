@@ -230,21 +230,21 @@ jobs:
         uses: aws-actions/amazon-ecr-login@v1
 
       - name: Push to ECR
-        if: (github.event_name == 'push' && env.BRANCH_NAME == '${{ inputs.default_branch }}') || github.event_name == 'issue_comment'
+        if: (github.event_name == 'push' && needs.build-base.outputs.BRANCH_NAME == '${{ inputs.default_branch }}') || github.event_name == 'issue_comment'
         run: |
           docker pull ${{ needs.build-base.outputs.IMAGE_ID }}:adhoc-production || echo "true"
           #todo retag ^ make above image more uniquie per commit
           #docker push ${{ needs.build-base.outputs.IMAGE_ID }}:${{ needs.build-base.outputs.IMAGE_TAG }}
 
       - name: Push cache to ECR
-        if: (github.event_name == 'push' && env.BRANCH_NAME == '${{ inputs.default_branch }}')
+        if: (github.event_name == 'push' && needs.build-base.outputs.BRANCH_NAME == '${{ inputs.default_branch }}')
         run: |
           docker pull ${{ needs.build-base.outputs.IMAGE_ID }}:adhoc-cache || echo "true"
           #todo retag ^ make above image more uniquie per commit
           docker push ${{ inputs.app }}:cache
 
       - name: Update GitOps Repo to trigger deploys
-        if: env.BRANCH_NAME == '${{ inputs.default_branch }}' && github.event_name == 'push'
+        if: needs.build-base.outputs.BRANCH_NAME == '${{ inputs.default_branch }}' && github.event_name == 'push'
         run: |
           printenv > .envs
            docker run --env-file .envs \
