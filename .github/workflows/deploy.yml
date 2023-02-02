@@ -348,9 +348,6 @@ jobs:
     runs-on: ubuntu-latest
     name: notify
     steps:
-      - uses: xt0rted/pull-request-comment-branch@v1
-        id: comment-branch
-
       - name: check for failures
         run: |
           output=
