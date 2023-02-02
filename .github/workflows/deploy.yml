@@ -41,6 +41,8 @@ jobs:
   run:
     runs-on: ubuntu-latest
     name: Build base
+    outputs:
+      ISSUE_COMMENT_HEAD_SHA: ${{ steps.comment-branch.outputs.head_sha }}
     services:
       mysql:
         image: mysql:5.7
@@ -77,22 +79,12 @@ jobs:
           echo "BRANCH_NAME=$branch_name" >> $GITHUB_OUTPUT
 
           if [ "${{ github.event_name }}" == "issue_comment" ]; then
-            echo "ISSUE_COMMENT_HEAD_SHA=${{ steps.comment-branch.outputs.head_sha }}" >> $GITHUB_OUTPUT
-            echo "GITHUB_SHA=${{ steps.comment-branch.outputs.head_sha }}" >> $GITHUB_OUTPUT
             image_tag=adhoc-${{steps.comment-branch.outputs.head_ref}}-${{steps.comment-branch.outputs.head_sha}}
           else
             image_tag=stable-${{ github.sha }}
-            echo "GITHUB_SHA=${{ github.sha }}" >> $GITHUB_OUTPUT
           fi
           image_tag=$(echo "$image_tag" | tr / _)
           echo "IMAGE_TAG=$image_tag" >> $GITHUB_OUTPUT
-
-      - name: Create Cache Registry
-        id: cache-docker-images
-        uses: actions/cache@v2
-        with:
-          path: ${{ env.IMAGE_CACHE_DIR }}
-          key: ${{ runner.os }}-docker-images-${{ steps.env1.outputs.GITHUB_SHA }}
 
       - uses: actions/checkout@v2
         with:
@@ -160,7 +152,6 @@ jobs:
           PREPARE_DB: true
           RAILS_ENV: test
         run: |
-          docker load --input ${{ env.IMAGE_CACHE_DIR }}/${{ env.IMAGE_CACHE_KEY }}.tar
           ${{ inputs.test_command }}
 
       - name: Build Production OCI Image
@@ -173,13 +164,11 @@ jobs:
       - name: Push to ECR
         if: (github.event_name == 'push' && env.BRANCH_NAME == '${{ inputs.default_branch }}') || github.event_name == 'issue_comment'
         run: |
-          docker load --input ${{ env.IMAGE_CACHE_DIR }}/${{ env.IMAGE_STABLE_KEY }}.tar
-          docker push ${{ needs.build-base.outputs.IMAGE_ID }}:${{ needs.build-base.outputs.IMAGE_TAG }}
+          docker push ${{ steps.env2.outputs.IMAGE_ID }}:${{ steps.env2.outputs.IMAGE_TAG }}
 
       - name: Push cache to ECR
         if: (github.event_name == 'push' && env.BRANCH_NAME == '${{ inputs.default_branch }}')
         run: |
-          docker load --input ${{ env.IMAGE_CACHE_DIR }}/${{ env.IMAGE_CACHE_KEY }}.tar
           docker push ${{ inputs.app }}:cache
 
       - name: Update GitOps Repo to trigger deploys
@@ -189,7 +178,7 @@ jobs:
            docker run --env-file .envs \
            -e PROJECTS="${{ inputs.app }}" \
            -e ENVIRONMENTS="${{ inputs.environments }}" \
-           ${{ needs.build-base.outputs.ECR_REGISTRY }}/publish_app:latest
+           ${{ steps.env2.outputs.ECR_REGISTRY }}/publish_app:latest
 
       - name: Update GitOps Repo to trigger deploys for development
         if: github.event_name == 'issue_comment'
@@ -198,40 +187,20 @@ jobs:
            docker run --env-file .envs \
            -e PROJECTS="${{ inputs.app }}" \
            -e ENVIRONMENTS="development" \
-           ${{ needs.build-base.outputs.ECR_REGISTRY }}/publish_app:latest
-
+           ${{ steps.env2.outputs.ECR_REGISTRY }}/publish_app:latest
+  notify:
+    needs: [run]
+    if: github.event_name == 'issue_comment' && always()
+    runs-on: ubuntu-latest
+    name: notify
+    steps:
       - name: check for failures
         run: |
           output=
-          if [ "${{ needs.run-tests.result }}" != "success"]; then 
-            output="${output}Run tests failed! "
-          fi
-
-          if [ "${{ needs.run-task-1.result }}" != "success"]; then 
-            output="${output}Run task 1 failed! "
-          fi
-
-          if [ "${{ needs.run-task-2.result }}" != "success"]; then 
-            output="${output}Run task 2 failed! "
-          fi
-
-          if [ "${{ needs.run-task-3.result }}" != "success"]; then 
-            output="${output}Run task 3 failed! "
-          fi
-
-          if [ "${{ needs.build-base.result }}" != "success"]; then 
-            output="${output}build base failed! "
-          fi
-
-          if [ "${{ needs.build-production.result }}" != "success"]; then 
-            output="${output}build production failed! "
-          fi
-
-          if [ "${{ needs.push-images.result }}" != "success"]; then 
+          status="failure"
+          if [ "${{ needs.run.result }}" != "success"]; then 
             output="${output}push images failed!"
           fi
-
-          status="failure"
 
           if [ "$output" == ""]; then 
             output="Manifest updated, Deploying to ${{ inputs.app }}.dev.aaf.edu.au (may take up to 5 minutes)"
@@ -243,7 +212,7 @@ jobs:
       - name: Set final commit status
         uses: myrotvorets/set-commit-status-action@master
         with:
-          sha: ${{ needs.build-base.outputs.ISSUE_COMMENT_HEAD_SHA }}
+          sha: ${{ needs.run.outputs.ISSUE_COMMENT_HEAD_SHA }}
           token: ${{ secrets.GITHUB_TOKEN }}
           status: ${{ env.ADHOC_STATUS }}
           targetUrl: https://${{ inputs.app }}.dev.aaf.edu.au
