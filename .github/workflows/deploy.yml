@@ -124,10 +124,10 @@ jobs:
           --cache-from ${{ steps.env2.outputs.IMAGE_ID }}:cache -t ${{ inputs.app }}:cache .
           docker image save ${{ inputs.app }}:cache -o /tmp/image-cache.tar
 
-      - name: Upload artifact
+      - name: Upload cache image
         uses: actions/upload-artifact@v2
         with:
-          name: $${{ inputs.app }}-cache
+          name: ${{ inputs.app }}-cache
           path: /tmp/image-cache.tar
 
   build-production:
@@ -140,7 +140,7 @@ jobs:
         with:
           ref: ${{ needs.build-base.outputs.BRANCH_NAME }}
 
-      - name: Download artifacts (Docker images) from previous workflows
+      - name: Download cache docker image
         uses: actions/download-artifact@v2
         with:
           name: ${{ inputs.app }}-cache
@@ -158,7 +158,7 @@ jobs:
           -t ${{ needs.build-base.outputs.IMAGE_ID }}:${{ needs.build-base.outputs.IMAGE_TAG }} .
           docker image save ${{ needs.build-base.outputs.IMAGE_ID }}:${{ needs.build-base.outputs.IMAGE_TAG }} -o /tmp/image-stable.tar
 
-      - name: Upload artifact
+      - name: Upload stable docker image
         uses: actions/upload-artifact@v2
         with:
           name: ${{ needs.build-base.outputs.IMAGE_ID }}-stable
@@ -176,7 +176,7 @@ jobs:
         ports:
           - "3306:3306"
     steps:
-      - name: Download artifacts (Docker images) from previous workflows
+      - name: Download cache docker image
         uses: actions/download-artifact@v2
         with:
           name: ${{ inputs.app }}-cache
@@ -208,7 +208,7 @@ jobs:
     runs-on: ubuntu-latest
     name: run task 1
     steps:
-      - name: Download artifacts (Docker images) from previous workflows
+      - name: Download cache docker image
         uses: actions/download-artifact@v2
         with:
           name: ${{ inputs.app }}-cache
@@ -227,7 +227,7 @@ jobs:
     runs-on: ubuntu-latest
     name: run task 2
     steps:
-      - name: Download artifacts (Docker images) from previous workflows
+      - name: Download cache docker image
         uses: actions/download-artifact@v2
         with:
           name: ${{ inputs.app }}-cache
@@ -276,13 +276,13 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
-      - name: Download artifacts (Docker images) from previous workflows
+      - name: Download cache docker image
         uses: actions/download-artifact@v2
         with:
           name: ${{ inputs.app }}-cache
           path: /tmp/image-cache.tar
 
-      - name: Download artifacts (Docker images) from previous workflows
+      - name: Download stable docker image
         uses: actions/download-artifact@v2
         with:
           name: ${{ needs.build-base.outputs.IMAGE_ID }}-stable
