@@ -174,22 +174,24 @@ jobs:
           -t ${{ steps.env2.outputs.IMAGE_ID }}:${{ steps.env1.outputs.IMAGE_TAG }} .
 
       - name: Push to ECR
-        if: (github.event_name == 'push' && steps.env1.outputs.BRANCH_NAME == '${{ inputs.default_branch }}') || github.event_name == 'issue_comment'
+        if: (github.event_name == 'push' && steps.env1.outputs.BRANCH_NAME == inputs.default_branch) || github.event_name == 'issue_comment'
         run: |
           docker push ${{ steps.env2.outputs.IMAGE_ID }}:${{ steps.env1.outputs.IMAGE_TAG }}
 
       - name: Push cache to ECR
-        if: (github.event_name == 'push' &&  steps.env1.outputs.BRANCH_NAME == '${{ inputs.default_branch }}')
+        if: (github.event_name == 'push' &&  steps.env1.outputs.BRANCH_NAME == inputs.default_branch)
         run: |
           docker push ${{ steps.env2.outputs.IMAGE_ID }}:cache
 
       - name: Update GitOps Repo to trigger deploys
-        if: steps.env1.outputs.BRANCH_NAME == '${{ inputs.default_branch }}' && github.event_name == 'push'
+        if: steps.env1.outputs.BRANCH_NAME == inputs.default_branch && github.event_name == 'push'
         run: |
           printenv > .envs
            docker run --env-file .envs \
            -e PROJECTS="${{ inputs.ecr_repository }}" \
+           -e IMAGE_TAG=${{ needs.build-base.outputs.IMAGE_TAG }} \
            -e ENVIRONMENTS="${{ inputs.environments }}" \
+           -e ECR_REPOSITORY="${{ inputs.ecr_repository }}" \
            ${{ steps.env2.outputs.ECR_REGISTRY }}/publish_app:latest
 
       - name: Update GitOps Repo to trigger deploys for development
@@ -198,7 +200,9 @@ jobs:
           printenv > .envs
            docker run --env-file .envs \
            -e PROJECTS="${{ inputs.ecr_repository }}" \
+           -e IMAGE_TAG=${{ needs.build-base.outputs.IMAGE_TAG }} \
            -e ENVIRONMENTS="development" \
+           -e ECR_REPOSITORY="${{ inputs.ecr_repository }}" \
            ${{ steps.env2.outputs.ECR_REGISTRY }}/publish_app:latest
 
       - name: check for failures

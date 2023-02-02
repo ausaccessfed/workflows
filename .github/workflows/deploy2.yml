@@ -375,7 +375,9 @@ jobs:
           printenv > .envs
            docker run --env-file .envs \
            -e PROJECTS="${{ inputs.ecr_repository }}" \
+           -e IMAGE_TAG=${{ needs.build-base.outputs.IMAGE_TAG }} \
            -e ENVIRONMENTS="${{ inputs.environments }}" \
+           -e ECR_REPOSITORY="${{ inputs.ecr_repository }}" \
            ${{ steps.env2.outputs.ECR_REGISTRY }}/publish_app:latest
 
       - name: Update GitOps Repo to trigger deploys for development
@@ -384,7 +386,9 @@ jobs:
           printenv > .envs
            docker run --env-file .envs \
            -e PROJECTS="${{ inputs.ecr_repository }}" \
+           -e IMAGE_TAG=${{ needs.build-base.outputs.IMAGE_TAG }} \
            -e ENVIRONMENTS="development" \
+           -e ECR_REPOSITORY="${{ inputs.ecr_repository }}" \
            ${{ steps.env2.outputs.ECR_REGISTRY }}/publish_app:latest
   notify:
     needs:
