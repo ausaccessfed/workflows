@@ -5,7 +5,7 @@ on:
       ecr_repository:
         required: true
         type: string
-      app:
+      url:
         required: true
         type: string
       event_name:
@@ -102,7 +102,7 @@ jobs:
         with:
           aws-region: ap-southeast-2
           role-to-assume: ${{ secrets.ROLE }}
-          role-session-name: GithubActions-${{ inputs.app }}-ci
+          role-session-name: GithubActions-${{ inputs.ecr_repository }}-ci
 
       - name: Login to Amazon ECR
         id: login-ecr
@@ -130,7 +130,7 @@ jobs:
           --build-arg BUILDKIT_INLINE_CACHE=1 \
           --cache-from ${{ steps.env2.outputs.IMAGE_ID }}:cache \
           -t ${{ steps.env2.outputs.IMAGE_ID }}:cache \
-          -t ${{ inputs.app }}:cache .
+          -t app:cache .
 
       - name: Ensure MySQL is ready
         if: inputs.test_command != ''
@@ -189,7 +189,7 @@ jobs:
         run: |
           printenv > .envs
            docker run --env-file .envs \
-           -e PROJECTS="${{ inputs.app }}" \
+           -e PROJECTS="${{ inputs.ecr_repository }}" \
            -e ENVIRONMENTS="${{ inputs.environments }}" \
            ${{ steps.env2.outputs.ECR_REGISTRY }}/publish_app:latest
 
@@ -198,7 +198,7 @@ jobs:
         run: |
           printenv > .envs
            docker run --env-file .envs \
-           -e PROJECTS="${{ inputs.app }}" \
+           -e PROJECTS="${{ inputs.ecr_repository }}" \
            -e ENVIRONMENTS="development" \
            ${{ steps.env2.outputs.ECR_REGISTRY }}/publish_app:latest
 
@@ -213,7 +213,7 @@ jobs:
           fi
 
           if [ "$output" == ""]; then 
-            output="Manifest updated, Deploying to ${{ inputs.app }}.dev.aaf.edu.au (may take up to 5 minutes)"
+            output="Manifest updated, Deploying to ${{ inputs.url }} (may take up to 5 minutes)"
             status="success"
           fi
           echo "ADHOC_OUTPUT=$output" >> $GITHUB_OUTPUT
@@ -226,6 +226,6 @@ jobs:
           sha: ${{ steps.comment-branch.outputs.head_ref }}
           token: ${{ secrets.GITHUB_TOKEN }}
           status: ${{ steps.failure-check.outputs.ADHOC_STATUS }}
-          targetUrl: https://${{ inputs.app }}.dev.aaf.edu.au
+          targetUrl: ${{ inputs.url }}
           description: ${{ steps.failure-check.outputs.ADHOC_OUTPUT }}
           context: "Dev federation deploy"
