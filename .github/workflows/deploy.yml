@@ -176,7 +176,7 @@ jobs:
           path: /tmp/image-stable.tar
   run-tests:
     needs: [envs, build-base]
-    if: inputs.test_command != "" && needs.build-base.result == 'success'
+    if: inputs.test_command != '' && needs.build-base.result == 'success'
     runs-on: ubuntu-latest
     name: run task 1
     services:
@@ -215,7 +215,7 @@ jobs:
           ${{ inputs.test_command }}
   run-task-1:
     needs: [envs, build-base]
-    if: inputs.task_1 != "" && needs.build-base.result == 'success'
+    if: inputs.task_1 != '' && needs.build-base.result == 'success'
     runs-on: ubuntu-latest
     name: run task 1
     steps:
@@ -234,7 +234,7 @@ jobs:
           ${{ inputs.task_1 }}
   run-task-2:
     needs: [envs, build-base]
-    if: inputs.task_2 != "" && needs.build-base.result == 'success'
+    if: inputs.task_2 != '' && needs.build-base.result == 'success'
     runs-on: ubuntu-latest
     name: run task 2
     steps:
@@ -253,7 +253,7 @@ jobs:
           ${{ inputs.task_2 }}
   run-task-3:
     needs: [envs, build-base]
-    if: inputs.task_3 != "" && needs.build-base.result == 'success'
+    if: inputs.task_3 != '' && needs.build-base.result == 'success'
     runs-on: ubuntu-latest
     name: run task 3
     steps:
