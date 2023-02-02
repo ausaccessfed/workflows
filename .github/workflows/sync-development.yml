@@ -19,9 +19,6 @@ on:
 
 jobs:
   sync:
-    concurrency:
-      group: sync-development
-      cancel-in-progress: true
     name: Deploy trunk to development
     runs-on: ubuntu-latest
     permissions:
