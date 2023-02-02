@@ -44,12 +44,12 @@ jobs:
     name: envs
     steps:
       - uses: xt0rted/pull-request-comment-branch@v1
-        if: inputs.event_name == 'issue_comment'
+        if: github.event_name == 'issue_comment'
         id: comment-branch
 
       - name: Set commit status as pending
         uses: myrotvorets/set-commit-status-action@master
-        if: inputs.event_name == 'issue_comment'
+        if: github.event_name == 'issue_comment'
         with:
           sha: ${{ steps.comment-branch.outputs.head_sha }}
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -70,7 +70,7 @@ jobs:
           echo "BRANCH_NAME=$branch_name" >> $GITHUB_ENV
           echo "BRANCH_NAME=$branch_name" >> $GITHUB_OUTPUT
 
-          if [ "${{ inputs.event_name }}" == "issue_comment" ]; then
+          if [ "${{ github.event_name }}" == "issue_comment" ]; then
               echo "ISSUE_COMMENT_HEAD_SHA=${{ steps.comment-branch.outputs.head_sha }}" >> $GITHUB_OUTPUT
             image_tag=adhoc-${{steps.comment-branch.outputs.head_ref}}-${{steps.comment-branch.outputs.head_sha}}
           else
@@ -107,19 +107,10 @@ jobs:
           echo "ECR_REGISTRY=$ECR_REGISTRY" >> $GITHUB_OUTPUT
           echo "IMAGE_ID=$IMAGE_ID" >> $GITHUB_OUTPUT
   build-base:
+    needs: [envs]
     runs-on: ubuntu-latest
     name: Build base
     steps:
-      - name: Set commit status as pending
-        uses: myrotvorets/set-commit-status-action@master
-        if: inputs.event_name == 'issue_comment'
-        with:
-          sha: ${{ needs.envs.outputs.ISSUE_COMMENT_HEAD_SHA }}
-          token: ${{ secrets.GITHUB_TOKEN }}
-          status: pending
-          description: "testing, building and pushing image"
-          context: "Dev federation deploy"
-
       - uses: actions/checkout@v2
         with:
           ref: ${{ needs.envs.outputs.BRANCH_NAME }}
@@ -151,7 +142,7 @@ jobs:
           path: /tmp/image-cache.tar
 
   build-production:
-    needs: [build-base]
+    needs: [envs, build-base]
     if: needs.build-base.result == 'success'
     runs-on: ubuntu-latest
     name: Build production
@@ -184,7 +175,7 @@ jobs:
           name: ${{ needs.envs.outputs.$IMAGE_ID }}-stable
           path: /tmp/image-stable.tar
   run-tests:
-    needs: [build-base]
+    needs: [envs, build-base]
     if: inputs.test_command != "" && needs.build-base.result == 'success'
     runs-on: ubuntu-latest
     name: run task 1
@@ -223,7 +214,7 @@ jobs:
         run: |
           ${{ inputs.test_command }}
   run-task-1:
-    needs: [build-base]
+    needs: [envs, build-base]
     if: inputs.task_1 != "" && needs.build-base.result == 'success'
     runs-on: ubuntu-latest
     name: run task 1
@@ -242,7 +233,7 @@ jobs:
         run: |
           ${{ inputs.task_1 }}
   run-task-2:
-    needs: [build-base]
+    needs: [envs, build-base]
     if: inputs.task_2 != "" && needs.build-base.result == 'success'
     runs-on: ubuntu-latest
     name: run task 2
@@ -261,7 +252,7 @@ jobs:
         run: |
           ${{ inputs.task_2 }}
   run-task-3:
-    needs: [build-base]
+    needs: [envs, build-base]
     if: inputs.task_3 != "" && needs.build-base.result == 'success'
     runs-on: ubuntu-latest
     name: run task 3
@@ -280,7 +271,8 @@ jobs:
         run: |
           ${{ inputs.task_3 }}
   push-images:
-    needs: [build-production, run-tests, run-task-1, run-task-2, run-task-3]
+    needs:
+      [envs, build-production, run-tests, run-task-1, run-task-2, run-task-3]
     if: needs.build-production.result == 'success' && needs.run-tests.result == 'success' && needs.run-task-1.result == 'success' && needs.run-task-2.result == 'success' && needs.run-task-3.result == 'success'
     runs-on: ubuntu-latest
     name: push images
@@ -343,6 +335,7 @@ jobs:
   notify:
     needs:
       [
+        envs,
         build-base,
         build-production,
         run-tests,
@@ -351,7 +344,7 @@ jobs:
         run-task-3,
         push-images,
       ]
-    if: inputs.event_name == 'issue_comment' && always()
+    if: github.event_name == 'issue_comment' && always()
     runs-on: ubuntu-latest
     name: notify
     steps:
@@ -401,7 +394,7 @@ jobs:
       - name: Set final commit status
         uses: myrotvorets/set-commit-status-action@master
         with:
-          sha: ${{ steps.comment-branch.outputs.head_sha }}
+          sha: ${{ needs.envs.outputs.ISSUE_COMMENT_HEAD_SHA }}
           token: ${{ secrets.GITHUB_TOKEN }}
           status: ${{ env.ADHOC_STATUS }}
           targetUrl: https://${{ inputs.app }}.dev.aaf.edu.au
