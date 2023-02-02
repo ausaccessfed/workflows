@@ -40,6 +40,7 @@ on:
 env:
   IMAGE_CACHE_DIR: /tmp/cache/docker-image
   IMAGE_CACHE_KEY: cache-image
+  IMAGE_STABLE_KEY: stable-image
 jobs:
   build-base:
     runs-on: ubuntu-latest
@@ -140,7 +141,7 @@ jobs:
             BUILDKIT_INLINE_CACHE=1
           context: .
           tags: ${{ inputs.app }}:cache
-          outputs: type=docker,dest=${{ env.IMAGE_CACHE_DIR }}/image-cache.tar
+          outputs: type=docker,dest=${{ env.IMAGE_CACHE_DIR }}${{ env.IMAGE_CACHE_KEY }}.tar
 
   build-production:
     needs: [build-base]
@@ -161,7 +162,7 @@ jobs:
 
       - name: Load Docker images from previous workflows
         run: |
-          docker load --input ${{ env.IMAGE_CACHE_DIR }}/image-cache.tar
+          docker load --input ${{ env.IMAGE_CACHE_DIR }}/${{ env.IMAGE_CACHE_KEY }}.tar
 
       - name: Build Production OCI Image
         uses: docker/build-push-action@v2
@@ -174,7 +175,7 @@ jobs:
             RELEASE_VERSION=${{ needs.build-base.outputs.IMAGE_TAG }}
           context: .
           tags: ${{ needs.build-base.outputs.IMAGE_ID }}:${{ needs.build-base.outputs.IMAGE_TAG }}
-          outputs: type=docker,dest=${{ env.IMAGE_CACHE_DIR }}/image-stable.tar
+          outputs: type=docker,dest=${{ env.IMAGE_CACHE_DIR }}/${{ env.IMAGE_STABLE_KEY }}.tar
 
   run-tests:
     needs: [build-base]
@@ -189,11 +190,12 @@ jobs:
         ports:
           - "3306:3306"
     steps:
-      - name: Download cache docker image
-        uses: actions/download-artifact@v2
+      - name: Declare Cache Registry
+        id: cache-docker-images
+        uses: actions/cache@v2
         with:
-          name: ${{ inputs.app }}-cache
-          path: /tmp/image-cache.tar
+          path: ${{ env.IMAGE_CACHE_DIR }}
+          key: ${{ runner.os }}-docker-images-${{ needs.base-image.outputs.GITHUB_SHA }}
 
       - name: Ensure MySQL is ready
         timeout-minutes: 5
@@ -210,7 +212,7 @@ jobs:
           PREPARE_DB: true
           RAILS_ENV: test
         run: |
-          docker load --input ${{ env.IMAGE_CACHE_DIR }}/image-cache.tar
+          docker load --input ${{ env.IMAGE_CACHE_DIR }}/${{ env.IMAGE_CACHE_KEY }}.tar
           ${{ inputs.test_command }}
   run-task-1:
     needs: [build-base]
@@ -218,15 +220,16 @@ jobs:
     runs-on: ubuntu-latest
     name: run task 1
     steps:
-      - name: Download cache docker image
-        uses: actions/download-artifact@v2
+      - name: Declare Cache Registry
+        id: cache-docker-images
+        uses: actions/cache@v2
         with:
-          name: ${{ inputs.app }}-cache
-          path: /tmp/image-cache.tar
+          path: ${{ env.IMAGE_CACHE_DIR }}
+          key: ${{ runner.os }}-docker-images-${{ needs.base-image.outputs.GITHUB_SHA }}
 
       - name: Run task 1
         run: |
-          docker load --input ${{ env.IMAGE_CACHE_DIR }}/image-cache.tar
+          docker load --input ${{ env.IMAGE_CACHE_DIR }}/${{ env.IMAGE_CACHE_KEY }}.tar
           ${{ inputs.task_1 }}
   run-task-2:
     needs: [build-base]
@@ -234,15 +237,16 @@ jobs:
     runs-on: ubuntu-latest
     name: run task 2
     steps:
-      - name: Download cache docker image
-        uses: actions/download-artifact@v2
+      - name: Declare Cache Registry
+        id: cache-docker-images
+        uses: actions/cache@v2
         with:
-          name: ${{ inputs.app }}-cache
-          path: /tmp/image-cache.tar
+          path: ${{ env.IMAGE_CACHE_DIR }}
+          key: ${{ runner.os }}-docker-images-${{ needs.base-image.outputs.GITHUB_SHA }}
 
       - name: Run task 2
         run: |
-          docker load --input ${{ env.IMAGE_CACHE_DIR }}/image-cache.tar
+          docker load --input ${{ env.IMAGE_CACHE_DIR }}/${{ env.IMAGE_CACHE_KEY }}.tar
           ${{ inputs.task_2 }}
   run-task-3:
     needs: [build-base]
@@ -250,15 +254,16 @@ jobs:
     runs-on: ubuntu-latest
     name: run task 3
     steps:
-      - name: Download artifacts (Docker images) from previous workflows
-        uses: actions/download-artifact@v2
+      - name: Declare Cache Registry
+        id: cache-docker-images
+        uses: actions/cache@v2
         with:
-          name: ${{ inputs.app }}-cache
-          path: /tmp/image-cache.tar
+          path: ${{ env.IMAGE_CACHE_DIR }}
+          key: ${{ runner.os }}-docker-images-${{ needs.base-image.outputs.GITHUB_SHA }}
 
       - name: Run task 3
         run: |
-          docker load --input ${{ env.IMAGE_CACHE_DIR }}/image-cache.tar
+          docker load --input ${{ env.IMAGE_CACHE_DIR }}/${{ env.IMAGE_CACHE_KEY }}.tar
           ${{ inputs.task_3 }}
   push-images:
     needs: [build-production, run-tests, run-task-1, run-task-2, run-task-3]
@@ -266,6 +271,13 @@ jobs:
     runs-on: ubuntu-latest
     name: push images
     steps:
+      - name: Declare Cache Registry
+        id: cache-docker-images
+        uses: actions/cache@v2
+        with:
+          path: ${{ env.IMAGE_CACHE_DIR }}
+          key: ${{ runner.os }}-docker-images-${{ needs.base-image.outputs.GITHUB_SHA }}
+
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@master
         with:
@@ -277,28 +289,16 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
-      - name: Download cache docker image
-        uses: actions/download-artifact@v2
-        with:
-          name: ${{ inputs.app }}-cache
-          path: /tmp/image-cache.tar
-
-      - name: Download stable docker image
-        uses: actions/download-artifact@v2
-        with:
-          name: ${{ needs.build-base.outputs.IMAGE_ID }}-stable
-          path: /tmp/image-stable.tar
-
       - name: Push to ECR
         if: (github.event_name == 'push' && env.BRANCH_NAME == '${{ inputs.default_branch }}') || github.event_name == 'issue_comment'
         run: |
-          docker load --input ${{ env.IMAGE_CACHE_DIR }}/image-stable.tar
+          docker load --input ${{ env.IMAGE_CACHE_DIR }}/${{ env.IMAGE_STABLE_KEY }}.tar
           docker push ${{ needs.build-base.outputs.IMAGE_ID }}:${{ needs.build-base.outputs.IMAGE_TAG }}
 
       - name: Push cache to ECR
         if: (github.event_name == 'push' && env.BRANCH_NAME == '${{ inputs.default_branch }}')
         run: |
-          docker load --input ${{ env.IMAGE_CACHE_DIR }}/image-cache.tar
+          docker load --input ${{ env.IMAGE_CACHE_DIR }}/${{ env.IMAGE_CACHE_KEY }}.tar
           docker push ${{ inputs.app }}:cache
 
       - name: Update GitOps Repo to trigger deploys
