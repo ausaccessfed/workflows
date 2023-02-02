@@ -1,0 +1,60 @@
+name: Sync development
+on:
+  workflow_call:
+    inputs:
+      ecr_repository:
+        required: true
+        type: string
+      app:
+        required: true
+        type: string
+      sha:
+        required: true
+        type: string
+    secrets:
+      DOCKER_ECR:
+        required: true
+      ROLE:
+        required: true
+
+jobs:
+  sync:
+    concurrency:
+      group: sync-development
+      cancel-in-progress: true
+    name: Deploy trunk to development
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@master
+        with:
+          aws-region: ap-southeast-2
+          role-to-assume: ${{ secrets.ROLE }}
+          role-session-name: GithubActions-${{ inputs.app }}-ci
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Check if there's an app image corresponding to this commit
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        # This throws an error if there's no matching image.
+        run: |
+          aws ecr describe-images --repository-name "${{ inputs.ecr_repository }}" \
+           --image-ids imageTag=stable-${{ inputs.sha }}
+
+      - name: Update GitOps Repo to deploy in development
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        run: |
+          printenv > .envs
+           docker run --env-file .envs \
+           -e PROJECTS="${{ inputs.app }}" \
+           -e IMAGE_TAG=stable-${{github.sha}} \
+           -e ENVIRONMENTS="development" \
+           $ECR_REGISTRY/publish_app:latest
