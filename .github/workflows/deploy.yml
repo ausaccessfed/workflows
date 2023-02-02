@@ -37,7 +37,9 @@ on:
         required: true
       ROLE:
         required: true
-
+env:
+  IMAGE_CACHE_DIR: /tmp/cache/docker-image
+  IMAGE_CACHE_KEY: cache-image
 jobs:
   build-base:
     runs-on: ubuntu-latest
@@ -45,6 +47,7 @@ jobs:
     outputs:
       BRANCH_NAME: ${{ steps.env1.outputs.BRANCH_NAME }}
       ISSUE_COMMENT_HEAD_SHA: ${{ steps.env1.outputs.ISSUE_COMMENT_HEAD_SHA }}
+      GITHUB_SHA: ${{ steps.env1.outputs.GITHUB_SHA }}
       IMAGE_TAG: ${{ steps.env1.outputs.IMAGE_TAG }}
       BASE_IMAGE: ${{ steps.env2.outputs.BASE_IMAGE }}
       ECR_REGISTRY: ${{ steps.env2.outputs.ECR_REGISTRY }}
@@ -78,13 +81,22 @@ jobs:
           echo "BRANCH_NAME=$branch_name" >> $GITHUB_OUTPUT
 
           if [ "${{ github.event_name }}" == "issue_comment" ]; then
-              echo "ISSUE_COMMENT_HEAD_SHA=${{ steps.comment-branch.outputs.head_sha }}" >> $GITHUB_OUTPUT
+            echo "ISSUE_COMMENT_HEAD_SHA=${{ steps.comment-branch.outputs.head_sha }}" >> $GITHUB_OUTPUT
+            echo "GITHUB_SHA=${{ steps.comment-branch.outputs.head_sha }}" >> $GITHUB_OUTPUT
             image_tag=adhoc-${{steps.comment-branch.outputs.head_ref}}-${{steps.comment-branch.outputs.head_sha}}
           else
             image_tag=stable-${{ github.sha }}
+            echo "GITHUB_SHA=${{ github.sha }}" >> $GITHUB_OUTPUT
           fi
           image_tag=$(echo "$image_tag" | tr / _)
           echo "IMAGE_TAG=$image_tag" >> $GITHUB_OUTPUT
+
+      - name: Create Cache Registry
+        id: cache-docker-images
+        uses: actions/cache@v2
+        with:
+          path: ${{ env.IMAGE_CACHE_DIR }}
+          key: ${{ runner.os }}-docker-images-${{ steps.env1.outputs.GITHUB_SHA }}
 
       - uses: actions/checkout@v2
         with:
@@ -115,20 +127,20 @@ jobs:
           echo "ECR_REGISTRY=$ECR_REGISTRY" >> $GITHUB_OUTPUT
           echo "IMAGE_ID=$IMAGE_ID" >> $GITHUB_OUTPUT
 
-      - name: Build Test OCI Image
-        run: |
-          docker pull ${{ steps.env2.outputs.IMAGE_ID }}:cache || echo "true"
-          DOCKER_BUILDKIT=1 docker build --target development \
-          --build-arg BASE_IMAGE=${{ steps.env2.outputs.BASE_IMAGE }} \
-          --build-arg BUILDKIT_INLINE_CACHE=1 \
-          --cache-from ${{ steps.env2.outputs.IMAGE_ID }}:cache -t ${{ inputs.app }}:cache .
-          docker image save ${{ inputs.app }}:cache -o /tmp/image-cache.tar
+      # - name: pull cache
+      #   run: docker pull ${{ steps.env2.outputs.IMAGE_ID }}:cache || echo "true"
 
-      - name: Upload cache image
-        uses: actions/upload-artifact@v2
+      - name: Build Test OCI Image
+        uses: docker/build-push-action@v2
         with:
-          name: ${{ inputs.app }}-cache
-          path: /tmp/image-cache.tar
+          cache-from: ${{ steps.env2.outputs.IMAGE_ID }}:cache
+          target: development
+          build-args: |
+            BASE_IMAGE=${{ steps.env2.outputs.BASE_IMAGE }}
+            BUILDKIT_INLINE_CACHE=1
+          context: .
+          tags: ${{ inputs.app }}:cache
+          outputs: type=docker,dest=${{ env.IMAGE_CACHE_DIR }}/image-cache.tar
 
   build-production:
     needs: [build-base]
@@ -136,33 +148,34 @@ jobs:
     runs-on: ubuntu-latest
     name: Build production
     steps:
+      - name: Declare Cache Registry
+        id: cache-docker-images
+        uses: actions/cache@v2
+        with:
+          path: ${{ env.IMAGE_CACHE_DIR }}
+          key: ${{ runner.os }}-docker-images-${{ needs.base-image.outputs.GITHUB_SHA }}
+
       - uses: actions/checkout@v2
         with:
           ref: ${{ needs.build-base.outputs.BRANCH_NAME }}
 
-      - name: Download cache docker image
-        uses: actions/download-artifact@v2
-        with:
-          name: ${{ inputs.app }}-cache
-          path: /tmp/image-cache.tar
-
       - name: Load Docker images from previous workflows
         run: |
-          docker load --input /tmp/image-cache.tar
+          docker load --input ${{ env.IMAGE_CACHE_DIR }}/image-cache.tar
 
       - name: Build Production OCI Image
-        run: |
-          DOCKER_BUILDKIT=1 docker build --cache-from ${{ inputs.app }}:cache \
-          --build-arg BASE_IMAGE=${{ needs.build-base.outputs.BASE_IMAGE }} \
-          --build-arg RELEASE_VERSION=${{ needs.build-base.outputs.IMAGE_TAG }} \
-          -t ${{ needs.build-base.outputs.IMAGE_ID }}:${{ needs.build-base.outputs.IMAGE_TAG }} .
-          docker image save ${{ needs.build-base.outputs.IMAGE_ID }}:${{ needs.build-base.outputs.IMAGE_TAG }} -o /tmp/image-stable.tar
-
-      - name: Upload stable docker image
-        uses: actions/upload-artifact@v2
+        uses: docker/build-push-action@v2
         with:
-          name: ${{ needs.build-base.outputs.IMAGE_ID }}-stable
-          path: /tmp/image-stable.tar
+          cache-from: ${{ inputs.app }}:cache
+          target: development
+          build-args: |
+            BASE_IMAGE=${{ needs.build-base.outputs.BASE_IMAGE }}
+            BUILDKIT_INLINE_CACHE=1
+            RELEASE_VERSION=${{ needs.build-base.outputs.IMAGE_TAG }}
+          context: .
+          tags: ${{ needs.build-base.outputs.IMAGE_ID }}:${{ needs.build-base.outputs.IMAGE_TAG }}
+          outputs: type=docker,dest=${{ env.IMAGE_CACHE_DIR }}/image-stable.tar
+
   run-tests:
     needs: [build-base]
     if: inputs.test_command != '' && needs.build-base.result == 'success'
@@ -182,10 +195,6 @@ jobs:
           name: ${{ inputs.app }}-cache
           path: /tmp/image-cache.tar
 
-      - name: Load Docker images from previous workflows
-        run: |
-          docker load --input /tmp/image-cache.tar
-
       - name: Ensure MySQL is ready
         timeout-minutes: 5
         run: |
@@ -201,6 +210,7 @@ jobs:
           PREPARE_DB: true
           RAILS_ENV: test
         run: |
+          docker load --input ${{ env.IMAGE_CACHE_DIR }}/image-cache.tar
           ${{ inputs.test_command }}
   run-task-1:
     needs: [build-base]
@@ -214,12 +224,9 @@ jobs:
           name: ${{ inputs.app }}-cache
           path: /tmp/image-cache.tar
 
-      - name: Load Docker images from previous workflows
-        run: |
-          docker load --input /tmp/image-cache.tar
-
       - name: Run task 1
         run: |
+          docker load --input ${{ env.IMAGE_CACHE_DIR }}/image-cache.tar
           ${{ inputs.task_1 }}
   run-task-2:
     needs: [build-base]
@@ -233,12 +240,9 @@ jobs:
           name: ${{ inputs.app }}-cache
           path: /tmp/image-cache.tar
 
-      - name: Load Docker images from previous workflows
-        run: |
-          docker load --input /tmp/image-cache.tar
-
       - name: Run task 2
         run: |
+          docker load --input ${{ env.IMAGE_CACHE_DIR }}/image-cache.tar
           ${{ inputs.task_2 }}
   run-task-3:
     needs: [build-base]
@@ -252,12 +256,9 @@ jobs:
           name: ${{ inputs.app }}-cache
           path: /tmp/image-cache.tar
 
-      - name: Load Docker images from previous workflows
-        run: |
-          docker load --input /tmp/image-cache.tar
-
       - name: Run task 3
         run: |
+          docker load --input ${{ env.IMAGE_CACHE_DIR }}/image-cache.tar
           ${{ inputs.task_3 }}
   push-images:
     needs: [build-production, run-tests, run-task-1, run-task-2, run-task-3]
@@ -288,19 +289,16 @@ jobs:
           name: ${{ needs.build-base.outputs.IMAGE_ID }}-stable
           path: /tmp/image-stable.tar
 
-      - name: Load Docker images from previous workflows
-        run: |
-          docker load --input /tmp/image-cache.tar
-          docker load --input /tmp/image-stable.tar
-
       - name: Push to ECR
         if: (github.event_name == 'push' && env.BRANCH_NAME == '${{ inputs.default_branch }}') || github.event_name == 'issue_comment'
         run: |
+          docker load --input ${{ env.IMAGE_CACHE_DIR }}/image-stable.tar
           docker push ${{ needs.build-base.outputs.IMAGE_ID }}:${{ needs.build-base.outputs.IMAGE_TAG }}
 
       - name: Push cache to ECR
         if: (github.event_name == 'push' && env.BRANCH_NAME == '${{ inputs.default_branch }}')
         run: |
+          docker load --input ${{ env.IMAGE_CACHE_DIR }}/image-cache.tar
           docker push ${{ inputs.app }}:cache
 
       - name: Update GitOps Repo to trigger deploys
