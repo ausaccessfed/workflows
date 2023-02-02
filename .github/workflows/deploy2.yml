@@ -196,6 +196,10 @@ jobs:
           role-to-assume: ${{ secrets.ROLE }}
           role-session-name: GithubActions-${{ inputs.ecr_repository }}-ci
 
+      - uses: actions/checkout@v2
+        with:
+          ref: ${{ needs.build-base.outputs.BRANCH_NAME }}
+
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
@@ -225,7 +229,7 @@ jobs:
           RAILS_ENV: test
         run: |
           docker pull ${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache
-          docker tag ${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache app:adhoc-cache
+          docker tag ${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache app:cache
           ${{ inputs.test_command }}
   run-task-1:
     needs: [build-base]
@@ -256,7 +260,7 @@ jobs:
       - name: Run ${{ inputs.task_1_name }}
         run: |
           docker pull ${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache
-          docker tag ${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache app:adhoc-cache
+          docker tag ${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache app:cache
           ${{ inputs.task_1 }}
   run-task-2:
     needs: [build-base]
@@ -287,7 +291,7 @@ jobs:
       - name: Run ${{ inputs.task_2_name }}
         run: |
           docker pull ${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache
-          docker tag ${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache app:adhoc-cache
+          docker tag ${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache app:cache
           ${{ inputs.task_2 }}
   run-task-3:
     needs: [build-base]
@@ -318,7 +322,7 @@ jobs:
       - name: Run ${{ inputs.task_3_name }}
         run: |
           docker pull ${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache
-          docker tag ${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache app:adhoc-cache
+          docker tag ${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache app:cache
           ${{ inputs.task_3 }}
   push-images:
     needs: [build-production, run-tests, run-task-1, run-task-2, run-task-3]
