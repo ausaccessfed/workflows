@@ -117,11 +117,11 @@ jobs:
 
       - name: Build Test OCI Image
         run: |
-          docker pull $IMAGE_ID:cache || echo "true"
+          docker pull ${{ steps.env2.outputs.IMAGE_ID }}:cache || echo "true"
           DOCKER_BUILDKIT=1 docker build --target development \
-          --build-arg BASE_IMAGE=${{ env.BASE_IMAGE }} \
+          --build-arg BASE_IMAGE=${{ steps.env2.outputs.BASE_IMAGE }} \
           --build-arg BUILDKIT_INLINE_CACHE=1 \
-          --cache-from $IMAGE_ID:cache -t $IMAGE_ID:cache .
+          --cache-from ${{ steps.env2.outputs.IMAGE_ID }}:cache -t ${{ inputs.app }}:cache .
 
       - name: Ensure MySQL is ready
         if: inputs.test_command != ''
@@ -156,10 +156,10 @@ jobs:
 
       - name: Build Production OCI Image
         run: |
-          DOCKER_BUILDKIT=1 docker build --cache-from $IMAGE_ID:development \
-          --build-arg BASE_IMAGE=${{ env.BASE_IMAGE }} \
-          --build-arg RELEASE_VERSION=${IMAGE_TAG} \
-          -t $IMAGE_ID:$IMAGE_TAG .
+          DOCKER_BUILDKIT=1 docker build --cache-from ${{ inputs.app }}:cache \
+          --build-arg BASE_IMAGE=${{ steps.env2.outputs.BASE_IMAGE }} \
+          --build-arg RELEASE_VERSION=$${{ steps.env2.outputs.IMAGE_TAG }} \
+          -t ${{ steps.env2.outputs.IMAGE_ID }}:${{ steps.env2.outputs.IMAGE_TAG }} .
 
       - name: Push to ECR
         if: (github.event_name == 'push' && env.BRANCH_NAME == '${{ inputs.default_branch }}') || github.event_name == 'issue_comment'
