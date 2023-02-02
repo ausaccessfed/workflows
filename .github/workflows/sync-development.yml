@@ -55,6 +55,6 @@ jobs:
           printenv > .envs
            docker run --env-file .envs \
            -e PROJECTS="${{ inputs.app }}" \
-           -e IMAGE_TAG=stable-${{github.sha}} \
+           -e IMAGE_TAG=stable-${{ inputs.sha }} \
            -e ENVIRONMENTS="development" \
            $ECR_REGISTRY/publish_app:latest
