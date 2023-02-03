@@ -56,6 +56,7 @@ jobs:
       ISSUE_COMMENT_HEAD_SHA: ${{ steps.env1.outputs.ISSUE_COMMENT_HEAD_SHA }}
       IMAGE_TAG: ${{ steps.env1.outputs.IMAGE_TAG }}
       BASE_IMAGE: ${{ steps.env2.outputs.BASE_IMAGE }}
+      ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
     steps:
       - uses: xt0rted/pull-request-comment-branch@v1
         if: github.event_name == 'issue_comment'
@@ -100,6 +101,7 @@ jobs:
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@master
         with:
+          mask-aws-account-id: false
           aws-region: ap-southeast-2
           role-to-assume: ${{ secrets.ROLE }}
           role-session-name: GithubActions-${{ inputs.ecr_repository }}-ci
@@ -153,7 +155,7 @@ jobs:
       - name: set more envs
         id: env2
         run: |
-          IMAGE_ID=$(echo "${{ steps.login-ecr.outputs.registry }}/${{ inputs.ecr_repository }}" | tr '[A-Z]' '[a-z]')
+          IMAGE_ID=$(echo "${{ needs.base-image.outputs.ECR_REGISTRY }}/${{ inputs.ecr_repository }}" | tr '[A-Z]' '[a-z]')
           echo "IMAGE_ID=$IMAGE_ID" >> $GITHUB_OUTPUT
 
       - name: Build Production OCI Image
