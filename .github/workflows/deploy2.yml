@@ -132,8 +132,8 @@ jobs:
           DOCKER_BUILDKIT=1 docker build --target development \
           --build-arg BASE_IMAGE=${{ steps.env2.outputs.BASE_IMAGE }} \
           --build-arg BUILDKIT_INLINE_CACHE=1 \
-          --push \
           --cache-from ${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache -t ${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache  .
+          docker push ${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache
           # TODO: this push should be more unquie
 
   build-production:
@@ -165,6 +165,7 @@ jobs:
           --push \
           --build-arg RELEASE_VERSION=${{ needs.build-base.outputs.IMAGE_TAG }} \
           -t ${{ needs.build-base.outputs.IMAGE_ID }}:adhoc-production .
+          docker push ${{ steps.env2.outputs.IMAGE_ID }}:adhoc-production
   run-tests:
     needs: [build-base]
     if: inputs.test_command != '' && needs.build-base.result == 'success'
