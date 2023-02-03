@@ -57,6 +57,8 @@ jobs:
       IMAGE_TAG: ${{ steps.env1.outputs.IMAGE_TAG }}
       BASE_IMAGE: ${{ steps.env2.outputs.BASE_IMAGE }}
       ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+      IMAGE_ID: ${{ steps.env3.outputs.IMAGE_ID }}
+      TEST_ENVS: ${{ steps.env2.outputs.TEST_ENVS }}
     steps:
       - uses: xt0rted/pull-request-comment-branch@v1
         if: github.event_name == 'issue_comment'
@@ -113,8 +115,18 @@ jobs:
       - name: set more envs
         id: env2
         run: |
+          ECR_REGISTRY="${{ steps.login-ecr.outputs.registry }}"
+          echo "ECR_REGISTRY=$ECR_REGISTRY" >> $GITHUB_OUTPUT
           BASE_IMAGE="ruby-base:$(${{ inputs.version_command }})"
           echo "BASE_IMAGE=$BASE_IMAGE" >> $GITHUB_OUTPUT
+          TEST_ENVS=$(cat rails/.env.dist)
+          echo "TEST_ENVS='$TEST_ENVS'" >> $GITHUB_OUTPUT
+
+      - id: env3
+        run: |
+          ECR_REGISTRY="${{ steps.env2.outputs.ECR_REGISTRY }}"
+          IMAGE_ID=$(echo "${{ steps.login-ecr.outputs.registry }}/${{ inputs.ecr_repository }}" | tr '[A-Z]' '[a-z]')
+          echo "IMAGE_ID=$IMAGE_ID" >> $GITHUB_OUTPUT
 
       - name: Build Test OCI Image
         run: |
@@ -212,6 +224,7 @@ jobs:
           PREPARE_DB: true
           RAILS_ENV: test
         run: |
+          echo "${{ needs.build-base.outputs.TEST_ENVS }}" > rails/env.dist
           ${{ inputs.test_command }}
   run-task-1:
     needs: [build-base]
