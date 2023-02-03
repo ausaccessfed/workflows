@@ -131,6 +131,8 @@ jobs:
     if: needs.build-base.result == 'success'
     runs-on: ubuntu-latest
     name: Build production
+    outputs:
+      IMAGE_ID: ${{ steps.env2.outputs.IMAGE_ID }}
     steps:
       - uses: actions/checkout@v2
         with:
