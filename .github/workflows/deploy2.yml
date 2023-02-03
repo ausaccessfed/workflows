@@ -118,25 +118,24 @@ jobs:
         run: |
           BASE_IMAGE="ruby-base:$(${{ inputs.version_command }})"
           echo "BASE_IMAGE=$BASE_IMAGE" >> $GITHUB_OUTPUT
-          ECR_REGISTRY="${{ steps.env2.outputs.ECR_REGISTRY }}"
           IMAGE_ID=$(echo "${{ steps.login-ecr.outputs.registry }}/${{ inputs.ecr_repository }}" | tr '[A-Z]' '[a-z]')
-          echo "IMAGE_ID=$IMAGE_ID" >> $GITHUB_OUTPUT
+          echo "IMAGE_ID=$IMAGE_ID" >> $GITHUB_ENV
 
       - name: Build Test OCI Image
         run: |
           # TODO: this should pull the more unique image then fallback to :cache
-          IMAGE_ID=$(echo "${{ steps.login-ecr.outputs.registry }}/${{ inputs.ecr_repository }}" | tr '[A-Z]' '[a-z]')
-          docker pull $IMAGE_ID:adhoc-cache || echo "true"
+          docker pull ${{ env.IMAGE_ID }}:adhoc-cache || echo "true"
           DOCKER_BUILDKIT=1 docker build --target development \
           --build-arg BASE_IMAGE=${{ secrets.DOCKER_ECR }}${{ steps.env2.outputs.BASE_IMAGE }} \
           --build-arg BUILDKIT_INLINE_CACHE=1 \
-          --cache-from $IMAGE_ID:adhoc-cache -t $IMAGE_ID:adhoc-cache  .
-          docker push $IMAGE_ID:adhoc-cache
+          --cache-from ${{ env.IMAGE_ID }}:adhoc-cache -t ${{ env.IMAGE_ID }}:adhoc-cache  .
+          docker push ${{ env.IMAGE_ID }}:adhoc-cache
           # TODO: this push should be more unquie
+  ## TODO: this is needed cause its marked as senstive otherwise
   env:
     needs: [build-base]
     runs-on: ubuntu-latest
-    name: Build base
+    name: Generate extra env
     outputs:
       IMAGE_ID: ${{ steps.env.outputs.IMAGE_ID }}
     steps:
@@ -152,8 +151,6 @@ jobs:
     if: needs.build-base.result == 'success'
     runs-on: ubuntu-latest
     name: Build production
-    outputs:
-      IMAGE_ID: ${{ steps.env2.outputs.IMAGE_ID }}
     steps:
       - uses: actions/checkout@v2
         with:
@@ -171,23 +168,15 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
-      - name: set more envs
-        id: env2
-        run: |
-          IMAGE_ID=$(echo "${{ needs.base-image.outputs.ECR_REGISTRY }}/${{ inputs.ecr_repository }}" | tr '[A-Z]' '[a-z]')
-          echo "IMAGE_ID=$IMAGE_ID" >> $GITHUB_OUTPUT
-
       - name: Build Production OCI Image
         run: |
-          IMAGE_ID=$(echo "${{ steps.login-ecr.outputs.registry }}/${{ inputs.ecr_repository }}" | tr '[A-Z]' '[a-z]')
-          BASE_IMAGE="${{ secrets.DOCKER_ECR }}${{ needs.build-base.outputs.BASE_IMAGE }}"
-          DOCKER_BUILDKIT=1 docker build --cache-from $IMAGE_ID:adhoc-cache \
-          --build-arg BASE_IMAGE=$BASE_IMAGE \
+          DOCKER_BUILDKIT=1 docker build --cache-from ${{ needs.env.outputs.IMAGE_ID }}:adhoc-cache \
+          --build-arg BASE_IMAGE=${{ secrets.DOCKER_ECR }}${{ needs.build-base.outputs.BASE_IMAGE }} \
           --build-arg RELEASE_VERSION=${{ needs.build-base.outputs.IMAGE_TAG }} \
           -t $IMAGE_ID:adhoc-production .
-          docker push $IMAGE_ID:adhoc-production
+          docker push ${{ needs.env.outputs.IMAGE_ID }}:adhoc-production
   run-tests:
-    needs: [build-base]
+    needs: [build-base, env]
     if: inputs.test_command != '' && needs.build-base.result == 'success'
     runs-on: ubuntu-latest
     name: run tests
@@ -224,8 +213,8 @@ jobs:
       - name: Download cache image
         run: |
           IMAGE_ID=$(echo "${{ steps.login-ecr.outputs.registry }}/${{ inputs.ecr_repository }}" | tr '[A-Z]' '[a-z]')
-          docker pull $IMAGE_ID:adhoc-cache
-          docker tag $IMAGE_ID:adhoc-cache app:cache
+          docker pull ${{ needs.env.outputs.IMAGE_ID }}:adhoc-cache
+          docker tag ${{ needs.env.outputs.IMAGE_ID }}:adhoc-cache app:cache
 
       - name: Tests
         env:
@@ -237,7 +226,7 @@ jobs:
         run: |
           ${{ inputs.test_command }}
   run-task-1:
-    needs: [build-base]
+    needs: [build-base, env]
     if: inputs.task_1 != '' && needs.build-base.result == 'success'
     runs-on: ubuntu-latest
     name: Run ${{ inputs.task_1_name }}
@@ -256,14 +245,14 @@ jobs:
       - name: Download cache image
         run: |
           IMAGE_ID=$(echo "${{ steps.login-ecr.outputs.registry }}/${{ inputs.ecr_repository }}" | tr '[A-Z]' '[a-z]')
-          docker pull $IMAGE_ID:adhoc-cache
-          docker tag  $IMAGE_ID:adhoc-cache app:cache
+          docker pull ${{ needs.env.outputs.IMAGE_ID }}:adhoc-cache
+          docker tag  ${{ needs.env.outputs.IMAGE_ID }}:adhoc-cache app:cache
 
       - name: Run ${{ inputs.task_1_name }}
         run: |
           ${{ inputs.task_1 }}
   run-task-2:
-    needs: [build-base]
+    needs: [build-base, env]
     if: inputs.task_2 != '' && needs.build-base.result == 'success'
     runs-on: ubuntu-latest
     name: Run ${{ inputs.task_2_name }}
@@ -282,14 +271,14 @@ jobs:
       - name: Download cache image
         run: |
           IMAGE_ID=$(echo "${{ steps.login-ecr.outputs.registry }}/${{ inputs.ecr_repository }}" | tr '[A-Z]' '[a-z]')
-          docker pull $IMAGE_ID:adhoc-cache
-          docker tag  $IMAGE_ID:adhoc-cache app:cache
+          docker pull ${{ needs.env.outputs.IMAGE_ID }}:adhoc-cache
+          docker tag  ${{ needs.env.outputs.IMAGE_ID }}:adhoc-cache app:cache
 
       - name: Run ${{ inputs.task_2_name }}
         run: |
           ${{ inputs.task_2 }}
   run-task-3:
-    needs: [build-base]
+    needs: [build-base, env]
     if: inputs.task_3 != '' && needs.build-base.result == 'success'
     runs-on: ubuntu-latest
     name: Run ${{ inputs.task_3_name }}
@@ -308,14 +297,15 @@ jobs:
       - name: Download cache image
         run: |
           IMAGE_ID=$(echo "${{ steps.login-ecr.outputs.registry }}/${{ inputs.ecr_repository }}" | tr '[A-Z]' '[a-z]')
-          docker pull $IMAGE_ID:adhoc-cache
-          docker tag  $IMAGE_ID:adhoc-cache app:cache
+          docker pull ${{ needs.env.outputs.IMAGE_ID }}:adhoc-cache
+          docker tag  ${{ needs.env.outputs.IMAGE_ID }}:adhoc-cache app:cache
 
       - name: Run ${{ inputs.task_3_name }}
         run: |
           ${{ inputs.task_3 }}
   push-images:
-    needs: [build-production, run-tests, run-task-1, run-task-2, run-task-3]
+    needs:
+      [build-production, run-tests, run-task-1, run-task-2, run-task-3, env]
     if: ((github.event_name == 'push' && needs.build-base.outputs.BRANCH_NAME == inputs.default_branch) || github.event_name == 'issue_comment') && needs.build-production.result == 'success' && needs.run-tests.result == 'success' && needs.run-task-1.result == 'success' && needs.run-task-2.result == 'success' && needs.run-task-3.result == 'success'
     runs-on: ubuntu-latest
     name: push images
@@ -335,19 +325,19 @@ jobs:
         if: (github.event_name == 'push' && needs.build-base.outputs.BRANCH_NAME == inputs.default_branch) || github.event_name == 'issue_comment'
         run: |
           IMAGE_ID=$(echo "${{ steps.login-ecr.outputs.registry }}/${{ inputs.ecr_repository }}" | tr '[A-Z]' '[a-z]')
-          docker pull $IMAGE_ID:adhoc-production
+          docker pull ${{ needs.env.outputs.IMAGE_ID }}:adhoc-production
           #todo retag ^ make above image more uniquie per commit
-          docker tag $IMAGE_ID:adhoc-production  $IMAGE_ID:${{ needs.build-base.outputs.IMAGE_TAG }}
-          docker push $IMAGE_ID:${{ needs.build-base.outputs.IMAGE_TAG }}
+          docker tag ${{ needs.env.outputs.IMAGE_ID }}:adhoc-production  ${{ needs.env.outputs.IMAGE_ID }}:${{ needs.build-base.outputs.IMAGE_TAG }}
+          docker push ${{ needs.env.outputs.IMAGE_ID }}:${{ needs.build-base.outputs.IMAGE_TAG }}
 
       - name: Push cache to ECR
         if: (github.event_name == 'push' && needs.build-base.outputs.BRANCH_NAME == inputs.default_branch)
         run: |
           IMAGE_ID=$(echo "${{ steps.login-ecr.outputs.registry }}/${{ inputs.ecr_repository }}" | tr '[A-Z]' '[a-z]')
-          docker pull $IMAGE_ID:adhoc-cache
-          docker tag $IMAGE_ID:adhoc-cache  $IMAGE_ID:cache
+          docker pull ${{ needs.env.outputs.IMAGE_ID }}:adhoc-cache
+          docker tag ${{ needs.env.outputs.IMAGE_ID }}:adhoc-cache  ${{ needs.env.outputs.IMAGE_ID }}:cache
           #todo retag ^ make above image more uniquie per commit
-          docker push $IMAGE_ID:cache
+          docker push ${{ needs.env.outputs.IMAGE_ID }}:cache
 
       - name: Update GitOps Repo to trigger deploys
         if: needs.build-base.outputs.BRANCH_NAME == inputs.default_branch && github.event_name == 'push'
@@ -374,6 +364,7 @@ jobs:
     needs:
       [
         build-base,
+        env,
         build-production,
         run-tests,
         run-task-1,
