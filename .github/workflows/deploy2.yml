@@ -134,6 +134,7 @@ jobs:
           docker push $IMAGE_ID:adhoc-cache
           # TODO: this push should be more unquie
   env:
+    needs: [build-base]
     runs-on: ubuntu-latest
     name: Build base
     outputs:
