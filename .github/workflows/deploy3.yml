@@ -134,11 +134,10 @@ jobs:
           context: .
           build-args: |
             BASE_IMAGE=${{ steps.env2.outputs.BASE_IMAGE }}
-            BUILDKIT_INLINE_CACHE=1
           push: true
           target: development
           tags: ${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache
-          cache-to: type=registry,${{ steps.env2.outputs.IMAGE_ID }},mode=max
+          cache-to: ${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache,mode=max
 
       - name: Build Test OCI Image
         uses: docker/build-push-action@v4
@@ -146,7 +145,6 @@ jobs:
           context: .
           build-args: |
             BASE_IMAGE=${{ steps.env2.outputs.BASE_IMAGE }}
-            BUILDKIT_INLINE_CACHE=1
           push: true
           target: development
           tags: ${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache
