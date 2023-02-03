@@ -211,12 +211,6 @@ jobs:
           docker tag $IMAGE_ID:${{ needs.build-base.outputs.TEMP_CACHE_IMAGE_TAG }} app:cache
 
       - name: Tests
-        env:
-          DATABASE_USERNAME: root
-          DATABASE_PASSWORD: password
-          DATABASE_HOST: host.docker.internal
-          PREPARE_DB: true
-          RAILS_ENV: test
         run: |
           ${{ inputs.test_command }}
   run-task-1:
