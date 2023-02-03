@@ -128,18 +128,6 @@ jobs:
         with:
           driver: docker-container
 
-      - name: Push cache to ECR
-        uses: docker/build-push-action@v4
-        with:
-          context: .
-          build-args: |
-            BASE_IMAGE=${{ steps.env2.outputs.BASE_IMAGE }}
-            BUILDKIT_INLINE_CACHE=1
-          push: true
-          target: development
-          tags: ${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache
-          cache-from: type=registry,ref=${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache
-
       - name: Build Test OCI Image
         uses: docker/build-push-action@v4
         with:
@@ -213,7 +201,7 @@ jobs:
           target: production
           push: true
           tags: ${{ steps.env2.outputs.IMAGE_ID }}:adhoc-production
-          cache-from: type=gha,ref=${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache,${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache
+          cache-from: type=gha,ref=${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache
           cache-to: type=gha,mode=min
 
       # - name: Download cache image
@@ -266,6 +254,10 @@ jobs:
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         run: |
+          DOCKER_ECR=${{ secrets.DOCKER_ECR }}
+          VERSION=$(${{ inputs.version_command }})
+          BASE_IMAGE="${DOCKER_ECR}ruby-base:${VERSION}"
+          echo "BASE_IMAGE=$BASE_IMAGE" >> $GITHUB_OUTPUT
           # Strip git ref prefix from version
           IMAGE_ID=$(echo "$ECR_REGISTRY/${{ inputs.ecr_repository }}" | tr '[A-Z]' '[a-z]')
           echo "IMAGE_ID=$IMAGE_ID" >> $GITHUB_OUTPUT
@@ -323,6 +315,10 @@ jobs:
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         run: |
+          DOCKER_ECR=${{ secrets.DOCKER_ECR }}
+          VERSION=$(${{ inputs.version_command }})
+          BASE_IMAGE="${DOCKER_ECR}ruby-base:${VERSION}"
+          echo "BASE_IMAGE=$BASE_IMAGE" >> $GITHUB_OUTPUT
           # Strip git ref prefix from version
           IMAGE_ID=$(echo "$ECR_REGISTRY/${{ inputs.ecr_repository }}" | tr '[A-Z]' '[a-z]')
           echo "IMAGE_ID=$IMAGE_ID" >> $GITHUB_OUTPUT
@@ -374,6 +370,10 @@ jobs:
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         run: |
+          DOCKER_ECR=${{ secrets.DOCKER_ECR }}
+          VERSION=$(${{ inputs.version_command }})
+          BASE_IMAGE="${DOCKER_ECR}ruby-base:${VERSION}"
+          echo "BASE_IMAGE=$BASE_IMAGE" >> $GITHUB_OUTPUT
           # Strip git ref prefix from version
           IMAGE_ID=$(echo "$ECR_REGISTRY/${{ inputs.ecr_repository }}" | tr '[A-Z]' '[a-z]')
           echo "IMAGE_ID=$IMAGE_ID" >> $GITHUB_OUTPUT
@@ -425,6 +425,10 @@ jobs:
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         run: |
+          DOCKER_ECR=${{ secrets.DOCKER_ECR }}
+          VERSION=$(${{ inputs.version_command }})
+          BASE_IMAGE="${DOCKER_ECR}ruby-base:${VERSION}"
+          echo "BASE_IMAGE=$BASE_IMAGE" >> $GITHUB_OUTPUT
           # Strip git ref prefix from version
           IMAGE_ID=$(echo "$ECR_REGISTRY/${{ inputs.ecr_repository }}" | tr '[A-Z]' '[a-z]')
           echo "IMAGE_ID=$IMAGE_ID" >> $GITHUB_OUTPUT
@@ -476,6 +480,10 @@ jobs:
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         run: |
+          DOCKER_ECR=${{ secrets.DOCKER_ECR }}
+          VERSION=$(${{ inputs.version_command }})
+          BASE_IMAGE="${DOCKER_ECR}ruby-base:${VERSION}"
+          echo "BASE_IMAGE=$BASE_IMAGE" >> $GITHUB_OUTPUT
           # Strip git ref prefix from version
           IMAGE_ID=$(echo "$ECR_REGISTRY/${{ inputs.ecr_repository }}" | tr '[A-Z]' '[a-z]')
           echo "ECR_REGISTRY=$ECR_REGISTRY" >> $GITHUB_OUTPUT
