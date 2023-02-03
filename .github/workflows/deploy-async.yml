@@ -12,10 +12,10 @@ on:
         required: true
         type: string
       default_branch:
-        required: true
+        default: "master"
         type: string
       version_command:
-        required: true
+        default: "cat .ruby-version"
         type: string
       test_command:
         default: ""
