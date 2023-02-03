@@ -123,17 +123,33 @@ jobs:
           IMAGE_ID=$(echo "$ECR_REGISTRY/${{ inputs.ecr_repository }}" | tr '[A-Z]' '[a-z]')
           echo "ECR_REGISTRY=$ECR_REGISTRY" >> $GITHUB_OUTPUT
           echo "IMAGE_ID=$IMAGE_ID" >> $GITHUB_OUTPUT
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+        with:
+          driver: docker-container
 
       - name: Build Test OCI Image
-        run: |
-          # TODO: this should pull the more unique image then fallback to :cache
-          docker pull ${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache || echo "true"
-          DOCKER_BUILDKIT=1 docker build --target development \
-          --build-arg BASE_IMAGE=${{ steps.env2.outputs.BASE_IMAGE }} \
-          --build-arg BUILDKIT_INLINE_CACHE=1 \
-          --cache-from ${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache -t ${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache  .
-          # TODO: this push should be more unquie
-          docker push ${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          build_args: |
+            BASE_IMAGE=${{ steps.env2.outputs.BASE_IMAGE }}
+            BUILDKIT_INLINE_CACHE=1
+          push: true
+          tags: ${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache
+          cache-from: ${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache
+          cache-to: type=gha,mode=max
+
+      # - name: Build Test OCI Image
+      #   run: |
+      #     # TODO: this should pull the more unique image then fallback to :cache
+      #     docker pull ${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache || echo "true"
+      #     DOCKER_BUILDKIT=1 docker build --target development \
+      #     --build-arg BASE_IMAGE=${{ steps.env2.outputs.BASE_IMAGE }} \
+      #     --build-arg BUILDKIT_INLINE_CACHE=1 \
+      #     --cache-from ${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache -t ${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache  .
+      #     # TODO: this push should be more unquie
+      #     docker push ${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache
 
   build-production:
     needs: [build-base]
@@ -170,16 +186,34 @@ jobs:
           IMAGE_ID=$(echo "$ECR_REGISTRY/${{ inputs.ecr_repository }}" | tr '[A-Z]' '[a-z]')
           echo "IMAGE_ID=$IMAGE_ID" >> $GITHUB_OUTPUT
 
-      - name: Download cache image
-        run: docker pull ${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+        with:
+          driver: docker-container
 
-      - name: Build Production OCI Image
-        run: |
-          DOCKER_BUILDKIT=1 docker build --cache-from ${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache \
-          --build-arg BASE_IMAGE=${{ steps.env2.outputs.BASE_IMAGE }} \
-          --build-arg RELEASE_VERSION=${{ needs.build-base.outputs.IMAGE_TAG }} \
-          -t ${{ steps.env2.outputs.IMAGE_ID }}:adhoc-production .
-          docker push ${{ steps.env2.outputs.IMAGE_ID }}:adhoc-production
+      - name: Build Test OCI Image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          build_args: |
+            BASE_IMAGE=${{ steps.env2.outputs.BASE_IMAGE }}
+            BUILDKIT_INLINE_CACHE=1
+            RELEASE_VERSION=${{ needs.build-base.outputs.IMAGE_TAG }}
+          push: true
+          tags: ${{ steps.env2.outputs.IMAGE_ID }}:adhoc-production
+          cache-from: type=gha,${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache
+          cache-to: type=gha,mode=max
+
+      # - name: Download cache image
+      #   run: docker pull ${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache
+
+      # - name: Build Production OCI Image
+      #   run: |
+      #     DOCKER_BUILDKIT=1 docker build --cache-from ${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache \
+      #     --build-arg BASE_IMAGE=${{ steps.env2.outputs.BASE_IMAGE }} \
+      #     --build-arg RELEASE_VERSION=${{ needs.build-base.outputs.IMAGE_TAG }} \
+      #     -t ${{ steps.env2.outputs.IMAGE_ID }}:adhoc-production .
+      #     docker push ${{ steps.env2.outputs.IMAGE_ID }}:adhoc-production
   run-tests:
     needs: [build-base]
     if: inputs.test_command != '' && needs.build-base.result == 'success'
@@ -224,10 +258,27 @@ jobs:
           IMAGE_ID=$(echo "$ECR_REGISTRY/${{ inputs.ecr_repository }}" | tr '[A-Z]' '[a-z]')
           echo "IMAGE_ID=$IMAGE_ID" >> $GITHUB_OUTPUT
 
-      - name: Download cache image
-        run: |
-          docker pull ${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache
-          docker tag ${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache app:cache
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+        with:
+          driver: docker-container
+
+      - name: Build Test OCI Image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          build_args: |
+            BASE_IMAGE=${{ steps.env2.outputs.BASE_IMAGE }}
+            BUILDKIT_INLINE_CACHE=1
+          load: true
+          push: false
+          tags: app:cache
+          cache-from: type=gha,${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache
+
+      # - name: Download cache image
+      #   run: |
+      #     docker pull ${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache
+      #     docker tag ${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache app:cache
 
       - name: Tests
         env:
@@ -264,10 +315,27 @@ jobs:
           IMAGE_ID=$(echo "$ECR_REGISTRY/${{ inputs.ecr_repository }}" | tr '[A-Z]' '[a-z]')
           echo "IMAGE_ID=$IMAGE_ID" >> $GITHUB_OUTPUT
 
-      - name: Download cache image
-        run: |
-          docker pull ${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache
-          docker tag ${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache app:cache
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+        with:
+          driver: docker-container
+
+      - name: Build Test OCI Image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          build_args: |
+            BASE_IMAGE=${{ steps.env2.outputs.BASE_IMAGE }}
+            BUILDKIT_INLINE_CACHE=1
+          load: true
+          push: false
+          tags: app:cache
+          cache-from: type=gha,${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache
+
+      # - name: Download cache image
+      #   run: |
+      #     docker pull ${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache
+      #     docker tag ${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache app:cache
 
       - name: Run ${{ inputs.task_1_name }}
         run: |
@@ -298,10 +366,27 @@ jobs:
           IMAGE_ID=$(echo "$ECR_REGISTRY/${{ inputs.ecr_repository }}" | tr '[A-Z]' '[a-z]')
           echo "IMAGE_ID=$IMAGE_ID" >> $GITHUB_OUTPUT
 
-      - name: Download cache image
-        run: |
-          docker pull ${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache
-          docker tag ${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache app:cache
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+        with:
+          driver: docker-container
+
+      - name: Build Test OCI Image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          build_args: |
+            BASE_IMAGE=${{ steps.env2.outputs.BASE_IMAGE }}
+            BUILDKIT_INLINE_CACHE=1
+          load: true
+          push: false
+          tags: app:cache
+          cache-from: type=gha,${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache
+
+      # - name: Download cache image
+      #   run: |
+      #     docker pull ${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache
+      #     docker tag ${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache app:cache
 
       - name: Run ${{ inputs.task_2_name }}
         run: |
@@ -332,10 +417,27 @@ jobs:
           IMAGE_ID=$(echo "$ECR_REGISTRY/${{ inputs.ecr_repository }}" | tr '[A-Z]' '[a-z]')
           echo "IMAGE_ID=$IMAGE_ID" >> $GITHUB_OUTPUT
 
-      - name: Download cache image
-        run: |
-          docker pull ${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache
-          docker tag ${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache app:cache
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+        with:
+          driver: docker-container
+
+      - name: Build Test OCI Image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          build_args: |
+            BASE_IMAGE=${{ steps.env2.outputs.BASE_IMAGE }}
+            BUILDKIT_INLINE_CACHE=1
+          load: true
+          push: false
+          tags: app:cache
+          cache-from: type=gha,${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache
+
+      # - name: Download cache image
+      #   run: |
+      #     docker pull ${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache
+      #     docker tag ${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache app:cache
 
       - name: Run ${{ inputs.task_3_name }}
         run: |
@@ -367,21 +469,51 @@ jobs:
           echo "ECR_REGISTRY=$ECR_REGISTRY" >> $GITHUB_OUTPUT
           echo "IMAGE_ID=$IMAGE_ID" >> $GITHUB_OUTPUT
 
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+        with:
+          driver: docker-container
+
       - name: Push to ECR
         if: (github.event_name == 'push' && needs.build-base.outputs.BRANCH_NAME == inputs.default_branch) || github.event_name == 'issue_comment'
-        run: |
-          docker pull ${{ steps.env2.outputs.IMAGE_ID }}:adhoc-production
-          #todo retag ^ make above image more uniquie per commit
-          docker tag${{ steps.env2.outputs.IMAGE_ID }}:adhoc-production ${{ steps.env2.outputs.IMAGE_ID }}:${{ needs.build-base.outputs.IMAGE_TAG }}
-          docker push ${{ steps.env2.outputs.IMAGE_ID }}:${{ needs.build-base.outputs.IMAGE_TAG }}
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          build_args: |
+            BASE_IMAGE=${{ steps.env2.outputs.BASE_IMAGE }}
+            BUILDKIT_INLINE_CACHE=1
+            RELEASE_VERSION=${{ needs.build-base.outputs.IMAGE_TAG }}
+          push: true
+          tags: ${{ steps.env2.outputs.IMAGE_ID }}:${{ needs.build-base.outputs.IMAGE_TAG }}
+          cache-from: type=gha,${{ steps.env2.outputs.IMAGE_ID }}:adhoc-production
+
+      # - name: Push to ECR
+      #   if: (github.event_name == 'push' && needs.build-base.outputs.BRANCH_NAME == inputs.default_branch) || github.event_name == 'issue_comment'
+      #   run: |
+      #     docker pull ${{ steps.env2.outputs.IMAGE_ID }}:adhoc-production
+      #     #todo retag ^ make above image more uniquie per commit
+      #     docker tag ${{ steps.env2.outputs.IMAGE_ID }}:adhoc-production ${{ steps.env2.outputs.IMAGE_ID }}:${{ needs.build-base.outputs.IMAGE_TAG }}
+      #     docker push ${{ steps.env2.outputs.IMAGE_ID }}:${{ needs.build-base.outputs.IMAGE_TAG }}
 
       - name: Push cache to ECR
         if: (github.event_name == 'push' && needs.build-base.outputs.BRANCH_NAME == inputs.default_branch)
-        run: |
-          docker pull ${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache
-          docker tag ${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache ${{ steps.env2.outputs.IMAGE_ID }}:cache
-          #todo retag ^ make above image more uniquie per commit
-          docker push ${{ steps.env2.outputs.IMAGE_ID }}:cache
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          build_args: |
+            BASE_IMAGE=${{ steps.env2.outputs.BASE_IMAGE }}
+            BUILDKIT_INLINE_CACHE=1
+          push: true
+          tags: ${{ steps.env2.outputs.IMAGE_ID }}:cache
+          cache-from: type=gha,${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache
+
+      # - name: Push cache to ECR
+      #   if: (github.event_name == 'push' && needs.build-base.outputs.BRANCH_NAME == inputs.default_branch)
+      #   run: |
+      #     docker pull ${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache
+      #     docker tag ${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache ${{ steps.env2.outputs.IMAGE_ID }}:cache
+      #     #todo retag ^ make above image more uniquie per commit
+      #     docker push ${{ steps.env2.outputs.IMAGE_ID }}:cache
 
       - name: Update GitOps Repo to trigger deploys
         if: needs.build-base.outputs.BRANCH_NAME == inputs.default_branch && github.event_name == 'push'
