@@ -116,9 +116,9 @@ jobs:
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         run: |
-          DOCKER_ECR=${{ secrets.DOCKER_ECR }}
+          echo ${{ secrets.DOCKER_ECR }} > temp.txt
           VERSION=$(${{ inputs.version_command }})
-          BASE_IMAGE="${DOCKER_ECR}ruby-base:${VERSION}"
+          BASE_IMAGE="$(cat temp.txt)ruby-base:${VERSION}"
           echo "BASE_IMAGE=$BASE_IMAGE" >> $GITHUB_OUTPUT
           # Strip git ref prefix from version
           IMAGE_ID=$(echo "$ECR_REGISTRY/${{ inputs.ecr_repository }}" | tr '[A-Z]' '[a-z]')
@@ -162,7 +162,6 @@ jobs:
           BASE_IMAGE="${{ secrets.DOCKER_ECR }}${{ needs.build-base.outputs.BASE_IMAGE }}"
           DOCKER_BUILDKIT=1 docker build --cache-from ${{ needs.build-base.outputs.IMAGE_ID }}:adhoc-cache \
           --build-arg BASE_IMAGE=$BASE_IMAGE \
-          --push \
           --build-arg RELEASE_VERSION=${{ needs.build-base.outputs.IMAGE_TAG }} \
           -t ${{ needs.build-base.outputs.IMAGE_ID }}:adhoc-production .
           docker push ${{ steps.env2.outputs.IMAGE_ID }}:adhoc-production
