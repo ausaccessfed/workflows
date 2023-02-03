@@ -142,8 +142,7 @@ jobs:
       - name: set envs
         id: env
         run: |
-          ECR_REGISTRY="${{ needs.build-base.outputs.ECR_REGISTRY }}"
-          IMAGE_ID=$(echo "${{ steps.login-ecr.outputs.registry }}/${{ inputs.ecr_repository }}" | tr '[A-Z]' '[a-z]')
+          IMAGE_ID=$(echo "${{ needs.build-base.outputs.ECR_REGISTRY }}/${{ inputs.ecr_repository }}" | tr '[A-Z]' '[a-z]')
           echo "IMAGE_ID=$IMAGE_ID" >> $GITHUB_OUTPUT
 
   build-production:
