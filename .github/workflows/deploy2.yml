@@ -55,9 +55,9 @@ jobs:
       BRANCH_NAME: ${{ steps.env1.outputs.BRANCH_NAME }}
       ISSUE_COMMENT_HEAD_SHA: ${{ steps.env1.outputs.ISSUE_COMMENT_HEAD_SHA }}
       IMAGE_TAG: ${{ steps.env1.outputs.IMAGE_TAG }}
-      # BASE_IMAGE: ${{ steps.env2.outputs.BASE_IMAGE }}
-      # ECR_REGISTRY: ${{ steps.env2.outputs.ECR_REGISTRY }}
-      # IMAGE_ID: ${{ steps.env2.outputs.IMAGE_ID }}
+      BASE_IMAGE: ${{ steps.env2.outputs.BASE_IMAGE }}
+      ECR_REGISTRY: ${{ steps.env2.outputs.ECR_REGISTRY }}
+      IMAGE_ID: ${{ steps.env2.outputs.IMAGE_ID }}
     steps:
       - uses: xt0rted/pull-request-comment-branch@v1
         if: github.event_name == 'issue_comment'
@@ -102,6 +102,7 @@ jobs:
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@master
         with:
+          mask-aws-account-id: "false"
           aws-region: ap-southeast-2
           role-to-assume: ${{ secrets.ROLE }}
           role-session-name: GithubActions-${{ inputs.ecr_repository }}-ci
@@ -131,9 +132,9 @@ jobs:
           DOCKER_BUILDKIT=1 docker build --target development \
           --build-arg BASE_IMAGE=${{ steps.env2.outputs.BASE_IMAGE }} \
           --build-arg BUILDKIT_INLINE_CACHE=1 \
+          --push \
           --cache-from ${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache -t ${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache  .
           # TODO: this push should be more unquie
-          docker push ${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache
 
   build-production:
     needs: [build-base]
@@ -156,30 +157,14 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
-      - name: set more envs
-        id: env2
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-        run: |
-          DOCKER_ECR=${{ secrets.DOCKER_ECR }}
-          VERSION=$(${{ inputs.version_command }})
-          BASE_IMAGE="${DOCKER_ECR}ruby-base:${VERSION}"
-          echo "BASE_IMAGE=$BASE_IMAGE" >> $GITHUB_OUTPUT
-
-          # Strip git ref prefix from version
-          IMAGE_ID=$(echo "$ECR_REGISTRY/${{ inputs.ecr_repository }}" | tr '[A-Z]' '[a-z]')
-          echo "IMAGE_ID=$IMAGE_ID" >> $GITHUB_OUTPUT
-
-      - name: Download cache image
-        run: docker pull ${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache
-
       - name: Build Production OCI Image
         run: |
-          DOCKER_BUILDKIT=1 docker build --cache-from ${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache \
-          --build-arg BASE_IMAGE=${{ steps.env2.outputs.BASE_IMAGE }} \
+          BASE_IMAGE="${{ secrets.DOCKER_ECR }}${{ needs.build-base.outputs.BASE_IMAGE }}"
+          DOCKER_BUILDKIT=1 docker build --cache-from ${{ needs.build-base.outputs.IMAGE_ID }}:adhoc-cache \
+          --build-arg BASE_IMAGE=$BASE_IMAGE \
+          --push \
           --build-arg RELEASE_VERSION=${{ needs.build-base.outputs.IMAGE_TAG }} \
-          -t ${{ steps.env2.outputs.IMAGE_ID }}:adhoc-production .
-          docker push ${{ steps.env2.outputs.IMAGE_ID }}:adhoc-production
+          -t ${{ needs.build-base.outputs.IMAGE_ID }}:adhoc-production .
   run-tests:
     needs: [build-base]
     if: inputs.test_command != '' && needs.build-base.result == 'success'
@@ -200,10 +185,6 @@ jobs:
           role-to-assume: ${{ secrets.ROLE }}
           role-session-name: GithubActions-${{ inputs.ecr_repository }}-ci
 
-      - uses: actions/checkout@v2
-        with:
-          ref: ${{ needs.build-base.outputs.BRANCH_NAME }}
-
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
@@ -215,19 +196,10 @@ jobs:
             sleep 1
           done
 
-      - name: set more envs
-        id: env2
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-        run: |
-          # Strip git ref prefix from version
-          IMAGE_ID=$(echo "$ECR_REGISTRY/${{ inputs.ecr_repository }}" | tr '[A-Z]' '[a-z]')
-          echo "IMAGE_ID=$IMAGE_ID" >> $GITHUB_OUTPUT
-
       - name: Download cache image
         run: |
-          docker pull ${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache
-          docker tag ${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache app:cache
+          docker pull ${{ needs.build-base.outputs.IMAGE_ID }}:adhoc-cache
+          docker tag ${{ needs.build-base.outputs.IMAGE_ID }}:adhoc-cache app:cache
 
       - name: Tests
         env:
@@ -255,19 +227,10 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
-      - name: set more envs
-        id: env2
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-        run: |
-          # Strip git ref prefix from version
-          IMAGE_ID=$(echo "$ECR_REGISTRY/${{ inputs.ecr_repository }}" | tr '[A-Z]' '[a-z]')
-          echo "IMAGE_ID=$IMAGE_ID" >> $GITHUB_OUTPUT
-
       - name: Download cache image
         run: |
-          docker pull ${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache
-          docker tag ${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache app:cache
+          docker pull ${{ needs.build-base.outputs.IMAGE_ID }}:adhoc-cache
+          docker tag ${{ needs.build-base.outputs.IMAGE_ID }}:adhoc-cache app:cache
 
       - name: Run ${{ inputs.task_1_name }}
         run: |
@@ -289,19 +252,10 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
-      - name: set more envs
-        id: env2
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-        run: |
-          # Strip git ref prefix from version
-          IMAGE_ID=$(echo "$ECR_REGISTRY/${{ inputs.ecr_repository }}" | tr '[A-Z]' '[a-z]')
-          echo "IMAGE_ID=$IMAGE_ID" >> $GITHUB_OUTPUT
-
       - name: Download cache image
         run: |
-          docker pull ${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache
-          docker tag ${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache app:cache
+          docker pull ${{ needs.build-base.outputs.IMAGE_ID }}:adhoc-cache
+          docker tag ${{ needs.build-base.outputs.IMAGE_ID }}:adhoc-cache app:cache
 
       - name: Run ${{ inputs.task_2_name }}
         run: |
@@ -323,19 +277,10 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
-      - name: set more envs
-        id: env2
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-        run: |
-          # Strip git ref prefix from version
-          IMAGE_ID=$(echo "$ECR_REGISTRY/${{ inputs.ecr_repository }}" | tr '[A-Z]' '[a-z]')
-          echo "IMAGE_ID=$IMAGE_ID" >> $GITHUB_OUTPUT
-
       - name: Download cache image
         run: |
-          docker pull ${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache
-          docker tag ${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache app:cache
+          docker pull ${{ needs.build-base.outputs.IMAGE_ID }}:adhoc-cache
+          docker tag ${{ needs.build-base.outputs.IMAGE_ID }}:adhoc-cache app:cache
 
       - name: Run ${{ inputs.task_3_name }}
         run: |
@@ -357,31 +302,21 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
-      - name: set more envs
-        id: env2
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-        run: |
-          # Strip git ref prefix from version
-          IMAGE_ID=$(echo "$ECR_REGISTRY/${{ inputs.ecr_repository }}" | tr '[A-Z]' '[a-z]')
-          echo "ECR_REGISTRY=$ECR_REGISTRY" >> $GITHUB_OUTPUT
-          echo "IMAGE_ID=$IMAGE_ID" >> $GITHUB_OUTPUT
-
       - name: Push to ECR
         if: (github.event_name == 'push' && needs.build-base.outputs.BRANCH_NAME == inputs.default_branch) || github.event_name == 'issue_comment'
         run: |
-          docker pull ${{ steps.env2.outputs.IMAGE_ID }}:adhoc-production
+          docker pull  ${{ needs.build-base.outputs.IMAGE_ID }}:adhoc-production
           #todo retag ^ make above image more uniquie per commit
-          docker tag${{ steps.env2.outputs.IMAGE_ID }}:adhoc-production ${{ steps.env2.outputs.IMAGE_ID }}:${{ needs.build-base.outputs.IMAGE_TAG }}
-          docker push ${{ steps.env2.outputs.IMAGE_ID }}:${{ needs.build-base.outputs.IMAGE_TAG }}
+          docker tag  ${{ needs.build-base.outputs.IMAGE_ID }}:adhoc-production  ${{ needs.build-base.outputs.IMAGE_ID }}:${{ needs.build-base.outputs.IMAGE_TAG }}
+          docker push  ${{ needs.build-base.outputs.IMAGE_ID }}:${{ needs.build-base.outputs.IMAGE_TAG }}
 
       - name: Push cache to ECR
         if: (github.event_name == 'push' && needs.build-base.outputs.BRANCH_NAME == inputs.default_branch)
         run: |
-          docker pull ${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache
-          docker tag ${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache ${{ steps.env2.outputs.IMAGE_ID }}:cache
+          docker pull  ${{ needs.build-base.outputs.IMAGE_ID }}:adhoc-cache
+          docker tag  ${{ needs.build-base.outputs.IMAGE_ID }}:adhoc-cache  ${{ needs.build-base.outputs.IMAGE_ID }}:cache
           #todo retag ^ make above image more uniquie per commit
-          docker push ${{ steps.env2.outputs.IMAGE_ID }}:cache
+          docker push  ${{ needs.build-base.outputs.IMAGE_ID }}:cache
 
       - name: Update GitOps Repo to trigger deploys
         if: needs.build-base.outputs.BRANCH_NAME == inputs.default_branch && github.event_name == 'push'
@@ -392,7 +327,7 @@ jobs:
            -e IMAGE_TAG=${{ needs.build-base.outputs.IMAGE_TAG }} \
            -e ENVIRONMENTS="${{ inputs.environments }}" \
            -e ECR_REPOSITORY="${{ inputs.ecr_repository }}" \
-           ${{ steps.env2.outputs.ECR_REGISTRY }}/publish_app:latest
+           ${{ needs.build-base.outputs.ECR_REGISTRY }}/publish_app:latest
 
       - name: Update GitOps Repo to trigger deploys for development
         if: github.event_name == 'issue_comment'
@@ -403,7 +338,7 @@ jobs:
            -e IMAGE_TAG=${{ needs.build-base.outputs.IMAGE_TAG }} \
            -e ENVIRONMENTS="development" \
            -e ECR_REPOSITORY="${{ inputs.ecr_repository }}" \
-           ${{ steps.env2.outputs.ECR_REGISTRY }}/publish_app:latest
+           ${{ needs.build-base.outputs.ECR_REGISTRY }}/publish_app:latest
   notify:
     needs:
       [
