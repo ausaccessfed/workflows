@@ -129,6 +129,7 @@ jobs:
 
       - name: Build Test OCI Image
         run: |
+          docker pull ${{ env.IMAGE_ID }}:${{ steps.env1.outputs.TEMP_CACHE_IMAGE_TAG }} || docker pull ${{ env.IMAGE_ID }}:cache || echo "not found"
           DOCKER_BUILDKIT=1 docker build --target development \
           --build-arg BASE_IMAGE=${{ secrets.DOCKER_ECR }}${{ steps.env2.outputs.BASE_IMAGE }} \
           --build-arg BUILDKIT_INLINE_CACHE=1 \
@@ -159,6 +160,7 @@ jobs:
 
       - name: Build Production OCI Image
         run: |
+          docker pull $IMAGE_ID:${{ needs.build-base.outputs.TEMP_CACHE_IMAGE_TAG }}
           IMAGE_ID=$(echo "${{ steps.login-ecr.outputs.registry }}/${{ inputs.ecr_repository }}" | tr '[A-Z]' '[a-z]')
           BASE_IMAGE="${{ secrets.DOCKER_ECR }}${{ needs.build-base.outputs.BASE_IMAGE }}"
           DOCKER_BUILDKIT=1 docker build \
