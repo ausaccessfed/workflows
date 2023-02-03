@@ -165,8 +165,8 @@ jobs:
           --cache-from $IMAGE_ID:${{ needs.build-base.outputs.TEMP_CACHE_IMAGE_TAG }} \
           --build-arg BASE_IMAGE=$BASE_IMAGE \
           --build-arg RELEASE_VERSION=${{ needs.build-base.outputs.IMAGE_TAG }} \
-          -t $IMAGE_ID:${{ needs.build-base.outputs.TEMP_PRODUCTION_IMAGE_TAG }} .
-          docker push $IMAGE_ID:${{ needs.build-base.outputs.TEMP_PRODUCTION_IMAGE_TAG }}
+          -t $IMAGE_ID:${{ needs.build-base.outputs.TEMP_STABLE_IMAGE_TAG }} .
+          docker push $IMAGE_ID:${{ needs.build-base.outputs.TEMP_STABLE_IMAGE_TAG }}
   run-tests:
     needs: [build-base]
     if: inputs.test_command != '' && needs.build-base.result == 'success'
@@ -316,8 +316,8 @@ jobs:
         if: (github.event_name == 'push' && needs.build-base.outputs.BRANCH_NAME == inputs.default_branch) || github.event_name == 'issue_comment'
         run: |
           IMAGE_ID=$(echo "${{ steps.login-ecr.outputs.registry }}/${{ inputs.ecr_repository }}" | tr '[A-Z]' '[a-z]')
-          docker pull $IMAGE_ID:${{ needs.build-base.outputs.TEMP_PRODUCTION_IMAGE_TAG }}
-          docker tag $IMAGE_ID:${{ needs.build-base.outputs.TEMP_PRODUCTION_IMAGE_TAG }} $IMAGE_ID:${{ needs.build-base.outputs.IMAGE_TAG }}
+          docker pull $IMAGE_ID:${{ needs.build-base.outputs.TEMP_STABLE_IMAGE_TAG }}
+          docker tag $IMAGE_ID:${{ needs.build-base.outputs.TEMP_STABLE_IMAGE_TAG }} $IMAGE_ID:${{ needs.build-base.outputs.IMAGE_TAG }}
           docker push $IMAGE_ID:${{ needs.build-base.outputs.IMAGE_TAG }}
 
       - name: Push cache to ECR
