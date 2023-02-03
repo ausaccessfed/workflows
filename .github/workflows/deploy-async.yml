@@ -130,14 +130,12 @@ jobs:
       - name: Build Test OCI Image
         run: |
           cache_from_command=""
-          docker manifest inspect ${{ env.IMAGE_ID }}:${{ steps.env1.outputs.TEMP_CACHE_IMAGE_TAG }} > /dev/null 2>&1 
-          if [ "$?" == "0" ]; then
-            docker pull ${{ env.IMAGE_ID }}:${{ steps.env1.outputs.TEMP_CACHE_IMAGE_TAG }}
+          RESULT=$(docker pull ${{ env.IMAGE_ID }}:${{ steps.env1.outputs.TEMP_CACHE_IMAGE_TAG }} || echo "1")
+          if [ "$RESULT" != "1" ]; then
             cache_from_command="--cache-from ${{ env.IMAGE_ID }}:${{ steps.env1.outputs.TEMP_CACHE_IMAGE_TAG }}"
           else
-            docker manifest inspect ${{ env.IMAGE_ID }}:cache > /dev/null 2>&1 
-            if [ "$?" == "0" ]; then
-              docker pull ${{ env.IMAGE_ID }}:cache
+            RESULT=$(docker pull ${{ env.IMAGE_ID }}:cache || echo "1")
+            if [ "$RESULT" != "1" ]; then
               cache_from_command="--cache-from ${{ env.IMAGE_ID }}:cache"
             fi
           fi
