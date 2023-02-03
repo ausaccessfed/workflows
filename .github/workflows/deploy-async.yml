@@ -106,10 +106,10 @@ jobs:
           image_tag=$(echo "$image_tag" | tr / _)
           echo "IMAGE_TAG=$image_tag" >> $GITHUB_OUTPUT
 
-          temp_cache_image_tag=temp-cache-$image_tag
+          temp_cache_image_tag=temp-cache-$branch_name
           echo "TEMP_CACHE_IMAGE_TAG=$temp_cache_image_tag" >> $GITHUB_OUTPUT
 
-          temp_stable_image_tag=temp-stable-$image_tag
+          temp_stable_image_tag=temp-stable-$branch_name
           echo "TEMP_STABLE_IMAGE_TAG=$temp_stable_image_tag" >> $GITHUB_OUTPUT
 
           ECR_REGISTRY="${{ steps.login-ecr.outputs.registry }}"
