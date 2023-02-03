@@ -137,7 +137,7 @@ jobs:
           push: true
           target: development
           tags: ${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache
-          cache-to: ${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache,mode=max
+          cache-to: type=registry,ref=${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache,mode=max
 
       - name: Build Test OCI Image
         uses: docker/build-push-action@v4
@@ -149,7 +149,7 @@ jobs:
           target: development
           tags: ${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache
           cache-from: type=registry,ref=${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache
-          cache-to: type=gha,mode=max
+          cache-to: type=gha,ref=${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache,mode=max
 
       # - name: Build Test OCI Image
       #   run: |
@@ -208,12 +208,11 @@ jobs:
           context: .
           build-args: |
             BASE_IMAGE=${{ steps.env2.outputs.BASE_IMAGE }}
-            BUILDKIT_INLINE_CACHE=1
             RELEASE_VERSION=${{ needs.build-base.outputs.IMAGE_TAG }}
           target: production
           push: true
           tags: ${{ steps.env2.outputs.IMAGE_ID }}:adhoc-production
-          cache-from: ${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache
+          cache-from: type=gha,ref=${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache,${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache
           cache-to: type=gha,mode=min
 
       # - name: Download cache image
@@ -281,12 +280,11 @@ jobs:
           context: .
           build-args: |
             BASE_IMAGE=${{ steps.env2.outputs.BASE_IMAGE }}
-            BUILDKIT_INLINE_CACHE=1
           load: true
           push: false
           target: development
           tags: app:cache
-          cache-from: type=gha,${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache
+          cache-from: type=gha,ref=${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache
 
       # - name: Download cache image
       #   run: |
@@ -339,12 +337,11 @@ jobs:
           context: .
           build-args: |
             BASE_IMAGE=${{ steps.env2.outputs.BASE_IMAGE }}
-            BUILDKIT_INLINE_CACHE=1
           load: true
           target: development
           push: false
           tags: app:cache
-          cache-from: type=gha,${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache
+          cache-from: type=gha,ref=${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache
 
       # - name: Download cache image
       #   run: |
@@ -391,12 +388,11 @@ jobs:
           context: .
           build-args: |
             BASE_IMAGE=${{ steps.env2.outputs.BASE_IMAGE }}
-            BUILDKIT_INLINE_CACHE=1
           load: true
           push: false
           target: development
           tags: app:cache
-          cache-from: type=gha,${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache
+          cache-from: type=gha,ref=${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache
 
       # - name: Download cache image
       #   run: |
@@ -443,12 +439,11 @@ jobs:
           context: .
           build-args: |
             BASE_IMAGE=${{ steps.env2.outputs.BASE_IMAGE }}
-            BUILDKIT_INLINE_CACHE=1
           load: true
           push: false
           target: development
           tags: app:cache
-          cache-from: type=gha,${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache
+          cache-from: type=gha,ref=${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache
 
       # - name: Download cache image
       #   run: |
@@ -497,12 +492,11 @@ jobs:
           context: .
           build-args: |
             BASE_IMAGE=${{ steps.env2.outputs.BASE_IMAGE }}
-            BUILDKIT_INLINE_CACHE=1
             RELEASE_VERSION=${{ needs.build-base.outputs.IMAGE_TAG }}
           push: true
-          target: development
+          target: production
           tags: ${{ steps.env2.outputs.IMAGE_ID }}:${{ needs.build-base.outputs.IMAGE_TAG }}
-          cache-from: type=gha,${{ steps.env2.outputs.IMAGE_ID }}:adhoc-production
+          cache-from: type=gha,ref=${{ steps.env2.outputs.IMAGE_ID }}:adhoc-production
 
       # - name: Push to ECR
       #   if: (github.event_name == 'push' && needs.build-base.outputs.BRANCH_NAME == inputs.default_branch) || github.event_name == 'issue_comment'
@@ -519,11 +513,10 @@ jobs:
           context: .
           build-args: |
             BASE_IMAGE=${{ steps.env2.outputs.BASE_IMAGE }}
-            BUILDKIT_INLINE_CACHE=1
           push: true
           target: development
           tags: ${{ steps.env2.outputs.IMAGE_ID }}:cache
-          cache-from: type=gha,${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache
+          cache-from: type=gha,ref=${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache
 
       # - name: Push cache to ECR
       #   if: (github.event_name == 'push' && needs.build-base.outputs.BRANCH_NAME == inputs.default_branch)
