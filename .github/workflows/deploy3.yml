@@ -310,6 +310,10 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
+      - uses: actions/checkout@v2
+        with:
+          ref: ${{ needs.build-base.outputs.BRANCH_NAME }}
+
       - name: set more envs
         id: env2
         env:
@@ -364,6 +368,10 @@ jobs:
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
+
+      - uses: actions/checkout@v2
+        with:
+          ref: ${{ needs.build-base.outputs.BRANCH_NAME }}
 
       - name: set more envs
         id: env2
@@ -420,6 +428,10 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
+      - uses: actions/checkout@v2
+        with:
+          ref: ${{ needs.build-base.outputs.BRANCH_NAME }}
+
       - name: set more envs
         id: env2
         env:
@@ -474,6 +486,10 @@ jobs:
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
+
+      - uses: actions/checkout@v2
+        with:
+          ref: ${{ needs.build-base.outputs.BRANCH_NAME }}
 
       - name: set more envs
         id: env2
