@@ -17,26 +17,41 @@ on:
       version_command:
         required: true
         type: string
-      test_command:
-        default: ''
-        type: string
-      task_1_name:
+      production_build_task_1_name:
         default: "N/A"
         type: string
-      task_1:
-        default: ''
+      production_build_task_1:
+        default: ""
         type: string
-      task_2_name:
+      production_build_task_2_name:
         default: "N/A"
         type: string
-      task_2:
-        default: ''
+      production_build_task_2:
+        default: ""
         type: string
-      task_3_name:
+      production_build_task_3_name:
         default: "N/A"
         type: string
-      task_3:
-        default: ''
+      production_build_task_3:
+        default: ""
+        type: string
+      extra_task_1_name:
+        default: "N/A"
+        type: string
+      extra_task_1:
+        default: ""
+        type: string
+      extra_task_2_name:
+        default: "N/A"
+        type: string
+      extra_task_2:
+        default: ""
+        type: string
+      extra_task_3_name:
+        default: "N/A"
+        type: string
+      extra_task_3:
+        default: ""
         type: string
       production_environments:
         required: true
@@ -140,31 +155,20 @@ jobs:
             sleep 1
           done
 
-      - name: Run ${{ inputs.task_1_name }}
-        if: inputs.task_1 != ''
+      - name: Task ${{ inputs.extra_task_1_name }}
+        if: inputs.extra_task_1 != ''
         run: |
-          ${{ inputs.task_1 }}
+          ${{ inputs.extra_task_1 }}
 
-      - name: Run ${{ inputs.task_2_name }}
-        if: inputs.task_2 != ''
+      - name: Task ${{ inputs.extra_task_2_name }}
+        if: inputs.extra_task_2 != ''
         run: |
-          ${{ inputs.task_2 }}
+          ${{ inputs.extra_task_2 }}
 
-      - name: Run ${{ inputs.task_3_name }}
-        if: inputs.task_3 != ''
+      - name: Task ${{ inputs.extra_task_3_name }}
+        if: inputs.extra_task_3 != ''
         run: |
-          ${{ inputs.task_3 }}
-
-      - name: Tests
-        if: inputs.test_command != ''
-        env:
-          DATABASE_USERNAME: root
-          DATABASE_PASSWORD: password
-          DATABASE_HOST: host.docker.internal
-          PREPARE_DB: true
-          RAILS_ENV: test
-        run: |
-          ${{ inputs.test_command }}
+          ${{ inputs.extra_task_3 }}
 
       - name: Build Production OCI Image
         run: |
@@ -172,6 +176,21 @@ jobs:
           --build-arg BASE_IMAGE=${{ steps.env2.outputs.BASE_IMAGE }} \
           --build-arg RELEASE_VERSION=${{ steps.env1.outputs.IMAGE_TAG }} \
           -t ${{ steps.env2.outputs.IMAGE_ID }}:${{ steps.env1.outputs.IMAGE_TAG }} .
+      
+      - name: Task ${{ inputs.production_build_task_1_name }}
+        if: inputs.production_build_task_1 != ''
+        run: |
+          ${{ inputs.production_build_task_1 }}
+
+      - name: Task ${{ inputs.production_build_task_2_name }}
+        if: inputs.production_build_task_2 != ''
+        run: |
+          ${{ inputs.production_build_task_2 }}
+
+      - name: Task ${{ inputs.production_build_task_3_name }}
+        if: inputs.production_build_task_3 != ''
+        run: |
+          ${{ inputs.production_build_task_3 }}
 
       - name: Push to ECR
         if: (github.event_name == 'push' && steps.env1.outputs.BRANCH_NAME == inputs.default_branch) || github.event_name == 'issue_comment'

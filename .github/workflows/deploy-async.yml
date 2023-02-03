@@ -17,25 +17,40 @@ on:
       version_command:
         default: "cat .ruby-version"
         type: string
-      test_command:
-        default: ""
-        type: string
-      task_1_name:
+      production_build_task_1_name:
         default: "N/A"
         type: string
-      task_1:
+      production_build_task_1:
         default: ""
         type: string
-      task_2_name:
+      production_build_task_2_name:
         default: "N/A"
         type: string
-      task_2:
+      production_build_task_2:
         default: ""
         type: string
-      task_3_name:
+      production_build_task_3_name:
         default: "N/A"
         type: string
-      task_3:
+      production_build_task_3:
+        default: ""
+        type: string
+      extra_task_1_name:
+        default: "N/A"
+        type: string
+      extra_task_1:
+        default: ""
+        type: string
+      extra_task_2_name:
+        default: "N/A"
+        type: string
+      extra_task_2:
+        default: ""
+        type: string
+      extra_task_3_name:
+        default: "N/A"
+        type: string
+      extra_task_3:
         default: ""
         type: string
       production_environments:
@@ -151,7 +166,14 @@ jobs:
     needs: [build-base]
     if: needs.build-base.result == 'success'
     runs-on: ubuntu-latest
-    name: Build production
+    name: Build production, ${{ inputs.production_build_task_1_name }}, ${{ inputs.production_build_task_2_name }}, ${{ inputs.production_build_task_3_name }}
+    services:
+      mysql:
+        image: mysql:5.7
+        env:
+          MYSQL_ROOT_PASSWORD: password
+        ports:
+          - "3306:3306"
     steps:
       - uses: actions/checkout@v2
         with:
@@ -168,22 +190,42 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
-      - name: Build Production OCI Image
+      - name: Download cache image
         run: |
           IMAGE_ID=$(echo "${{ steps.login-ecr.outputs.registry }}/${{ inputs.ecr_repository }}" | tr '[A-Z]' '[a-z]')
+          echo "IMAGE_ID=$IMAGE_ID" >> $GITHUB_ENV
           docker pull $IMAGE_ID:${{ needs.build-base.outputs.TEMP_CACHE_IMAGE_TAG }}
+          docker tag $IMAGE_ID:${{ needs.build-base.outputs.TEMP_CACHE_IMAGE_TAG }} app:cache
+
+      - name: Build Production OCI Image
+        run: |
           BASE_IMAGE="${{ secrets.DOCKER_ECR }}${{ needs.build-base.outputs.BASE_IMAGE }}"
           DOCKER_BUILDKIT=1 docker build \
-          --cache-from $IMAGE_ID:${{ needs.build-base.outputs.TEMP_CACHE_IMAGE_TAG }} \
+          --cache-from ${{ env.IMAGE_ID }}:${{ needs.build-base.outputs.TEMP_CACHE_IMAGE_TAG }} \
           --build-arg BASE_IMAGE=$BASE_IMAGE \
           --build-arg RELEASE_VERSION=${{ needs.build-base.outputs.IMAGE_TAG }} \
-          -t $IMAGE_ID:${{ needs.build-base.outputs.TEMP_STABLE_IMAGE_TAG }} .
-          docker push $IMAGE_ID:${{ needs.build-base.outputs.TEMP_STABLE_IMAGE_TAG }}
-  run-tests:
+          -t ${{ env.IMAGE_ID }}:${{ needs.build-base.outputs.TEMP_STABLE_IMAGE_TAG }} .
+          docker push ${{ env.IMAGE_ID }}:${{ needs.build-base.outputs.TEMP_STABLE_IMAGE_TAG }}
+
+      - name: Task ${{ inputs.production_build_task_1_name }}
+        if: inputs.production_build_task_1 != ''
+        run: |
+          ${{ inputs.production_build_task_1 }}
+
+      - name: Task ${{ inputs.production_build_task_2_name }}
+        if: inputs.production_build_task_2 != ''
+        run: |
+          ${{ inputs.production_build_task_2 }}
+
+      - name: Task ${{ inputs.production_build_task_3_name }}
+        if: inputs.production_build_task_3 != ''
+        run: |
+          ${{ inputs.production_build_task_3 }}
+  run-extra-tasks:
     needs: [build-base]
     if: inputs.test_command != '' && needs.build-base.result == 'success'
     runs-on: ubuntu-latest
-    name: run tests
+    name: Run ${{ inputs.extra_task_1_name }}, ${{ inputs.extra_task_2_name }}, ${{ inputs.extra_task_3_name }}
     services:
       mysql:
         image: mysql:5.7
@@ -207,103 +249,30 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
-      - name: Ensure MySQL is ready
-        timeout-minutes: 5
-        run: |
-          while ! mysqladmin ping -h"127.0.0.1" --silent; do
-            sleep 1
-          done
-
       - name: Download cache image
         run: |
           IMAGE_ID=$(echo "${{ steps.login-ecr.outputs.registry }}/${{ inputs.ecr_repository }}" | tr '[A-Z]' '[a-z]')
+          echo "IMAGE_ID=$IMAGE_ID" >> $GITHUB_ENV
           docker pull $IMAGE_ID:${{ needs.build-base.outputs.TEMP_CACHE_IMAGE_TAG }}
           docker tag $IMAGE_ID:${{ needs.build-base.outputs.TEMP_CACHE_IMAGE_TAG }} app:cache
 
-      - name: Tests
+      - name: Task ${{ inputs.extra_task_1_name }}
+        if: inputs.extra_task_1 != ''
         run: |
-          ${{ inputs.test_command }}
-  run-task-1:
-    needs: [build-base]
-    if: inputs.task_1 != '' && needs.build-base.result == 'success'
-    runs-on: ubuntu-latest
-    name: Run ${{ inputs.task_1_name }}
-    steps:
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@master
-        with:
-          aws-region: ap-southeast-2
-          role-to-assume: ${{ secrets.ROLE }}
-          role-session-name: GithubActions-${{ inputs.ecr_repository }}-ci
+          ${{ inputs.extra_task_1 }}
 
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v1
-
-      - name: Download cache image
+      - name: Task ${{ inputs.extra_task_2_name }}
+        if: inputs.extra_task_2 != ''
         run: |
-          IMAGE_ID=$(echo "${{ steps.login-ecr.outputs.registry }}/${{ inputs.ecr_repository }}" | tr '[A-Z]' '[a-z]')
-          docker pull $IMAGE_ID:${{ needs.build-base.outputs.TEMP_CACHE_IMAGE_TAG }}
-          docker tag  $IMAGE_ID:${{ needs.build-base.outputs.TEMP_CACHE_IMAGE_TAG }} app:cache
+          ${{ inputs.extra_task_2 }}
 
-      - name: Run ${{ inputs.task_1_name }}
+      - name: Task ${{ inputs.extra_task_3_name }}
+        if: inputs.extra_task_3 != ''
         run: |
-          ${{ inputs.task_1 }}
-  run-task-2:
-    needs: [build-base]
-    if: inputs.task_2 != '' && needs.build-base.result == 'success'
-    runs-on: ubuntu-latest
-    name: Run ${{ inputs.task_2_name }}
-    steps:
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@master
-        with:
-          aws-region: ap-southeast-2
-          role-to-assume: ${{ secrets.ROLE }}
-          role-session-name: GithubActions-${{ inputs.ecr_repository }}-ci
-
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v1
-
-      - name: Download cache image
-        run: |
-          IMAGE_ID=$(echo "${{ steps.login-ecr.outputs.registry }}/${{ inputs.ecr_repository }}" | tr '[A-Z]' '[a-z]')
-          docker pull $IMAGE_ID:${{ needs.build-base.outputs.TEMP_CACHE_IMAGE_TAG }}
-          docker tag  $IMAGE_ID:${{ needs.build-base.outputs.TEMP_CACHE_IMAGE_TAG }} app:cache
-
-      - name: Run ${{ inputs.task_2_name }}
-        run: |
-          ${{ inputs.task_2 }}
-  run-task-3:
-    needs: [build-base]
-    if: inputs.task_3 != '' && needs.build-base.result == 'success'
-    runs-on: ubuntu-latest
-    name: Run ${{ inputs.task_3_name }}
-    steps:
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@master
-        with:
-          aws-region: ap-southeast-2
-          role-to-assume: ${{ secrets.ROLE }}
-          role-session-name: GithubActions-${{ inputs.ecr_repository }}-ci
-
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v1
-
-      - name: Download cache image
-        run: |
-          IMAGE_ID=$(echo "${{ steps.login-ecr.outputs.registry }}/${{ inputs.ecr_repository }}" | tr '[A-Z]' '[a-z]')
-          docker pull $IMAGE_ID:${{ needs.build-base.outputs.TEMP_CACHE_IMAGE_TAG }}
-          docker tag  $IMAGE_ID:${{ needs.build-base.outputs.TEMP_CACHE_IMAGE_TAG }} app:cache
-
-      - name: Run ${{ inputs.task_3_name }}
-        run: |
-          ${{ inputs.task_3 }}
+          ${{ inputs.extra_task_3 }}
   push-images:
-    needs: [build-production, run-tests, run-task-1, run-task-2, run-task-3]
-    if: ((github.event_name == 'push' && needs.build-base.outputs.BRANCH_NAME == inputs.default_branch) || github.event_name == 'issue_comment') && needs.build-production.result == 'success' && needs.run-tests.result == 'success' && needs.run-task-1.result == 'success' && needs.run-task-2.result == 'success' && needs.run-task-3.result == 'success'
+    needs: [build-production, run-extra-tasks]
+    if: ((github.event_name == 'push' && needs.build-base.outputs.BRANCH_NAME == inputs.default_branch) || github.event_name == 'issue_comment') && needs.build-production.result == 'success' && needs.run-extra-tasks.result == 'success'
     runs-on: ubuntu-latest
     name: push images
     steps:
@@ -355,50 +324,17 @@ jobs:
            -e ENVIRONMENTS="development" \
            -e ECR_REPOSITORY="${{ inputs.ecr_repository }}" \
            ${{ steps.login-ecr.outputs.registry }}/publish_app:latest
-  notify:
-    needs:
-      [
-        build-base,
-        build-production,
-        run-tests,
-        run-task-1,
-        run-task-2,
-        run-task-3,
-        push-images,
-      ]
-    if: github.event_name == 'issue_comment' && always()
-    runs-on: ubuntu-latest
-    name: notify
-    steps:
+
       - name: check for failures
+        if: github.event_name == 'issue_comment' && always()
         run: |
           output=
           if [ "${{ needs.run-tests.result }}" != "success"]; then 
             output="${output}Run tests failed! "
           fi
 
-          if [ "${{ needs.run-task-1.result }}" != "success"]; then 
+          if [ "${{ needs.run-extra-tasks.result }}" != "success"]; then 
             output="${output}Run task 1 failed! "
-          fi
-
-          if [ "${{ needs.run-task-2.result }}" != "success"]; then 
-            output="${output}Run task 2 failed! "
-          fi
-
-          if [ "${{ needs.run-task-3.result }}" != "success"]; then 
-            output="${output}Run task 3 failed! "
-          fi
-
-          if [ "${{ needs.build-base.result }}" != "success"]; then 
-            output="${output}build base failed! "
-          fi
-
-          if [ "${{ needs.build-production.result }}" != "success"]; then 
-            output="${output}build production failed! "
-          fi
-
-          if [ "${{ needs.push-images.result }}" != "success"]; then 
-            output="${output}push images failed!"
           fi
 
           status="failure"
@@ -411,6 +347,7 @@ jobs:
           echo "ADHOC_STATUS=$status" >> $GITHUB_ENV
 
       - name: Set final commit status
+        if: github.event_name == 'issue_comment' && always()
         uses: myrotvorets/set-commit-status-action@master
         with:
           sha: ${{ needs.build-base.outputs.ISSUE_COMMENT_HEAD_SHA }}
