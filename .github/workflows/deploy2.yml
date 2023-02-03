@@ -152,7 +152,7 @@ jobs:
           IMAGE_ID=$(echo "${{ steps.login-ecr.outputs.registry }}/${{ inputs.ecr_repository }}" | tr '[A-Z]' '[a-z]')
           BASE_IMAGE="${{ secrets.DOCKER_ECR }}${{ needs.build-base.outputs.BASE_IMAGE }}"
           DOCKER_BUILDKIT=1 docker build --cache-from $IMAGE_ID:adhoc-cache \
-          --build-arg BASE_IMAGE=${{ secrets.DOCKER_ECR }}${{ steps.env2.outputs.BASE_IMAGE }} \
+          --build-arg BASE_IMAGE=$BASE_IMAGE \
           --build-arg RELEASE_VERSION=${{ needs.build-base.outputs.IMAGE_TAG }} \
           -t $IMAGE_ID:adhoc-production .
           docker push $IMAGE_ID:adhoc-production
