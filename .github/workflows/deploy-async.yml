@@ -160,8 +160,8 @@ jobs:
 
       - name: Build Production OCI Image
         run: |
-          docker pull $IMAGE_ID:${{ needs.build-base.outputs.TEMP_CACHE_IMAGE_TAG }}
           IMAGE_ID=$(echo "${{ steps.login-ecr.outputs.registry }}/${{ inputs.ecr_repository }}" | tr '[A-Z]' '[a-z]')
+          docker pull $IMAGE_ID:${{ needs.build-base.outputs.TEMP_CACHE_IMAGE_TAG }}
           BASE_IMAGE="${{ secrets.DOCKER_ECR }}${{ needs.build-base.outputs.BASE_IMAGE }}"
           DOCKER_BUILDKIT=1 docker build \
           --cache-from $IMAGE_ID:${{ needs.build-base.outputs.TEMP_CACHE_IMAGE_TAG }} \
