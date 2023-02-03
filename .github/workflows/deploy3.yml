@@ -136,6 +136,7 @@ jobs:
             BASE_IMAGE=${{ steps.env2.outputs.BASE_IMAGE }}
             BUILDKIT_INLINE_CACHE=1
           push: true
+          target: development
           tags: ${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache
           cache-from: ${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache
           cache-to: type=gha,mode=max
@@ -191,7 +192,7 @@ jobs:
         with:
           driver: docker-container
 
-      - name: Build Test OCI Image
+      - name: Build Production OCI Image
         uses: docker/build-push-action@v4
         with:
           context: .
@@ -199,9 +200,10 @@ jobs:
             BASE_IMAGE=${{ steps.env2.outputs.BASE_IMAGE }}
             BUILDKIT_INLINE_CACHE=1
             RELEASE_VERSION=${{ needs.build-base.outputs.IMAGE_TAG }}
+          target: production
           push: true
           tags: ${{ steps.env2.outputs.IMAGE_ID }}:adhoc-production
-          cache-from: type=gha,${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache
+          cache-from: type=registry,ref=${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache
           cache-to: type=gha,mode=max
 
       # - name: Download cache image
@@ -272,6 +274,7 @@ jobs:
             BUILDKIT_INLINE_CACHE=1
           load: true
           push: false
+          target: development
           tags: app:cache
           cache-from: type=gha,${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache
 
@@ -328,6 +331,7 @@ jobs:
             BASE_IMAGE=${{ steps.env2.outputs.BASE_IMAGE }}
             BUILDKIT_INLINE_CACHE=1
           load: true
+          target: development
           push: false
           tags: app:cache
           cache-from: type=gha,${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache
@@ -380,6 +384,7 @@ jobs:
             BUILDKIT_INLINE_CACHE=1
           load: true
           push: false
+          target: development
           tags: app:cache
           cache-from: type=gha,${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache
 
@@ -431,6 +436,7 @@ jobs:
             BUILDKIT_INLINE_CACHE=1
           load: true
           push: false
+          target: development
           tags: app:cache
           cache-from: type=gha,${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache
 
@@ -484,6 +490,7 @@ jobs:
             BUILDKIT_INLINE_CACHE=1
             RELEASE_VERSION=${{ needs.build-base.outputs.IMAGE_TAG }}
           push: true
+          target: development
           tags: ${{ steps.env2.outputs.IMAGE_ID }}:${{ needs.build-base.outputs.IMAGE_TAG }}
           cache-from: type=gha,${{ steps.env2.outputs.IMAGE_ID }}:adhoc-production
 
@@ -504,6 +511,7 @@ jobs:
             BASE_IMAGE=${{ steps.env2.outputs.BASE_IMAGE }}
             BUILDKIT_INLINE_CACHE=1
           push: true
+          target: development
           tags: ${{ steps.env2.outputs.IMAGE_ID }}:cache
           cache-from: type=gha,${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache
 
