@@ -119,7 +119,7 @@ jobs:
           echo "ECR_REGISTRY=$ECR_REGISTRY" >> $GITHUB_OUTPUT
           BASE_IMAGE="ruby-base:$(${{ inputs.version_command }})"
           echo "BASE_IMAGE=$BASE_IMAGE" >> $GITHUB_OUTPUT
-          TEST_ENVS=$(cat rails/.env.dist)
+          TEST_ENVS=$(cat rails/env.dist)
           echo "TEST_ENVS='$TEST_ENVS'" >> $GITHUB_OUTPUT
 
       - id: env3
