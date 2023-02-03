@@ -223,7 +223,7 @@ jobs:
           ${{ inputs.production_build_task_3 }}
   run-extra-tasks:
     needs: [build-base]
-    if: inputs.test_command != '' && needs.build-base.result == 'success'
+    if: (inputs.extra_task_1 != '' || inputs.extra_task_2 != '' || inputs.extra_task_2 != '') && needs.build-base.result == 'success'
     runs-on: ubuntu-latest
     name: Run ${{ inputs.extra_task_1_name }}, ${{ inputs.extra_task_2_name }}, ${{ inputs.extra_task_3_name }}
     services:
