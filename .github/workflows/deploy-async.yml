@@ -55,8 +55,8 @@ jobs:
       BRANCH_NAME: ${{ steps.env1.outputs.BRANCH_NAME }}
       ISSUE_COMMENT_HEAD_SHA: ${{ steps.env1.outputs.ISSUE_COMMENT_HEAD_SHA }}
       IMAGE_TAG: ${{ steps.env1.outputs.IMAGE_TAG }}
-      ADHOC_CACHE_IMAGE_TAG: ${{ steps.env1.outputs.ADHOC_CACHE_IMAGE_TAG }}
-      ADHOC_PRODUCTION_IMAGE_TAG: ${{ steps.env1.outputs.ADHOC_PRODUCTION_IMAGE_TAG }}
+      TEMP_CACHE_IMAGE_TAG: ${{ steps.env1.outputs.TEMP_CACHE_IMAGE_TAG }}
+      TEMP_STABLE_IMAGE_TAG: ${{ steps.env1.outputs.TEMP_STABLE_IMAGE_TAG }}
       BASE_IMAGE: ${{ steps.env2.outputs.BASE_IMAGE }}
     steps:
       - uses: xt0rted/pull-request-comment-branch@v1
@@ -106,11 +106,11 @@ jobs:
           image_tag=$(echo "$image_tag" | tr / _)
           echo "IMAGE_TAG=$image_tag" >> $GITHUB_OUTPUT
 
-          adhoc_cache_image_tag=adhoc-cache-$IMAGE_ID
-          echo "ADHOC_CACHE_IMAGE_TAG=$adhoc_cache_image_tag" >> $GITHUB_OUTPUT
+          temp_cache_image_tag=temp-cache-$image_tag
+          echo "TEMP_CACHE_IMAGE_TAG=$temp_cache_image_tag" >> $GITHUB_OUTPUT
 
-          adhoc_production_image_tag=adhoc-cache-$IMAGE_ID
-          echo "ADHOC_PRODUCTION_IMAGE_TAG=$adhoc_production_image_tag" >> $GITHUB_OUTPUT
+          temp_stable_image_tag=temp-stable-$image_tag
+          echo "TEMP_STABLE_IMAGE_TAG=$temp_stable_image_tag" >> $GITHUB_OUTPUT
 
           ECR_REGISTRY="${{ steps.login-ecr.outputs.registry }}"
           echo "ECR_REGISTRY=$ECR_REGISTRY" >> $GITHUB_OUTPUT
@@ -132,10 +132,10 @@ jobs:
           DOCKER_BUILDKIT=1 docker build --target development \
           --build-arg BASE_IMAGE=${{ secrets.DOCKER_ECR }}${{ steps.env2.outputs.BASE_IMAGE }} \
           --build-arg BUILDKIT_INLINE_CACHE=1 \
-          --cache-from ${{ env.IMAGE_ID }}:${{ steps.env1.outputs.ADHOC_CACHE_IMAGE_TAG }} \
+          --cache-from ${{ env.IMAGE_ID }}:${{ steps.env1.outputs.TEMP_CACHE_IMAGE_TAG }} \
           --cache-from ${{ env.IMAGE_ID }}:cache \
-          -t ${{ env.IMAGE_ID }}:${{ steps.env1.outputs.ADHOC_CACHE_IMAGE_TAG }}  .
-          docker push ${{ env.IMAGE_ID }}:${{ steps.env1.outputs.ADHOC_CACHE_IMAGE_TAG }}
+          -t ${{ env.IMAGE_ID }}:${{ steps.env1.outputs.TEMP_CACHE_IMAGE_TAG }}  .
+          docker push ${{ env.IMAGE_ID }}:${{ steps.env1.outputs.TEMP_CACHE_IMAGE_TAG }}
   build-production:
     needs: [build-base]
     if: needs.build-base.result == 'success'
@@ -161,11 +161,12 @@ jobs:
         run: |
           IMAGE_ID=$(echo "${{ steps.login-ecr.outputs.registry }}/${{ inputs.ecr_repository }}" | tr '[A-Z]' '[a-z]')
           BASE_IMAGE="${{ secrets.DOCKER_ECR }}${{ needs.build-base.outputs.BASE_IMAGE }}"
-          DOCKER_BUILDKIT=1 docker build --cache-from $IMAGE_ID:${{ needs.build-base.outputs.ADHOC_CACHE_IMAGE_TAG }} \
+          DOCKER_BUILDKIT=1 docker build \
+          --cache-from $IMAGE_ID:${{ needs.build-base.outputs.TEMP_CACHE_IMAGE_TAG }} \
           --build-arg BASE_IMAGE=$BASE_IMAGE \
           --build-arg RELEASE_VERSION=${{ needs.build-base.outputs.IMAGE_TAG }} \
-          -t $IMAGE_ID:${{ needs.build-base.outputs.ADHOC_PRODUCTION_IMAGE_TAG }} .
-          docker push $IMAGE_ID:${{ needs.build-base.outputs.ADHOC_PRODUCTION_IMAGE_TAG }}
+          -t $IMAGE_ID:${{ needs.build-base.outputs.TEMP_PRODUCTION_IMAGE_TAG }} .
+          docker push $IMAGE_ID:${{ needs.build-base.outputs.TEMP_PRODUCTION_IMAGE_TAG }}
   run-tests:
     needs: [build-base]
     if: inputs.test_command != '' && needs.build-base.result == 'success'
@@ -204,8 +205,8 @@ jobs:
       - name: Download cache image
         run: |
           IMAGE_ID=$(echo "${{ steps.login-ecr.outputs.registry }}/${{ inputs.ecr_repository }}" | tr '[A-Z]' '[a-z]')
-          docker pull $IMAGE_ID:${{ needs.build-base.outputs.ADHOC_CACHE_IMAGE_TAG }}
-          docker tag $IMAGE_ID:${{ needs.build-base.outputs.ADHOC_CACHE_IMAGE_TAG }} app:cache
+          docker pull $IMAGE_ID:${{ needs.build-base.outputs.TEMP_CACHE_IMAGE_TAG }}
+          docker tag $IMAGE_ID:${{ needs.build-base.outputs.TEMP_CACHE_IMAGE_TAG }} app:cache
 
       - name: Tests
         env:
@@ -236,8 +237,8 @@ jobs:
       - name: Download cache image
         run: |
           IMAGE_ID=$(echo "${{ steps.login-ecr.outputs.registry }}/${{ inputs.ecr_repository }}" | tr '[A-Z]' '[a-z]')
-          docker pull $IMAGE_ID:${{ needs.build-base.outputs.ADHOC_CACHE_IMAGE_TAG }}
-          docker tag  $IMAGE_ID:${{ needs.build-base.outputs.ADHOC_CACHE_IMAGE_TAG }} app:cache
+          docker pull $IMAGE_ID:${{ needs.build-base.outputs.TEMP_CACHE_IMAGE_TAG }}
+          docker tag  $IMAGE_ID:${{ needs.build-base.outputs.TEMP_CACHE_IMAGE_TAG }} app:cache
 
       - name: Run ${{ inputs.task_1_name }}
         run: |
@@ -262,8 +263,8 @@ jobs:
       - name: Download cache image
         run: |
           IMAGE_ID=$(echo "${{ steps.login-ecr.outputs.registry }}/${{ inputs.ecr_repository }}" | tr '[A-Z]' '[a-z]')
-          docker pull $IMAGE_ID:${{ needs.build-base.outputs.ADHOC_CACHE_IMAGE_TAG }}
-          docker tag  $IMAGE_ID:${{ needs.build-base.outputs.ADHOC_CACHE_IMAGE_TAG }} app:cache
+          docker pull $IMAGE_ID:${{ needs.build-base.outputs.TEMP_CACHE_IMAGE_TAG }}
+          docker tag  $IMAGE_ID:${{ needs.build-base.outputs.TEMP_CACHE_IMAGE_TAG }} app:cache
 
       - name: Run ${{ inputs.task_2_name }}
         run: |
@@ -288,8 +289,8 @@ jobs:
       - name: Download cache image
         run: |
           IMAGE_ID=$(echo "${{ steps.login-ecr.outputs.registry }}/${{ inputs.ecr_repository }}" | tr '[A-Z]' '[a-z]')
-          docker pull $IMAGE_ID:${{ needs.build-base.outputs.ADHOC_CACHE_IMAGE_TAG }}
-          docker tag  $IMAGE_ID:${{ needs.build-base.outputs.ADHOC_CACHE_IMAGE_TAG }} app:cache
+          docker pull $IMAGE_ID:${{ needs.build-base.outputs.TEMP_CACHE_IMAGE_TAG }}
+          docker tag  $IMAGE_ID:${{ needs.build-base.outputs.TEMP_CACHE_IMAGE_TAG }} app:cache
 
       - name: Run ${{ inputs.task_3_name }}
         run: |
@@ -315,15 +316,15 @@ jobs:
         if: (github.event_name == 'push' && needs.build-base.outputs.BRANCH_NAME == inputs.default_branch) || github.event_name == 'issue_comment'
         run: |
           IMAGE_ID=$(echo "${{ steps.login-ecr.outputs.registry }}/${{ inputs.ecr_repository }}" | tr '[A-Z]' '[a-z]')
-          docker pull $IMAGE_ID:${{ needs.build-base.outputs.ADHOC_PRODUCTION_IMAGE_TAG }}
-          docker tag $IMAGE_ID:${{ needs.build-base.outputs.ADHOC_PRODUCTION_IMAGE_TAG }} $IMAGE_ID:${{ needs.build-base.outputs.IMAGE_TAG }}
+          docker pull $IMAGE_ID:${{ needs.build-base.outputs.TEMP_PRODUCTION_IMAGE_TAG }}
+          docker tag $IMAGE_ID:${{ needs.build-base.outputs.TEMP_PRODUCTION_IMAGE_TAG }} $IMAGE_ID:${{ needs.build-base.outputs.IMAGE_TAG }}
           docker push $IMAGE_ID:${{ needs.build-base.outputs.IMAGE_TAG }}
 
       - name: Push cache to ECR
         if: (github.event_name == 'push' && needs.build-base.outputs.BRANCH_NAME == inputs.default_branch)
         run: |
           IMAGE_ID=$(echo "${{ steps.login-ecr.outputs.registry }}/${{ inputs.ecr_repository }}" | tr '[A-Z]' '[a-z]')
-          docker pull $IMAGE_ID:${{ needs.build-base.outputs.ADHOC_CACHE_IMAGE_TAG }}
+          docker pull $IMAGE_ID:${{ needs.build-base.outputs.TEMP_CACHE_IMAGE_TAG }}
           docker tag $IMAGE_ID:${{ needs.build-base.outputs.CACHE_IMAGE_TAG }}  $IMAGE_ID:cache
           docker push $IMAGE_ID:cache
 
