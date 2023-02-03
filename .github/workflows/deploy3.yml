@@ -139,7 +139,6 @@ jobs:
           target: development
           tags: ${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache
           cache-from: type=registry,ref=${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache
-          cache-to: type=registry,ref=${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache
 
       - name: Build Test OCI Image
         uses: docker/build-push-action@v4
@@ -147,12 +146,11 @@ jobs:
           context: .
           build-args: |
             BASE_IMAGE=${{ steps.env2.outputs.BASE_IMAGE }}
-            BUILDKIT_INLINE_CACHE=1
           push: true
           target: development
           tags: ${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache
           cache-from: type=registry,ref=${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache
-          cache-to: type=gha,ref=${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache
+          cache-to: type=gha,ref=${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache,mode=max
 
       # - name: Build Test OCI Image
       #   run: |
@@ -212,7 +210,6 @@ jobs:
           build-args: |
             BASE_IMAGE=${{ steps.env2.outputs.BASE_IMAGE }}
             RELEASE_VERSION=${{ needs.build-base.outputs.IMAGE_TAG }}
-            BUILDKIT_INLINE_CACHE=1
           target: production
           push: true
           tags: ${{ steps.env2.outputs.IMAGE_ID }}:adhoc-production
@@ -284,7 +281,6 @@ jobs:
           context: .
           build-args: |
             BASE_IMAGE=${{ steps.env2.outputs.BASE_IMAGE }}
-            BUILDKIT_INLINE_CACHE=1
           load: true
           push: false
           target: development
@@ -342,7 +338,6 @@ jobs:
           context: .
           build-args: |
             BASE_IMAGE=${{ steps.env2.outputs.BASE_IMAGE }}
-            BUILDKIT_INLINE_CACHE=1
           load: true
           target: development
           push: false
@@ -394,7 +389,6 @@ jobs:
           context: .
           build-args: |
             BASE_IMAGE=${{ steps.env2.outputs.BASE_IMAGE }}
-            BUILDKIT_INLINE_CACHE=1
           load: true
           push: false
           target: development
@@ -446,7 +440,6 @@ jobs:
           context: .
           build-args: |
             BASE_IMAGE=${{ steps.env2.outputs.BASE_IMAGE }}
-            BUILDKIT_INLINE_CACHE=1
           load: true
           push: false
           target: development
@@ -501,7 +494,6 @@ jobs:
           build-args: |
             BASE_IMAGE=${{ steps.env2.outputs.BASE_IMAGE }}
             RELEASE_VERSION=${{ needs.build-base.outputs.IMAGE_TAG }}
-            BUILDKIT_INLINE_CACHE=1
           push: true
           target: production
           tags: ${{ steps.env2.outputs.IMAGE_ID }}:${{ needs.build-base.outputs.IMAGE_TAG }}
