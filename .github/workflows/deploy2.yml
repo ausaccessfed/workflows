@@ -133,9 +133,21 @@ jobs:
           --cache-from $IMAGE_ID:adhoc-cache -t $IMAGE_ID:adhoc-cache  .
           docker push $IMAGE_ID:adhoc-cache
           # TODO: this push should be more unquie
+  env:
+    runs-on: ubuntu-latest
+    name: Build base
+    outputs:
+      IMAGE_ID: ${{ steps.env.outputs.IMAGE_ID }}
+    steps:
+      - name: set envs
+        id: env
+        run: |
+          ECR_REGISTRY="${{ needs.build-base.outputs.ECR_REGISTRY }}"
+          IMAGE_ID=$(echo "${{ steps.login-ecr.outputs.registry }}/${{ inputs.ecr_repository }}" | tr '[A-Z]' '[a-z]')
+          echo "IMAGE_ID=$IMAGE_ID" >> $GITHUB_OUTPUT
 
   build-production:
-    needs: [build-base]
+    needs: [build-base, env]
     if: needs.build-base.result == 'success'
     runs-on: ubuntu-latest
     name: Build production
