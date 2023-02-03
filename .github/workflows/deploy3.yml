@@ -138,7 +138,7 @@ jobs:
           push: true
           target: development
           tags: ${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache
-          cache-to: type=registry,${{ steps.env2.outputs.IMAGE_ID }}:adhoc-cache,mode=max
+          cache-to: type=registry,${{ steps.env2.outputs.IMAGE_ID }},mode=max
 
       - name: Build Test OCI Image
         uses: docker/build-push-action@v4
