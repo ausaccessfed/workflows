@@ -14,9 +14,6 @@ on:
       event_comment_body:
         default: ""
         type: string
-      event_author:
-        default: ""
-        type: string
       default_branch:
         default: "master"
         type: string
@@ -71,7 +68,7 @@ jobs:
   run:
     runs-on: ubuntu-latest
     name: run
-    if: inputs.event_name != 'issue_comment' || (contains(inputs.event_comment_body, '/deploy')  && contains('phyzical,ArthurZheng,ritchiey,matthew-puku,rianniello,Kfoster14,waldofouche,Bo', inputs.event_author))
+    if: inputs.event_name != 'issue_comment' || (contains(inputs.event_comment_body, '/deploy')  && contains('phyzical,ArthurZheng,ritchiey,matthew-puku,rianniello,Kfoster14,waldofouche,Bo', github.event.author.login))
     services:
       mysql:
         image: mysql:5.7
