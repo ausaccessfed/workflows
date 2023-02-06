@@ -11,6 +11,9 @@ on:
       event_name:
         required: true
         type: string
+      event_comment_body:
+        default: ""
+        type: string
       default_branch:
         default: "master"
         type: string
@@ -64,6 +67,7 @@ on:
 
 jobs:
   build-base:
+    if: inputs.event_name != 'issue_comment' || (contains(inputs.event_comment_body, '/deploy')  && contains('phyzical,ArthurZheng,ritchiey,matthew-puku,rianniello,Kfoster14,waldofouche,Bo', github.event.author.login))
     runs-on: ubuntu-latest
     name: Build base
     outputs:
@@ -75,12 +79,12 @@ jobs:
       BASE_IMAGE: ${{ steps.env2.outputs.BASE_IMAGE }}
     steps:
       - uses: xt0rted/pull-request-comment-branch@v1
-        if: github.event_name == 'issue_comment'
+        if: inputs.event_name == 'issue_comment'
         id: comment-branch
 
       - name: Set commit status as pending
         uses: myrotvorets/set-commit-status-action@master
-        if: github.event_name == 'issue_comment'
+        if: inputs.event_name == 'issue_comment'
         with:
           sha: ${{ steps.comment-branch.outputs.head_sha }}
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -112,7 +116,7 @@ jobs:
           fi
           echo "BRANCH_NAME=$branch_name" >> $GITHUB_OUTPUT
 
-          if [ "${{ github.event_name }}" == "issue_comment" ]; then
+          if [ "${{ inputs.event_name }}" == "issue_comment" ]; then
               echo "ISSUE_COMMENT_HEAD_SHA=${{ steps.comment-branch.outputs.head_sha }}" >> $GITHUB_OUTPUT
             image_tag=adhoc-${{steps.comment-branch.outputs.head_ref}}-${{steps.comment-branch.outputs.head_sha}}
           else
@@ -272,7 +276,7 @@ jobs:
           ${{ inputs.extra_task_3 }}
   push-images:
     needs: [build-production, run-extra-tasks]
-    if: ((github.event_name == 'push' && needs.build-base.outputs.BRANCH_NAME == inputs.default_branch) || github.event_name == 'issue_comment') && needs.build-production.result == 'success' && needs.run-extra-tasks.result == 'success'
+    if: (( inputs.event_name == 'push' && needs.build-base.outputs.BRANCH_NAME == inputs.default_branch) ||  inputs.event_name == 'issue_comment') && needs.build-production.result == 'success' && needs.run-extra-tasks.result == 'success'
     runs-on: ubuntu-latest
     name: push images
     steps:
@@ -288,7 +292,7 @@ jobs:
         uses: aws-actions/amazon-ecr-login@v1
 
       - name: Push to ECR
-        if: (github.event_name == 'push' && needs.build-base.outputs.BRANCH_NAME == inputs.default_branch) || github.event_name == 'issue_comment'
+        if: ( inputs.event_name == 'push' && needs.build-base.outputs.BRANCH_NAME == inputs.default_branch) ||  inputs.event_name == 'issue_comment'
         run: |
           IMAGE_ID=$(echo "${{ steps.login-ecr.outputs.registry }}/${{ inputs.ecr_repository }}" | tr '[A-Z]' '[a-z]')
           docker pull $IMAGE_ID:${{ needs.build-base.outputs.TEMP_STABLE_IMAGE_TAG }}
@@ -296,7 +300,7 @@ jobs:
           docker push $IMAGE_ID:${{ needs.build-base.outputs.IMAGE_TAG }}
 
       - name: Push cache to ECR
-        if: (github.event_name == 'push' && needs.build-base.outputs.BRANCH_NAME == inputs.default_branch)
+        if: ( inputs.event_name == 'push' && needs.build-base.outputs.BRANCH_NAME == inputs.default_branch)
         run: |
           IMAGE_ID=$(echo "${{ steps.login-ecr.outputs.registry }}/${{ inputs.ecr_repository }}" | tr '[A-Z]' '[a-z]')
           docker pull $IMAGE_ID:${{ needs.build-base.outputs.TEMP_CACHE_IMAGE_TAG }}
@@ -304,7 +308,7 @@ jobs:
           docker push $IMAGE_ID:cache
 
       - name: Update GitOps Repo to trigger deploys
-        if: needs.build-base.outputs.BRANCH_NAME == inputs.default_branch && github.event_name == 'push'
+        if: needs.build-base.outputs.BRANCH_NAME == inputs.default_branch &&  inputs.event_name == 'push'
         run: |
           printenv > .envs
            docker run --env-file .envs \
@@ -315,7 +319,7 @@ jobs:
            ${{ steps.login-ecr.outputs.registry }}/publish_app:latest
 
       - name: Update GitOps Repo to trigger deploys for development
-        if: github.event_name == 'issue_comment'
+        if: inputs.event_name == 'issue_comment'
         run: |
           printenv > .envs
            docker run --env-file .envs \
@@ -326,7 +330,7 @@ jobs:
            ${{ steps.login-ecr.outputs.registry }}/publish_app:latest
 
       - name: check for failures
-        if: github.event_name == 'issue_comment' && always()
+        if: inputs.event_name == 'issue_comment' && always()
         run: |
           output=
           if [ "${{ needs.run-tests.result }}" != "success"]; then 
@@ -347,7 +351,7 @@ jobs:
           echo "ADHOC_STATUS=$status" >> $GITHUB_ENV
 
       - name: Set final commit status
-        if: github.event_name == 'issue_comment' && always()
+        if: inputs.event_name == 'issue_comment' && always()
         uses: myrotvorets/set-commit-status-action@master
         with:
           sha: ${{ needs.build-base.outputs.ISSUE_COMMENT_HEAD_SHA }}

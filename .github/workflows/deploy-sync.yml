@@ -104,7 +104,7 @@ jobs:
           fi
           echo "BRANCH_NAME=$branch_name" >> $GITHUB_OUTPUT
 
-          if [ "${{ github.event_name }}" == "issue_comment" ]; then
+          if [ "${{ inputs.event_name }}" == "issue_comment" ]; then
             image_tag=adhoc-${{steps.comment-branch.outputs.head_ref}}-${{steps.comment-branch.outputs.head_sha}}
           else
             image_tag=stable-${{ github.sha }}
@@ -189,17 +189,17 @@ jobs:
           ${{ inputs.production_build_task_3 }}
 
       - name: Push to ECR
-        if: (github.event_name == 'push' && steps.env1.outputs.BRANCH_NAME == inputs.default_branch) || github.event_name == 'issue_comment'
+        if: (inputs.event_name == 'push' && steps.env1.outputs.BRANCH_NAME == inputs.default_branch) ||  inputs.event_name == 'issue_comment'
         run: |
           docker push ${{ steps.env2.outputs.IMAGE_ID }}:${{ steps.env1.outputs.IMAGE_TAG }}
 
       - name: Push cache to ECR
-        if: (github.event_name == 'push' &&  steps.env1.outputs.BRANCH_NAME == inputs.default_branch)
+        if: (inputs.event_name == 'push' &&  steps.env1.outputs.BRANCH_NAME == inputs.default_branch)
         run: |
           docker push ${{ steps.env2.outputs.IMAGE_ID }}:cache
 
       - name: Update GitOps Repo to trigger deploys
-        if: steps.env1.outputs.BRANCH_NAME == inputs.default_branch && github.event_name == 'push'
+        if: steps.env1.outputs.BRANCH_NAME == inputs.default_branch &&  inputs.event_name == 'push'
         run: |
           printenv > .envs
            docker run --env-file .envs \
@@ -210,7 +210,7 @@ jobs:
            ${{ steps.env2.outputs.ECR_REGISTRY }}/publish_app:latest
 
       - name: Update GitOps Repo to trigger deploys for development
-        if: github.event_name == 'issue_comment'
+        if: inputs.event_name == 'issue_comment'
         run: |
           printenv > .envs
            docker run --env-file .envs \
@@ -222,7 +222,7 @@ jobs:
 
       - name: check for failures
         id: failure-check
-        if: github.event_name == 'issue_comment' && always()
+        if: inputs.event_name == 'issue_comment' && always()
         run: |
           output=
           status="failure"
@@ -238,10 +238,10 @@ jobs:
           echo "ADHOC_STATUS=$status" >> $GITHUB_OUTPUT
 
       - name: Set final commit status
-        if: github.event_name == 'issue_comment' && always()
+        if: inputs.event_name == 'issue_comment' && always()
         uses: myrotvorets/set-commit-status-action@master
         with:
-          sha: ${{ steps.comment-branch.outputs.head_ref }}
+          sha: ${{ steps.comment-branch.outputs.head_sha }}
           token: ${{ secrets.GITHUB_TOKEN }}
           status: ${{ steps.failure-check.outputs.ADHOC_STATUS }}
           targetUrl: ${{ inputs.dev_url }}
