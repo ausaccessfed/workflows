@@ -204,8 +204,8 @@ jobs:
           printenv > .envs
            docker run --env-file .envs \
            -e PROJECTS="${{ inputs.ecr_repository }}" \
-           -e IMAGE_TAG=${{ needs.build-base.outputs.IMAGE_TAG }} \
-           -e ENVIRONMENTS="${{ inputs.environments }}" \
+           -e IMAGE_TAG=${{ steps.env1.outputs.IMAGE_TAG }} \
+           -e ENVIRONMENTS="${{ inputs.production_environments }}" \
            -e ECR_REPOSITORY="${{ inputs.ecr_repository }}" \
            ${{ steps.env2.outputs.ECR_REGISTRY }}/publish_app:latest
 
@@ -215,7 +215,7 @@ jobs:
           printenv > .envs
            docker run --env-file .envs \
            -e PROJECTS="${{ inputs.ecr_repository }}" \
-           -e IMAGE_TAG=${{ needs.build-base.outputs.IMAGE_TAG }} \
+           -e IMAGE_TAG=${{ steps.env1.outputs.IMAGE_TAG }} \
            -e ENVIRONMENTS="development" \
            -e ECR_REPOSITORY="${{ inputs.ecr_repository }}" \
            ${{ steps.env2.outputs.ECR_REGISTRY }}/publish_app:latest
