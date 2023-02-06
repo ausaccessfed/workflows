@@ -229,12 +229,12 @@ jobs:
         run: |
           output=
           status="failure"
-          url=""
-          if [ "${{ needs.run.result }}" != "success"]; then 
+          url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          if [ "${{ success() }}" != "true" ]; then 
             output="${output}push images failed!"
           fi
 
-          if [ "$output" == ""]; then 
+          if [ "$output" == "" ]; then 
             output="Manifest updated, Deploying to ${{ inputs.dev_url }} (may take up to 5 minutes)"
             status="success"
             url="${{ inputs.dev_url }}"
