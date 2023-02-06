@@ -11,6 +11,9 @@ on:
       event_name:
         required: true
         type: string
+      event_name_comment_body:
+        default: ""
+        type: string
       default_branch:
         default: "master"
         type: string
@@ -65,6 +68,7 @@ jobs:
   run:
     runs-on: ubuntu-latest
     name: run
+    if: inputs.event_name != 'issue_comment' || (contains(inputs.event_name_comment_body, '/deploy')  && contains('phyzical,ArthurZheng,ritchiey,matthew-puku,rianniello,Kfoster14,waldofouche,Bo', github.event.author.login))
     services:
       mysql:
         image: mysql:5.7
@@ -74,12 +78,12 @@ jobs:
           - "3306:3306"
     steps:
       - uses: xt0rted/pull-request-comment-branch@v1
-        if: github.event_name == 'issue_comment'
+        if: inputs.event_name == 'issue_comment'
         id: comment-branch
 
       - name: Set commit status as pending
         uses: myrotvorets/set-commit-status-action@master
-        if: github.event_name == 'issue_comment'
+        if: inputs.event_name == 'issue_comment'
         with:
           sha: ${{ steps.comment-branch.outputs.head_sha }}
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -147,14 +151,6 @@ jobs:
           -t ${{ steps.env2.outputs.IMAGE_ID }}:cache \
           -t app:cache .
 
-      - name: Ensure MySQL is ready
-        if: inputs.test_command != ''
-        timeout-minutes: 5
-        run: |
-          while ! mysqladmin ping -h"127.0.0.1" --silent; do
-            sleep 1
-          done
-
       - name: Task ${{ inputs.extra_task_1_name }}
         if: inputs.extra_task_1 != ''
         run: |
@@ -176,7 +172,7 @@ jobs:
           --build-arg BASE_IMAGE=${{ steps.env2.outputs.BASE_IMAGE }} \
           --build-arg RELEASE_VERSION=${{ steps.env1.outputs.IMAGE_TAG }} \
           -t ${{ steps.env2.outputs.IMAGE_ID }}:${{ steps.env1.outputs.IMAGE_TAG }} .
-      
+
       - name: Task ${{ inputs.production_build_task_1_name }}
         if: inputs.production_build_task_1 != ''
         run: |
