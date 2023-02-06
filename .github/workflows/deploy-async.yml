@@ -337,17 +337,17 @@ jobs:
         run: |
           output=
           url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-          if [ "${{ needs.run-tests.result }}" != "success"]; then 
+          if [ "${{ needs.run-tests.result }}" != "success" ]; then 
             output="${output}Run tests failed! "
           fi
 
-          if [ "${{ needs.run-extra-tasks.result }}" != "success"]; then 
+          if [ "${{ needs.run-extra-tasks.result }}" != "success" ]; then 
             output="${output}Run task 1 failed! "
           fi
 
           status="failure"
 
-          if [ "$output" == ""]; then 
+          if [ "$output" == "" ]; then 
             output="Manifest updated, Deploying to ${{ inputs.dev_url }} (may take up to 5 minutes)"
             status="success"
             url="${{ inputs.dev_url }}"
