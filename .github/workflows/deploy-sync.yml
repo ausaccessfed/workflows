@@ -15,7 +15,7 @@ on:
         default: "master"
         type: string
       version_command:
-        required: true
+        default: "cat .ruby-version"
         type: string
       production_build_task_1_name:
         default: "N/A"
