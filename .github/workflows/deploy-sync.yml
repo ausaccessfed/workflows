@@ -229,7 +229,7 @@ jobs:
         run: |
           output=
           status="failure"
-          url=""
+          url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           if [ "${{ needs.run.result }}" != "success"]; then 
             output="${output}push images failed!"
           fi
