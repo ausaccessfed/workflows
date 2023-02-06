@@ -71,7 +71,7 @@ jobs:
   run:
     runs-on: ubuntu-latest
     name: run
-    if: inputs.event_name != 'issue_comment' || (contains(inputs.event_comment_body, '/deploy')  && contains('phyzical,ArthurZheng,ritchiey,matthew-puku,rianniello,Kfoster14,waldofouche,Bo', inputs.event_author))
+    # if: inputs.event_name != 'issue_comment' || (contains(inputs.event_comment_body, '/deploy')  && contains('phyzical,ArthurZheng,ritchiey,matthew-puku,rianniello,Kfoster14,waldofouche,Bo', inputs.event_author))
     services:
       mysql:
         image: mysql:5.7
@@ -80,6 +80,12 @@ jobs:
         ports:
           - "3306:3306"
     steps:
+      - run: |
+          echo "${{ inputs.event_name }}"
+          echo "${{ inputs.event_comment_body }}"
+          echo "${{ inputs.event_author }}"
+
+        id: comment-branch
       - uses: xt0rted/pull-request-comment-branch@v1
         if: inputs.event_name == 'issue_comment'
         id: comment-branch
