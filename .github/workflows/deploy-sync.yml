@@ -23,6 +23,12 @@ on:
       version_command:
         default: "cat .ruby-version"
         type: string
+      platforms:
+        default: ""
+        type: string
+      runner:
+        default: "ubuntu-latest"
+        type: string
       production_build_task_1_name:
         default: "N/A"
         type: string
@@ -69,7 +75,7 @@ on:
         required: true
 jobs:
   run:
-    runs-on: ubuntu-latest
+    runs-on: ${{ inputs.runner }}
     name: run
     if: inputs.event_name != 'issue_comment' || (contains(inputs.event_comment_body, '/deploy')  && contains('phyzical,ArthurZheng,ritchiey,matthew-puku,rianniello,Kfoster14,waldofouche,Bo', github.event.author.login))
     services:
