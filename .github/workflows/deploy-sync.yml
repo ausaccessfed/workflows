@@ -151,6 +151,7 @@ jobs:
           echo "IMAGE_ID=$IMAGE_ID" >> $GITHUB_OUTPUT
 
       - name: Build Test OCI Image
+        id: build-test
         run: |
           docker pull ${{ steps.env2.outputs.IMAGE_ID }}:cache || echo "true"
           DOCKER_BUILDKIT=1 docker build --target development \
@@ -236,8 +237,37 @@ jobs:
           output=
           status="failure"
           url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-          if [ "${{ success() }}" != "true" ]; then 
-            output="${output}push images failed!"
+          
+          if [ "${{ steps.build-test.outcome }}" != "true" ]; then 
+            output="${output}Building the Test image has failed!"
+          fi
+
+          if [ "${{ steps.extra-task-1.outcome }}" != "true" ]; then 
+            output="${output}${{ inputs.extra_task_1_name }} failed!"
+          fi
+
+          if [ "${{ steps.extra-task-2.outcome }}" != "true" ]; then 
+            output="${output}${{ inputs.extra_task_2_name }} failed!"
+          fi
+
+          if [ "${{ steps.extra-task-3.outcome }}" != "true" ]; then 
+            output="${output}${{ inputs.extra_task_3_name }} failed!"
+          fi
+
+          if [ "${{ steps.build-test.outcome }}" != "true" ]; then 
+            output="${output}Building the Production image has failed!"
+          fi
+
+          if [ "${{ steps.production-extra-task-1.outcome }}" != "true" ]; then 
+            output="${output}${{ inputs.production_extra_task_1_name }} failed!"
+          fi
+
+          if [ "${{ steps.production-extra-task-2.outcome }}" != "true" ]; then 
+            output="${output}${{ inputs.production_extra_task_2_name }} failed!"
+          fi
+
+          if [ "${{ steps.production-extra-task-3.outcome }}" != "true" ]; then 
+            output="${output}${{ inputs.production_extra_task_3_name }} failed!"
           fi
 
           if [ "$output" == "" ]; then 
