@@ -17,6 +17,9 @@ on:
       default_branch:
         default: "master"
         type: string
+      default_branch_for_caching:
+        default: "master"
+        type: string
       default_develop_branch:
         default: ""
         type: string
