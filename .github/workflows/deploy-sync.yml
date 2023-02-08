@@ -178,6 +178,7 @@ jobs:
             COMMAND="DOCKER_BUILDKIT=1 docker build --build-arg BUILDKIT_INLINE_CACHE=1"
           fi
           COMMAND="$COMMAND --target development --build-arg BASE_IMAGE=${{ steps.env2.outputs.BASE_IMAGE }}  --cache-from ${{ steps.env2.outputs.IMAGE_ID }}:cache -t ${{ steps.env2.outputs.IMAGE_ID }}:cache -t app:cache ."
+          echo "$COMMAND"
           $($COMMAND)
 
       - name: Task ${{ inputs.extra_task_1_name }}
