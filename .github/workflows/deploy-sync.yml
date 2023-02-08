@@ -179,15 +179,21 @@ jobs:
         id: build-test
         run: |
           docker pull ${{ steps.env2.outputs.IMAGE_ID }}:cache || echo "true"
-          COMMAND=""
+          BUILD_TEST_COMMAND=""
+
           if [ "${{ inputs.platforms }}" != "" ]; then
-            COMMAND="docker buildx build --platform=${{ inputs.platforms }} --load "
+            BUILD_TEST_COMMAND="docker buildx build --platform=${{ inputs.platforms }} --target development --build-arg BUILDKIT_INLINE_CACHE=1 --build-arg BASE_IMAGE=${{ steps.env2.outputs.BASE_IMAGE }}  --cache-from ${{ steps.env2.outputs.IMAGE_ID }}:cache -t app:cache ."
           else
-            COMMAND="DOCKER_BUILDKIT=1 docker build"
+            BUILD_TEST_COMMAND="DOCKER_BUILDKIT=1 docker build --target development --build-arg BUILDKIT_INLINE_CACHE=1 --build-arg BASE_IMAGE=${{ steps.env2.outputs.BASE_IMAGE }}  --cache-from ${{ steps.env2.outputs.IMAGE_ID }}:cache -t ${{ steps.env2.outputs.IMAGE_ID }}:cache -t app:cache ."
           fi
-          COMMAND="$COMMAND --target development --build-arg BUILDKIT_INLINE_CACHE=1 --build-arg BASE_IMAGE=${{ steps.env2.outputs.BASE_IMAGE }}  --cache-from ${{ steps.env2.outputs.IMAGE_ID }}:cache -t ${{ steps.env2.outputs.IMAGE_ID }}:cache -t app:cache ."
-          echo "$COMMAND"
-          $($COMMAND)
+
+          BUILDX_PUSH_TEST_COMMAND="docker buildx build --platform=${{ inputs.platforms }} --target development --build-arg BUILDKIT_INLINE_CACHE=1 --build-arg BASE_IMAGE=${{ steps.env2.outputs.BASE_IMAGE }}  --cache-from ${{ steps.env2.outputs.IMAGE_ID }}:cache -t ${{ steps.env2.outputs.IMAGE_ID }}:cache ."
+          echo "BUILDX_PUSH_TEST_COMMAND=$BUILDX_PUSH_TEST_COMMAND" >> $GITHUB_OUTPUT
+
+          $($BUILD_TEST_COMMAND)
+          if [ "${{ inputs.platforms }}" != "" ]; then
+            docker buildx build --load --target development --build-arg BUILDKIT_INLINE_CACHE=1 --build-arg BASE_IMAGE=${{ steps.env2.outputs.BASE_IMAGE }}  --cache-from ${{ steps.env2.outputs.IMAGE_ID }}:cache -t app:cache .
+          fi
 
       - name: Task ${{ inputs.extra_task_1_name }}
         if: inputs.extra_task_1 != ''
@@ -210,14 +216,17 @@ jobs:
       - name: Build Production OCI Image
         id: build-production
         run: |
-          COMMAND=""
+          BUILD_PRODUCTION_COMMAND=""
           if [ "${{ inputs.platforms }}" != "" ]; then
-            COMMAND="docker buildx build --platform=${{ inputs.platforms }} --load "
+            BUILD_PRODUCTION_COMMAND="docker buildx build --platform=${{ inputs.platforms }} --target production --build-arg BUILDKIT_INLINE_CACHE=1 --build-arg RELEASE_VERSION=${{ steps.env1.outputs.IMAGE_TAG }} --build-arg BASE_IMAGE=${{ steps.env2.outputs.BASE_IMAGE }}  --cache-from ${{ steps.env2.outputs.IMAGE_ID }}:cache -t ${{ steps.env2.outputs.IMAGE_ID }}:${{ steps.env1.outputs.IMAGE_TAG }} ."
           else
-            COMMAND="DOCKER_BUILDKIT=1 docker build"
+            BUILD_PRODUCTION_COMMAND="DOCKER_BUILDKIT=1 docker build --target production --build-arg BUILDKIT_INLINE_CACHE=1 --build-arg RELEASE_VERSION=${{ steps.env1.outputs.IMAGE_TAG }} --build-arg BASE_IMAGE=${{ steps.env2.outputs.BASE_IMAGE }}  --cache-from ${{ steps.env2.outputs.IMAGE_ID }}:cache -t ${{ steps.env2.outputs.IMAGE_ID }}:${{ steps.env1.outputs.IMAGE_TAG }} ."
           fi
-          COMMAND="$COMMAND --target production --build-arg BUILDKIT_INLINE_CACHE=1 --build-arg RELEASE_VERSION=${{ steps.env1.outputs.IMAGE_TAG }} --build-arg BASE_IMAGE=${{ steps.env2.outputs.BASE_IMAGE }}  --cache-from ${{ steps.env2.outputs.IMAGE_ID }}:cache -t ${{ steps.env2.outputs.IMAGE_ID }}:${{ steps.env1.outputs.IMAGE_TAG }} ."
-          $($COMMAND)
+
+          BUILDX_PUSH_PRODUCTION_COMMAND="docker buildx build --push --platform=${{ inputs.platforms }} --target production --build-arg BUILDKIT_INLINE_CACHE=1 --build-arg RELEASE_VERSION=${{ steps.env1.outputs.IMAGE_TAG }} --build-arg BASE_IMAGE=${{ steps.env2.outputs.BASE_IMAGE }}  --cache-from ${{ steps.env2.outputs.IMAGE_ID }}:cache -t ${{ steps.env2.outputs.IMAGE_ID }}:${{ steps.env1.outputs.IMAGE_TAG }} ."
+          echo "BUILDX_PUSH_PRODUCTION_COMMAND=$BUILDX_PUSH_PRODUCTION_COMMAND" >> $GITHUB_OUTPUT
+
+          $($BUILD_PRODUCTION_COMMAND)
 
       - name: Task ${{ inputs.production_build_task_1_name }}
         if: inputs.production_build_task_1 != ''
@@ -240,12 +249,20 @@ jobs:
       - name: Push to ECR
         if: (inputs.event_name == 'push' && steps.env1.outputs.BRANCH_NAME == inputs.default_branch) ||  inputs.event_name == 'issue_comment' || (steps.env1.outputs.BRANCH_NAME == inputs.default_develop_branch &&  inputs.event_name == 'push')
         run: |
-          docker push ${{ steps.env2.outputs.IMAGE_ID }}:${{ steps.env1.outputs.IMAGE_TAG }}
+          if [ "${{ inputs.platforms }}" != "" ]; then
+            $(${{ steps.build-test.outputs.BUILDX_PUSH_PRODUCTION_COMMAND }})
+          else 
+            docker push ${{ steps.env2.outputs.IMAGE_ID }}:cache
+          fi
 
       - name: Push cache to ECR
         if: (inputs.event_name == 'push' && steps.env1.outputs.BRANCH_NAME == steps.env2.outputs.DEFAULT_BRANCH_FOR_CACHING)
         run: |
-          docker push ${{ steps.env2.outputs.IMAGE_ID }}:cache
+          if [ "${{ inputs.platforms }}" != "" ]; then
+            $(${{ steps.build-test.outputs.BUILDX_PUSH_TEST_COMMAND }})
+          else
+            docker push ${{ steps.env2.outputs.IMAGE_ID }}:cache
+          fi
 
       - name: Update GitOps Repo to trigger deploys
         if: steps.env1.outputs.BRANCH_NAME == inputs.default_branch &&  inputs.event_name == 'push'
