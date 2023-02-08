@@ -166,7 +166,7 @@ jobs:
             DEFAULT_BRANCH_FOR_CACHING="${{ inputs.default_branch }}"
           fi
           echo "DEFAULT_BRANCH_FOR_CACHING=$DEFAULT_BRANCH_FOR_CACHING" >> $GITHUB_OUTPUT
-      
+
       - name: Set up QEMU
         if: inputs.platforms != ''
         uses: docker/setup-qemu-action@v1
@@ -183,9 +183,9 @@ jobs:
           if [ "${{ inputs.platforms }}" != "" ]; then
             COMMAND="docker buildx build --platform=${{ inputs.platforms }} --load "
           else
-            COMMAND="DOCKER_BUILDKIT=1 docker build --build-arg BUILDKIT_INLINE_CACHE=1"
+            COMMAND="DOCKER_BUILDKIT=1 docker build"
           fi
-          COMMAND="$COMMAND --target development --build-arg BASE_IMAGE=${{ steps.env2.outputs.BASE_IMAGE }}  --cache-from ${{ steps.env2.outputs.IMAGE_ID }}:cache -t ${{ steps.env2.outputs.IMAGE_ID }}:cache -t app:cache ."
+          COMMAND="$COMMAND --target development --build-arg BUILDKIT_INLINE_CACHE=1 --build-arg BASE_IMAGE=${{ steps.env2.outputs.BASE_IMAGE }}  --cache-from ${{ steps.env2.outputs.IMAGE_ID }}:cache -t ${{ steps.env2.outputs.IMAGE_ID }}:cache -t app:cache ."
           echo "$COMMAND"
           $($COMMAND)
 
@@ -214,9 +214,9 @@ jobs:
           if [ "${{ inputs.platforms }}" != "" ]; then
             COMMAND="docker buildx build --platform=${{ inputs.platforms }} --load "
           else
-            COMMAND="DOCKER_BUILDKIT=1 docker build --build-arg BUILDKIT_INLINE_CACHE=1"
+            COMMAND="DOCKER_BUILDKIT=1 docker build"
           fi
-          COMMAND="$COMMAND --target production --build-arg RELEASE_VERSION=${{ steps.env1.outputs.IMAGE_TAG }} --build-arg BASE_IMAGE=${{ steps.env2.outputs.BASE_IMAGE }}  --cache-from ${{ steps.env2.outputs.IMAGE_ID }}:cache -t ${{ steps.env2.outputs.IMAGE_ID }}:${{ steps.env1.outputs.IMAGE_TAG }} ."
+          COMMAND="$COMMAND --target production --build-arg BUILDKIT_INLINE_CACHE=1 --build-arg RELEASE_VERSION=${{ steps.env1.outputs.IMAGE_TAG }} --build-arg BASE_IMAGE=${{ steps.env2.outputs.BASE_IMAGE }}  --cache-from ${{ steps.env2.outputs.IMAGE_ID }}:cache -t ${{ steps.env2.outputs.IMAGE_ID }}:${{ steps.env1.outputs.IMAGE_TAG }} ."
           $($COMMAND)
 
       - name: Task ${{ inputs.production_build_task_1_name }}
