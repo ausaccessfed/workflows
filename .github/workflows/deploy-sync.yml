@@ -178,7 +178,7 @@ jobs:
             COMMAND="DOCKER_BUILDKIT=1 docker build --build-arg BUILDKIT_INLINE_CACHE=1"
           fi
           COMMAND="$COMMAND --target development --build-arg BASE_IMAGE=${{ steps.env2.outputs.BASE_IMAGE }}  --cache-from ${{ steps.env2.outputs.IMAGE_ID }}:cache -t ${{ steps.env2.outputs.IMAGE_ID }}:cache -t app:cache ."
-          $(COMMAND)
+          $($COMMAND)
 
       - name: Task ${{ inputs.extra_task_1_name }}
         if: inputs.extra_task_1 != ''
@@ -208,7 +208,7 @@ jobs:
             COMMAND="DOCKER_BUILDKIT=1 docker build --build-arg BUILDKIT_INLINE_CACHE=1"
           fi
           COMMAND="$COMMAND --target production --build-arg RELEASE_VERSION=${{ steps.env1.outputs.IMAGE_TAG }} --build-arg BASE_IMAGE=${{ steps.env2.outputs.BASE_IMAGE }}  --cache-from ${{ steps.env2.outputs.IMAGE_ID }}:cache -t ${{ steps.env2.outputs.IMAGE_ID }}:${{ steps.env1.outputs.IMAGE_TAG }} ."
-          $(COMMAND)
+          $($COMMAND)
 
       - name: Task ${{ inputs.production_build_task_1_name }}
         if: inputs.production_build_task_1 != ''
