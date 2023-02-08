@@ -173,7 +173,7 @@ jobs:
           docker pull ${{ steps.env2.outputs.IMAGE_ID }}:cache || echo "true"
           COMMAND=""
           if [ "${{ inputs.platforms }}" != "" ]; then
-            COMMAND="docker buildx --platform=\"${{ inputs.platforms }}\" --load "
+            COMMAND="docker buildx build --platform=\"${{ inputs.platforms }}\" --load "
           else
             COMMAND="DOCKER_BUILDKIT=1 docker build --build-arg BUILDKIT_INLINE_CACHE=1"
           fi
@@ -203,7 +203,7 @@ jobs:
         run: |
           COMMAND=""
           if [ "${{ inputs.platforms }}" != "" ]; then
-            COMMAND="docker buildx --platforms=\"${{ inputs.platforms }}\" --load "
+            COMMAND="docker buildx build --platform=\"${{ inputs.platforms }}\" --load "
           else
             COMMAND="DOCKER_BUILDKIT=1 docker build --build-arg BUILDKIT_INLINE_CACHE=1"
           fi
