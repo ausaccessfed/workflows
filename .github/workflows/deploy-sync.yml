@@ -166,6 +166,14 @@ jobs:
             DEFAULT_BRANCH_FOR_CACHING="${{ inputs.default_branch }}"
           fi
           echo "DEFAULT_BRANCH_FOR_CACHING=$DEFAULT_BRANCH_FOR_CACHING" >> $GITHUB_OUTPUT
+      
+      - name: Set up QEMU
+        if: inputs.platforms != ''
+        uses: docker/setup-qemu-action@v1
+
+      - name: Set up Docker Buildx
+        if: inputs.platforms != ''
+        uses: docker/setup-buildx-action@v1
 
       - name: Build Test OCI Image
         id: build-test
