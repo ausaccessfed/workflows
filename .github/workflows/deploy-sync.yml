@@ -6,7 +6,7 @@ on:
         required: true
         type: string
       dev_url:
-        required: true
+        default: ""
         type: string
       event_name:
         required: true
@@ -18,13 +18,16 @@ on:
         default: "master"
         type: string
       default_branch_for_caching:
-        default: "master"
+        default: ""
         type: string
       default_develop_branch:
         default: ""
         type: string
       version_command:
         default: "cat .ruby-version"
+        type: string
+      projects:
+        default: ""
         type: string
       platforms:
         default: ""
@@ -145,6 +148,7 @@ jobs:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         run: |
           DOCKER_ECR=${{ secrets.DOCKER_ECR }}
+          echo "DOCKER_ECR=$DOCKER_ECR" >> $GITHUB_ENV
           VERSION=$(${{ inputs.version_command }})
           BASE_IMAGE="${DOCKER_ECR}ruby-base:${VERSION}"
           echo "BASE_IMAGE=$BASE_IMAGE" >> $GITHUB_OUTPUT
@@ -152,52 +156,75 @@ jobs:
           IMAGE_ID=$(echo "$ECR_REGISTRY/${{ inputs.ecr_repository }}" | tr '[A-Z]' '[a-z]')
           echo "ECR_REGISTRY=$ECR_REGISTRY" >> $GITHUB_OUTPUT
           echo "IMAGE_ID=$IMAGE_ID" >> $GITHUB_OUTPUT
+          PROJECTS="${{ inputs.ecr_repository }}"
+          if [ "${{ inputs.projects }}" != "" ]; then
+            PROJECTS="${{ inputs.projects }}"
+          fi
+          echo "PROJECTS=$PROJECTS" >> $GITHUB_OUTPUT
+          DEFAULT_BRANCH_FOR_CACHING="${{ inputs.default_branch_for_caching }}"
+          if [ "$DEFAULT_BRANCH_FOR_CACHING" == "" ]; then
+            DEFAULT_BRANCH_FOR_CACHING="${{ inputs.default_branch }}"
+          fi
+          echo "DEFAULT_BRANCH_FOR_CACHING=$DEFAULT_BRANCH_FOR_CACHING" >> $GITHUB_OUTPUT
 
       - name: Build Test OCI Image
         id: build-test
         run: |
           docker pull ${{ steps.env2.outputs.IMAGE_ID }}:cache || echo "true"
-          DOCKER_BUILDKIT=1 docker build --target development \
-          --build-arg BASE_IMAGE=${{ steps.env2.outputs.BASE_IMAGE }} \
-          --build-arg BUILDKIT_INLINE_CACHE=1 \
-          --cache-from ${{ steps.env2.outputs.IMAGE_ID }}:cache \
-          -t ${{ steps.env2.outputs.IMAGE_ID }}:cache \
-          -t app:cache .
+          COMMAND=""
+          if [ "${{ inputs.platforms }}" != "" ]; then
+            COMMAND="docker buildx --platforms=\"${{ inputs.platforms }}\" --load "
+          else
+            COMMAND="DOCKER_BUILDKIT=1 docker build --build-arg BUILDKIT_INLINE_CACHE=1"
+          fi
+          COMMAND="$COMMAND --target development --build-arg BASE_IMAGE=${{ steps.env2.outputs.BASE_IMAGE }}  --cache-from ${{ steps.env2.outputs.IMAGE_ID }}:cache -t ${{ steps.env2.outputs.IMAGE_ID }}:cache -t app:cache ."
+          $(COMMAND)
 
       - name: Task ${{ inputs.extra_task_1_name }}
         if: inputs.extra_task_1 != ''
+        id: extra-task-1
         run: |
           ${{ inputs.extra_task_1 }}
 
       - name: Task ${{ inputs.extra_task_2_name }}
         if: inputs.extra_task_2 != ''
+        id: extra-task-2
         run: |
           ${{ inputs.extra_task_2 }}
 
       - name: Task ${{ inputs.extra_task_3_name }}
         if: inputs.extra_task_3 != ''
+        id: extra-task-3
         run: |
           ${{ inputs.extra_task_3 }}
 
       - name: Build Production OCI Image
+        id: build-production
         run: |
-          DOCKER_BUILDKIT=1 docker build --cache-from ${{ steps.env2.outputs.IMAGE_ID }}:cache \
-          --build-arg BASE_IMAGE=${{ steps.env2.outputs.BASE_IMAGE }} \
-          --build-arg RELEASE_VERSION=${{ steps.env1.outputs.IMAGE_TAG }} \
-          -t ${{ steps.env2.outputs.IMAGE_ID }}:${{ steps.env1.outputs.IMAGE_TAG }} .
+          COMMAND=""
+          if [ "${{ inputs.platforms }}" != "" ]; then
+            COMMAND="docker buildx --platforms=\"${{ inputs.platforms }}\" --load "
+          else
+            COMMAND="DOCKER_BUILDKIT=1 docker build --build-arg BUILDKIT_INLINE_CACHE=1"
+          fi
+          COMMAND="$COMMAND --target production --build-arg RELEASE_VERSION=${{ steps.env1.outputs.IMAGE_TAG }} --build-arg BASE_IMAGE=${{ steps.env2.outputs.BASE_IMAGE }}  --cache-from ${{ steps.env2.outputs.IMAGE_ID }}:cache -t ${{ steps.env2.outputs.IMAGE_ID }}:${{ steps.env1.outputs.IMAGE_TAG }} ."
+          $(COMMAND)
 
       - name: Task ${{ inputs.production_build_task_1_name }}
         if: inputs.production_build_task_1 != ''
+        id: production-extra-task-1
         run: |
           ${{ inputs.production_build_task_1 }}
 
       - name: Task ${{ inputs.production_build_task_2_name }}
         if: inputs.production_build_task_2 != ''
+        id: production-extra-task-2
         run: |
           ${{ inputs.production_build_task_2 }}
 
       - name: Task ${{ inputs.production_build_task_3_name }}
         if: inputs.production_build_task_3 != ''
+        id: production-extra-task-3
         run: |
           ${{ inputs.production_build_task_3 }}
 
@@ -207,7 +234,7 @@ jobs:
           docker push ${{ steps.env2.outputs.IMAGE_ID }}:${{ steps.env1.outputs.IMAGE_TAG }}
 
       - name: Push cache to ECR
-        if: (inputs.event_name == 'push' && steps.env1.outputs.BRANCH_NAME == inputs.default_branch)
+        if: (inputs.event_name == 'push' && steps.env1.outputs.BRANCH_NAME == steps.env2.outputs.DEFAULT_BRANCH_FOR_CACHING)
         run: |
           docker push ${{ steps.env2.outputs.IMAGE_ID }}:cache
 
@@ -216,7 +243,7 @@ jobs:
         run: |
           printenv > .envs
            docker run --env-file .envs \
-           -e PROJECTS="${{ inputs.ecr_repository }}" \
+           -e PROJECTS="${{ steps.env2.outputs.PROJECTS }}" \
            -e IMAGE_TAG=${{ steps.env1.outputs.IMAGE_TAG }} \
            -e ENVIRONMENTS="${{ inputs.production_environments }}" \
            -e ECR_REPOSITORY="${{ inputs.ecr_repository }}" \
@@ -227,7 +254,7 @@ jobs:
         run: |
           printenv > .envs
            docker run --env-file .envs \
-           -e PROJECTS="${{ inputs.ecr_repository }}" \
+           -e PROJECTS="${{ steps.env2.outputs.PROJECTS }}" \
            -e IMAGE_TAG=${{ steps.env1.outputs.IMAGE_TAG }} \
            -e ENVIRONMENTS="development" \
            -e ECR_REPOSITORY="${{ inputs.ecr_repository }}" \
@@ -240,7 +267,7 @@ jobs:
           output=
           status="failure"
           url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-          
+
           if [ "${{ steps.build-test.outcome }}" != "true" ]; then 
             output="${output}Building the Test image has failed!"
           fi
