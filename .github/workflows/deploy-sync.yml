@@ -170,6 +170,7 @@ jobs:
           echo "DEFAULT_BRANCH_FOR_CACHING=$DEFAULT_BRANCH_FOR_CACHING" >> $GITHUB_OUTPUT
           USE_BUILDX="false"
           if [ "${{ inputs.platforms }}" != "" ]; then
+            echo "hello?"
             USE_BUILDX="true"
           fi
           echo "USE_BUILDX=$USE_BUILDX" >> $GITHUB_OUTPUT
