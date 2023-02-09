@@ -278,7 +278,7 @@ jobs:
           if [ "${{ steps.env2.outputs.USE_BUILDX }}" == "true" ]; then
             $(${{ steps.build-test.outputs.BUILDX_PUSH_PRODUCTION_COMMAND }})
           else 
-            docker push ${{ steps.env2.outputs.IMAGE_ID }}:cache
+            docker push ${{ steps.env2.outputs.IMAGE_ID }}:${{ steps.env1.outputs.IMAGE_TAG }}
           fi
 
       - name: Push cache to ECR
