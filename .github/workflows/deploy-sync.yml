@@ -172,7 +172,7 @@ jobs:
           if [ "${{ inputs.platforms }}" != "" ]; then
             USE_BUILDX="true"
           fi
-          echo "USE_BUILDX=$(${{ inputs.platforms }}" >> $GITHUB_OUTPUT
+          echo "USE_BUILDX="$USE_BUILDX" >> $GITHUB_OUTPUT
 
       - name: Set up QEMU
         if: ${{ steps.env2.outputs.USE_BUILDX }} == 'true'
