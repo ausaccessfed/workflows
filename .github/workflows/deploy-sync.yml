@@ -172,22 +172,19 @@ jobs:
           if [ "${{ inputs.platforms }}" != "" ]; then
             USE_BUILDX="true"
           fi
-          echo "$USE_BUILDX"
-
           echo "USE_BUILDX=$USE_BUILDX" >> $GITHUB_OUTPUT
 
       - name: Set up QEMU
-        if: ${{ steps.env2.outputs.USE_BUILDX }} == 'true'
+        if: steps.env2.outputs.USE_BUILDX == 'true'
         uses: docker/setup-qemu-action@v1
 
       - name: Set up Docker Buildx
-        if: ${{ steps.env2.outputs.USE_BUILDX }} == 'true'
+        if: steps.env2.outputs.USE_BUILDX == 'true'
         uses: docker/setup-buildx-action@v1
 
       - name: Build Test OCI Image
         id: build-test
         run: |
-          echo "$USE_BUILDX"
           BUILD_TEST_COMMAND=""
           COMMON="--target development --build-arg BUILDKIT_INLINE_CACHE=1 --build-arg BASE_IMAGE=${{ steps.env2.outputs.BASE_IMAGE }}  --cache-from ${{ steps.env2.outputs.IMAGE_ID }}:cache "
 
@@ -209,7 +206,7 @@ jobs:
           DOCKER_BUILDKIT=1 $BUILD_TEST_COMMAND
 
       - name: Load Test OCI Image
-        if: ${{ steps.env2.outputs.USE_BUILDX }} == 'true'
+        if: steps.env2.outputs.USE_BUILDX == 'true'
         id: load-test
         run: $(${{ steps.build-test.outputs.BUILDX_LOAD_TEST_COMMAND }})
 
