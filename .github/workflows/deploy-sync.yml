@@ -180,20 +180,28 @@ jobs:
         run: |
           docker pull ${{ steps.env2.outputs.IMAGE_ID }}:cache || echo "true"
           BUILD_TEST_COMMAND=""
+          COMMON="--target development --build-arg BUILDKIT_INLINE_CACHE=1 --build-arg BASE_IMAGE=${{ steps.env2.outputs.BASE_IMAGE }}  --cache-from ${{ steps.env2.outputs.IMAGE_ID }}:cache "
 
           if [ "${{ inputs.platforms }}" != "" ]; then
-            BUILD_TEST_COMMAND="docker buildx build --platform=${{ inputs.platforms }} --target development --build-arg BUILDKIT_INLINE_CACHE=1 --build-arg BASE_IMAGE=${{ steps.env2.outputs.BASE_IMAGE }}  --cache-from ${{ steps.env2.outputs.IMAGE_ID }}:cache -t app:cache ."
+            BUILD_TEST_COMMAND="docker buildx build --platform=${{ inputs.platforms }} $COMMON -t app:cache ."
           else
-            BUILD_TEST_COMMAND="DOCKER_BUILDKIT=1 docker build --target development --build-arg BUILDKIT_INLINE_CACHE=1 --build-arg BASE_IMAGE=${{ steps.env2.outputs.BASE_IMAGE }}  --cache-from ${{ steps.env2.outputs.IMAGE_ID }}:cache -t ${{ steps.env2.outputs.IMAGE_ID }}:cache -t app:cache ."
+            BUILD_TEST_COMMAND="DOCKER_BUILDKIT=1 docker build $COMMON -t ${{ steps.env2.outputs.IMAGE_ID }}:cache -t app:cache ."
           fi
 
-          BUILDX_PUSH_TEST_COMMAND="docker buildx build --platform=${{ inputs.platforms }} --target development --build-arg BUILDKIT_INLINE_CACHE=1 --build-arg BASE_IMAGE=${{ steps.env2.outputs.BASE_IMAGE }}  --cache-from ${{ steps.env2.outputs.IMAGE_ID }}:cache -t ${{ steps.env2.outputs.IMAGE_ID }}:cache ."
+          BUILDX_PUSH_TEST_COMMAND="docker buildx build --push --platform=${{ inputs.platforms }} $COMMON -t ${{ steps.env2.outputs.IMAGE_ID }}:cache ."
           echo "BUILDX_PUSH_TEST_COMMAND=$BUILDX_PUSH_TEST_COMMAND" >> $GITHUB_OUTPUT
 
+          ## Note this is only needed as buildx doesnt support --load with multiple platforms yet but is on roadmap
+          ## if it is ever supported simply remove this and the "Load test oci image step" and add --load to the first BUILD_TEST_COMMAND
+          BUILDX_LOAD_TEST_COMMAND="docker buildx build --load $COMMON -t app:cache ."
+          echo "BUILDX_LOAD_TEST_COMMAND=$BUILDX_LOAD_TEST_COMMAND" >> $GITHUB_OUTPUT
+
           $($BUILD_TEST_COMMAND)
-          if [ "${{ inputs.platforms }}" != "" ]; then
-            docker buildx build --load --target development --build-arg BUILDKIT_INLINE_CACHE=1 --build-arg BASE_IMAGE=${{ steps.env2.outputs.BASE_IMAGE }}  --cache-from ${{ steps.env2.outputs.IMAGE_ID }}:cache -t app:cache .
-          fi
+
+      - name: Load Test OCI Image
+        if: inputs.platforms != ''
+        id: load-test
+        run: $(${{ steps.build-test.outputs.BUILDX_LOAD_TEST_COMMAND }})
 
       - name: Task ${{ inputs.extra_task_1_name }}
         if: inputs.extra_task_1 != ''
@@ -217,13 +225,14 @@ jobs:
         id: build-production
         run: |
           BUILD_PRODUCTION_COMMAND=""
+          COMMON="--target production --build-arg BUILDKIT_INLINE_CACHE=1 --build-arg RELEASE_VERSION=${{ steps.env1.outputs.IMAGE_TAG }} --build-arg BASE_IMAGE=${{ steps.env2.outputs.BASE_IMAGE }}  --cache-from ${{ steps.env2.outputs.IMAGE_ID }}:cache -t ${{ steps.env2.outputs.IMAGE_ID }}:${{ steps.env1.outputs.IMAGE_TAG }} ."
           if [ "${{ inputs.platforms }}" != "" ]; then
-            BUILD_PRODUCTION_COMMAND="docker buildx build --platform=${{ inputs.platforms }} --target production --build-arg BUILDKIT_INLINE_CACHE=1 --build-arg RELEASE_VERSION=${{ steps.env1.outputs.IMAGE_TAG }} --build-arg BASE_IMAGE=${{ steps.env2.outputs.BASE_IMAGE }}  --cache-from ${{ steps.env2.outputs.IMAGE_ID }}:cache -t ${{ steps.env2.outputs.IMAGE_ID }}:${{ steps.env1.outputs.IMAGE_TAG }} ."
+            BUILD_PRODUCTION_COMMAND="docker buildx build --platform=${{ inputs.platforms }} $COMMON"
           else
-            BUILD_PRODUCTION_COMMAND="DOCKER_BUILDKIT=1 docker build --target production --build-arg BUILDKIT_INLINE_CACHE=1 --build-arg RELEASE_VERSION=${{ steps.env1.outputs.IMAGE_TAG }} --build-arg BASE_IMAGE=${{ steps.env2.outputs.BASE_IMAGE }}  --cache-from ${{ steps.env2.outputs.IMAGE_ID }}:cache -t ${{ steps.env2.outputs.IMAGE_ID }}:${{ steps.env1.outputs.IMAGE_TAG }} ."
+            BUILD_PRODUCTION_COMMAND="DOCKER_BUILDKIT=1 docker build $COMMON"
           fi
 
-          BUILDX_PUSH_PRODUCTION_COMMAND="docker buildx build --push --platform=${{ inputs.platforms }} --target production --build-arg BUILDKIT_INLINE_CACHE=1 --build-arg RELEASE_VERSION=${{ steps.env1.outputs.IMAGE_TAG }} --build-arg BASE_IMAGE=${{ steps.env2.outputs.BASE_IMAGE }}  --cache-from ${{ steps.env2.outputs.IMAGE_ID }}:cache -t ${{ steps.env2.outputs.IMAGE_ID }}:${{ steps.env1.outputs.IMAGE_TAG }} ."
+          BUILDX_PUSH_PRODUCTION_COMMAND="docker buildx build --push --platform=${{ inputs.platforms }} $COMMON"
           echo "BUILDX_PUSH_PRODUCTION_COMMAND=$BUILDX_PUSH_PRODUCTION_COMMAND" >> $GITHUB_OUTPUT
 
           $($BUILD_PRODUCTION_COMMAND)
