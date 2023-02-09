@@ -170,9 +170,10 @@ jobs:
           echo "DEFAULT_BRANCH_FOR_CACHING=$DEFAULT_BRANCH_FOR_CACHING" >> $GITHUB_OUTPUT
           USE_BUILDX="false"
           if [ "${{ inputs.platforms }}" != "" ]; then
-            echo "hello?"
             USE_BUILDX="true"
           fi
+          echo "$USE_BUILDX"
+
           echo "USE_BUILDX=$USE_BUILDX" >> $GITHUB_OUTPUT
 
       - name: Set up QEMU
@@ -186,6 +187,7 @@ jobs:
       - name: Build Test OCI Image
         id: build-test
         run: |
+          echo "$USE_BUILDX"
           BUILD_TEST_COMMAND=""
           COMMON="--target development --build-arg BUILDKIT_INLINE_CACHE=1 --build-arg BASE_IMAGE=${{ steps.env2.outputs.BASE_IMAGE }}  --cache-from ${{ steps.env2.outputs.IMAGE_ID }}:cache "
 
