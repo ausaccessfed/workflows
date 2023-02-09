@@ -17,18 +17,22 @@ on:
       default_branch:
         default: "master"
         type: string
+      ## if not set defaults to default_branch
       default_branch_for_caching:
         default: ""
         type: string
+      ## if not set defaults to default_branch
       default_develop_branch:
         default: ""
         type: string
       version_command:
         default: "cat .ruby-version"
         type: string
+      ## if not set defaults to ecr_repository
       projects:
         default: ""
         type: string
+      ## if not set will use docker build, if set will use buildx
       platforms:
         default: ""
         type: string
