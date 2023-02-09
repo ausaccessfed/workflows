@@ -251,7 +251,7 @@ jobs:
 
       - name: Load Production OCI Image
         if: steps.env2.outputs.USE_BUILDX == 'true'
-        id: load-test
+        id: load-production
         run: $(${{ steps.build-production.outputs.BUILDX_LOAD_PRODUCTION_COMMAND }})
 
       - name: Task ${{ inputs.production_build_task_1_name }}
