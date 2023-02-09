@@ -192,7 +192,7 @@ jobs:
             BUILD_TEST_COMMAND="docker buildx build --platform=${{ inputs.platforms }} $COMMON -t ${{ steps.env2.outputs.IMAGE_ID }}:cache -t app:cache ."
           else
             docker pull ${{ steps.env2.outputs.IMAGE_ID }}:cache || echo "true"
-            BUILD_TEST_COMMAND="DOCKER_BUILDKIT=1 docker build $COMMON -t ${{ steps.env2.outputs.IMAGE_ID }}:cache -t app:cache ."
+            BUILD_TEST_COMMAND="docker build $COMMON -t ${{ steps.env2.outputs.IMAGE_ID }}:cache -t app:cache ."
           fi
 
           BUILDX_PUSH_TEST_COMMAND="docker buildx build --push --platform=${{ inputs.platforms }} $COMMON -t ${{ steps.env2.outputs.IMAGE_ID }}:cache ."
@@ -203,7 +203,7 @@ jobs:
           BUILDX_LOAD_TEST_COMMAND="docker buildx build --load $COMMON -t app:cache ."
           echo "BUILDX_LOAD_TEST_COMMAND=$BUILDX_LOAD_TEST_COMMAND" >> $GITHUB_OUTPUT
 
-          $BUILD_TEST_COMMAND
+          DOCKER_BUILDKIT=1 $BUILD_TEST_COMMAND
 
       - name: Load Test OCI Image
         if: ${{ steps.env2.outputs.USE_BUILDX }} == 'true'
@@ -236,13 +236,13 @@ jobs:
           if [ "${{ steps.env2.outputs.USE_BUILDX }}" == "true" ]; then
             BUILD_PRODUCTION_COMMAND="docker buildx build --platform=${{ inputs.platforms }} $COMMON"
           else
-            BUILD_PRODUCTION_COMMAND="DOCKER_BUILDKIT=1 docker build $COMMON"
+            BUILD_PRODUCTION_COMMAND="docker build $COMMON"
           fi
 
           BUILDX_PUSH_PRODUCTION_COMMAND="docker buildx build --push --platform=${{ inputs.platforms }} $COMMON"
           echo "BUILDX_PUSH_PRODUCTION_COMMAND=$BUILDX_PUSH_PRODUCTION_COMMAND" >> $GITHUB_OUTPUT
 
-          $BUILD_PRODUCTION_COMMAND
+          DOCKER_BUILDKIT=1 $BUILD_PRODUCTION_COMMAND
 
       - name: Task ${{ inputs.production_build_task_1_name }}
         if: inputs.production_build_task_1 != ''
