@@ -180,13 +180,13 @@ jobs:
       - name: Build Test OCI Image
         id: build-test
         run: |
-          docker pull ${{ steps.env2.outputs.IMAGE_ID }}:cache || echo "true"
           BUILD_TEST_COMMAND=""
           COMMON="--target development --build-arg BUILDKIT_INLINE_CACHE=1 --build-arg BASE_IMAGE=${{ steps.env2.outputs.BASE_IMAGE }}  --cache-from ${{ steps.env2.outputs.IMAGE_ID }}:cache "
 
           if [ "${{ inputs.platforms }}" != "" ]; then
             BUILD_TEST_COMMAND="docker buildx build --platform=${{ inputs.platforms }} $COMMON -t app:cache ."
           else
+            docker pull ${{ steps.env2.outputs.IMAGE_ID }}:cache || echo "true"
             BUILD_TEST_COMMAND="DOCKER_BUILDKIT=1 docker build $COMMON -t ${{ steps.env2.outputs.IMAGE_ID }}:cache -t app:cache ."
           fi
 
