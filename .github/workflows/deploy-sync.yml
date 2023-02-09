@@ -276,7 +276,7 @@ jobs:
         if: (inputs.event_name == 'push' && steps.env1.outputs.BRANCH_NAME == inputs.default_branch) ||  inputs.event_name == 'issue_comment' || (steps.env1.outputs.BRANCH_NAME == inputs.default_develop_branch &&  inputs.event_name == 'push')
         run: |
           if [ "${{ steps.env2.outputs.USE_BUILDX }}" == "true" ]; then
-            $(${{ steps.build-test.outputs.BUILDX_PUSH_PRODUCTION_COMMAND }})
+            $(${{ steps.build-production.outputs.BUILDX_PUSH_PRODUCTION_COMMAND }})
           else 
             docker push ${{ steps.env2.outputs.IMAGE_ID }}:${{ steps.env1.outputs.IMAGE_TAG }}
           fi
