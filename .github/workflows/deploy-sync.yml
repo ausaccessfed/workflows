@@ -242,7 +242,17 @@ jobs:
           BUILDX_PUSH_PRODUCTION_COMMAND="docker buildx build --push --platform=${{ inputs.platforms }} $COMMON"
           echo "BUILDX_PUSH_PRODUCTION_COMMAND=$BUILDX_PUSH_PRODUCTION_COMMAND" >> $GITHUB_OUTPUT
 
+          ## Note this is only needed as buildx doesnt support --load with multiple platforms yet but is on roadmap
+          ## if it is ever supported simply remove this and the "Load test oci image step" and add --load to the first BUILD_TEST_COMMAND
+          BUILDX_LOAD_PRODUCTION_COMMAND="docker buildx build --load $COMMON -t app:production ."
+          echo "BUILDX_LOAD_PRODUCTION_COMMAND=$BUILDX_LOAD_PRODUCTION_COMMAND" >> $GITHUB_OUTPUT
+
           DOCKER_BUILDKIT=1 $BUILD_PRODUCTION_COMMAND
+
+      - name: Load Production OCI Image
+        if: steps.env2.outputs.USE_BUILDX == 'true'
+        id: load-test
+        run: $(${{ steps.build-production.outputs.BUILDX_LOAD_PRODUCTION_COMMAND }})
 
       - name: Task ${{ inputs.production_build_task_1_name }}
         if: inputs.production_build_task_1 != ''
