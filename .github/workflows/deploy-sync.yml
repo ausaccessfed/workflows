@@ -6,7 +6,7 @@ on:
         required: true
         type: string
       dev_url:
-        required: true
+        default: ""
         type: string
       event_name:
         required: true
@@ -17,15 +17,22 @@ on:
       default_branch:
         default: "master"
         type: string
+      ## if not set defaults to default_branch
       default_branch_for_caching:
-        default: "master"
+        default: ""
         type: string
+      ## if not set defaults to default_branch
       default_develop_branch:
         default: ""
         type: string
       version_command:
         default: "cat .ruby-version"
         type: string
+      ## if not set defaults to ecr_repository
+      projects:
+        default: ""
+        type: string
+      ## if not set will use docker build, if set will use buildx
       platforms:
         default: ""
         type: string
@@ -144,79 +151,151 @@ jobs:
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         run: |
-          DOCKER_ECR=${{ secrets.DOCKER_ECR }}
           VERSION=$(${{ inputs.version_command }})
-          BASE_IMAGE="${DOCKER_ECR}ruby-base:${VERSION}"
+          BASE_IMAGE="${{ secrets.DOCKER_ECR }}ruby-base:${VERSION}"
           echo "BASE_IMAGE=$BASE_IMAGE" >> $GITHUB_OUTPUT
           # Strip git ref prefix from version
           IMAGE_ID=$(echo "$ECR_REGISTRY/${{ inputs.ecr_repository }}" | tr '[A-Z]' '[a-z]')
           echo "ECR_REGISTRY=$ECR_REGISTRY" >> $GITHUB_OUTPUT
           echo "IMAGE_ID=$IMAGE_ID" >> $GITHUB_OUTPUT
+          PROJECTS="${{ inputs.ecr_repository }}"
+          if [ "${{ inputs.projects }}" != "" ]; then
+            PROJECTS="${{ inputs.projects }}"
+          fi
+          echo "PROJECTS=$PROJECTS" >> $GITHUB_OUTPUT
+          DEFAULT_BRANCH_FOR_CACHING="${{ inputs.default_branch_for_caching }}"
+          if [ "$DEFAULT_BRANCH_FOR_CACHING" == "" ]; then
+            DEFAULT_BRANCH_FOR_CACHING="${{ inputs.default_branch }}"
+          fi
+          echo "DEFAULT_BRANCH_FOR_CACHING=$DEFAULT_BRANCH_FOR_CACHING" >> $GITHUB_OUTPUT
+          USE_BUILDX="false"
+          if [ "${{ inputs.platforms }}" != "" ]; then
+            USE_BUILDX="true"
+          fi
+          echo "USE_BUILDX=$USE_BUILDX" >> $GITHUB_OUTPUT
+
+      - name: Set up QEMU
+        if: steps.env2.outputs.USE_BUILDX == 'true'
+        uses: docker/setup-qemu-action@v1
+
+      - name: Set up Docker Buildx
+        if: steps.env2.outputs.USE_BUILDX == 'true'
+        uses: docker/setup-buildx-action@v1
 
       - name: Build Test OCI Image
         id: build-test
         run: |
-          docker pull ${{ steps.env2.outputs.IMAGE_ID }}:cache || echo "true"
-          DOCKER_BUILDKIT=1 docker build --target development \
-          --build-arg BASE_IMAGE=${{ steps.env2.outputs.BASE_IMAGE }} \
-          --build-arg BUILDKIT_INLINE_CACHE=1 \
-          --cache-from ${{ steps.env2.outputs.IMAGE_ID }}:cache \
-          -t ${{ steps.env2.outputs.IMAGE_ID }}:cache \
-          -t app:cache .
+          BUILD_TEST_COMMAND=""
+          COMMON="--target development --build-arg BUILDKIT_INLINE_CACHE=1 --build-arg BASE_IMAGE=${{ steps.env2.outputs.BASE_IMAGE }}  --cache-from ${{ steps.env2.outputs.IMAGE_ID }}:cache "
+
+          if [ "${{ steps.env2.outputs.USE_BUILDX }}" == "true" ]; then
+            BUILD_TEST_COMMAND="docker buildx build --platform=${{ inputs.platforms }} $COMMON -t ${{ steps.env2.outputs.IMAGE_ID }}:cache -t app:cache ."
+          else
+            docker pull ${{ steps.env2.outputs.IMAGE_ID }}:cache || echo "true"
+            BUILD_TEST_COMMAND="docker build $COMMON -t ${{ steps.env2.outputs.IMAGE_ID }}:cache -t app:cache ."
+          fi
+
+          BUILDX_PUSH_TEST_COMMAND="docker buildx build --push --platform=${{ inputs.platforms }} $COMMON -t ${{ steps.env2.outputs.IMAGE_ID }}:cache ."
+          echo "BUILDX_PUSH_TEST_COMMAND=$BUILDX_PUSH_TEST_COMMAND" >> $GITHUB_OUTPUT
+
+          ## Note this is only needed as buildx doesnt support --load with multiple platforms yet but is on roadmap
+          ## if it is ever supported simply remove this and the "Load test oci image step" and add --load to the first BUILD_TEST_COMMAND
+          BUILDX_LOAD_TEST_COMMAND="docker buildx build --load $COMMON -t app:cache ."
+          echo "BUILDX_LOAD_TEST_COMMAND=$BUILDX_LOAD_TEST_COMMAND" >> $GITHUB_OUTPUT
+
+          DOCKER_BUILDKIT=1 $BUILD_TEST_COMMAND
+
+      - name: Load Test OCI Image
+        if: steps.env2.outputs.USE_BUILDX == 'true'
+        id: load-test
+        run: $(${{ steps.build-test.outputs.BUILDX_LOAD_TEST_COMMAND }})
 
       - name: Task ${{ inputs.extra_task_1_name }}
         if: inputs.extra_task_1 != ''
+        id: extra-task-1
         run: |
           ${{ inputs.extra_task_1 }}
 
       - name: Task ${{ inputs.extra_task_2_name }}
         if: inputs.extra_task_2 != ''
+        id: extra-task-2
         run: |
           ${{ inputs.extra_task_2 }}
 
       - name: Task ${{ inputs.extra_task_3_name }}
         if: inputs.extra_task_3 != ''
+        id: extra-task-3
         run: |
           ${{ inputs.extra_task_3 }}
 
       - name: Build Production OCI Image
+        id: build-production
         run: |
-          DOCKER_BUILDKIT=1 docker build --cache-from ${{ steps.env2.outputs.IMAGE_ID }}:cache \
-          --build-arg BASE_IMAGE=${{ steps.env2.outputs.BASE_IMAGE }} \
-          --build-arg RELEASE_VERSION=${{ steps.env1.outputs.IMAGE_TAG }} \
-          -t ${{ steps.env2.outputs.IMAGE_ID }}:${{ steps.env1.outputs.IMAGE_TAG }} .
+          BUILD_PRODUCTION_COMMAND=""
+          COMMON="--target production --build-arg BUILDKIT_INLINE_CACHE=1 --build-arg RELEASE_VERSION=${{ steps.env1.outputs.IMAGE_TAG }} --build-arg BASE_IMAGE=${{ steps.env2.outputs.BASE_IMAGE }}  --cache-from ${{ steps.env2.outputs.IMAGE_ID }}:cache -t ${{ steps.env2.outputs.IMAGE_ID }}:${{ steps.env1.outputs.IMAGE_TAG }}"
+          if [ "${{ steps.env2.outputs.USE_BUILDX }}" == "true" ]; then
+            BUILD_PRODUCTION_COMMAND="docker buildx build --platform=${{ inputs.platforms }} $COMMON ."
+          else
+            BUILD_PRODUCTION_COMMAND="docker build $COMMON ."
+          fi
+
+          BUILDX_PUSH_PRODUCTION_COMMAND="docker buildx build --push --platform=${{ inputs.platforms }} $COMMON ."
+          echo "BUILDX_PUSH_PRODUCTION_COMMAND=$BUILDX_PUSH_PRODUCTION_COMMAND" >> $GITHUB_OUTPUT
+
+          ## Note this is only needed as buildx doesnt support --load with multiple platforms yet but is on roadmap
+          ## if it is ever supported simply remove this and the "Load test oci image step" and add --load to the first BUILD_TEST_COMMAND
+          BUILDX_LOAD_PRODUCTION_COMMAND="docker buildx build --load $COMMON -t app:production ."
+          echo "BUILDX_LOAD_PRODUCTION_COMMAND=$BUILDX_LOAD_PRODUCTION_COMMAND" >> $GITHUB_OUTPUT
+
+          DOCKER_BUILDKIT=1 $BUILD_PRODUCTION_COMMAND
+
+      - name: Load Production OCI Image
+        if: steps.env2.outputs.USE_BUILDX == 'true'
+        id: load-production
+        run: $(${{ steps.build-production.outputs.BUILDX_LOAD_PRODUCTION_COMMAND }})
 
       - name: Task ${{ inputs.production_build_task_1_name }}
         if: inputs.production_build_task_1 != ''
+        id: production-extra-task-1
         run: |
           ${{ inputs.production_build_task_1 }}
 
       - name: Task ${{ inputs.production_build_task_2_name }}
         if: inputs.production_build_task_2 != ''
+        id: production-extra-task-2
         run: |
           ${{ inputs.production_build_task_2 }}
 
       - name: Task ${{ inputs.production_build_task_3_name }}
         if: inputs.production_build_task_3 != ''
+        id: production-extra-task-3
         run: |
           ${{ inputs.production_build_task_3 }}
 
       - name: Push to ECR
         if: (inputs.event_name == 'push' && steps.env1.outputs.BRANCH_NAME == inputs.default_branch) ||  inputs.event_name == 'issue_comment' || (steps.env1.outputs.BRANCH_NAME == inputs.default_develop_branch &&  inputs.event_name == 'push')
         run: |
-          docker push ${{ steps.env2.outputs.IMAGE_ID }}:${{ steps.env1.outputs.IMAGE_TAG }}
+          if [ "${{ steps.env2.outputs.USE_BUILDX }}" == "true" ]; then
+            $(${{ steps.build-production.outputs.BUILDX_PUSH_PRODUCTION_COMMAND }})
+          else 
+            docker push ${{ steps.env2.outputs.IMAGE_ID }}:${{ steps.env1.outputs.IMAGE_TAG }}
+          fi
 
       - name: Push cache to ECR
-        if: (inputs.event_name == 'push' && steps.env1.outputs.BRANCH_NAME == inputs.default_branch)
+        if: (inputs.event_name == 'push' && steps.env1.outputs.BRANCH_NAME == steps.env2.outputs.DEFAULT_BRANCH_FOR_CACHING)
         run: |
-          docker push ${{ steps.env2.outputs.IMAGE_ID }}:cache
+          if [ "${{ steps.env2.outputs.USE_BUILDX }}" == "true" ]; then
+            $(${{ steps.build-test.outputs.BUILDX_PUSH_TEST_COMMAND }})
+          else
+            docker push ${{ steps.env2.outputs.IMAGE_ID }}:cache
+          fi
 
       - name: Update GitOps Repo to trigger deploys
         if: steps.env1.outputs.BRANCH_NAME == inputs.default_branch &&  inputs.event_name == 'push'
         run: |
           printenv > .envs
            docker run --env-file .envs \
-           -e PROJECTS="${{ inputs.ecr_repository }}" \
+           -e PROJECTS="${{ steps.env2.outputs.PROJECTS }}" \
            -e IMAGE_TAG=${{ steps.env1.outputs.IMAGE_TAG }} \
            -e ENVIRONMENTS="${{ inputs.production_environments }}" \
            -e ECR_REPOSITORY="${{ inputs.ecr_repository }}" \
@@ -227,7 +306,7 @@ jobs:
         run: |
           printenv > .envs
            docker run --env-file .envs \
-           -e PROJECTS="${{ inputs.ecr_repository }}" \
+           -e PROJECTS="${{ steps.env2.outputs.PROJECTS }}" \
            -e IMAGE_TAG=${{ steps.env1.outputs.IMAGE_TAG }} \
            -e ENVIRONMENTS="development" \
            -e ECR_REPOSITORY="${{ inputs.ecr_repository }}" \
@@ -240,36 +319,36 @@ jobs:
           output=
           status="failure"
           url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-          
-          if [ "${{ steps.build-test.outcome }}" != "true" ]; then 
+
+          if [ "${{ steps.build-test.outcome }}" == "failure" ]; then 
             output="${output}Building the Test image has failed!"
           fi
 
-          if [ "${{ steps.extra-task-1.outcome }}" != "true" ]; then 
+          if [ "${{ steps.extra-task-1.outcome }}" == "failure" ]; then 
             output="${output}${{ inputs.extra_task_1_name }} failed!"
           fi
 
-          if [ "${{ steps.extra-task-2.outcome }}" != "true" ]; then 
+          if [ "${{ steps.extra-task-2.outcome }}" == "failure" ]; then 
             output="${output}${{ inputs.extra_task_2_name }} failed!"
           fi
 
-          if [ "${{ steps.extra-task-3.outcome }}" != "true" ]; then 
+          if [ "${{ steps.extra-task-3.outcome }}" == "failure" ]; then 
             output="${output}${{ inputs.extra_task_3_name }} failed!"
           fi
 
-          if [ "${{ steps.build-test.outcome }}" != "true" ]; then 
+          if [ "${{ steps.build-production.outcome }}" == "failure" ]; then 
             output="${output}Building the Production image has failed!"
           fi
 
-          if [ "${{ steps.production-extra-task-1.outcome }}" != "true" ]; then 
+          if [ "${{ steps.production-extra-task-1.outcome }}" == "failure" ]; then 
             output="${output}${{ inputs.production_extra_task_1_name }} failed!"
           fi
 
-          if [ "${{ steps.production-extra-task-2.outcome }}" != "true" ]; then 
+          if [ "${{ steps.production-extra-task-2.outcome }}" == "failure" ]; then 
             output="${output}${{ inputs.production_extra_task_2_name }} failed!"
           fi
 
-          if [ "${{ steps.production-extra-task-3.outcome }}" != "true" ]; then 
+          if [ "${{ steps.production-extra-task-3.outcome }}" == "failure" ]; then 
             output="${output}${{ inputs.production_extra_task_3_name }} failed!"
           fi
 
