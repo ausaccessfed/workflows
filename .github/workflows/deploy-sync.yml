@@ -216,25 +216,7 @@ jobs:
         id: load-test
         run: $(${{ steps.build-test.outputs.BUILDX_LOAD_TEST_COMMAND }})
 
-      - name: Task ${{ inputs.extra_task_1_name }}
-        if: inputs.extra_task_1 != ''
-        id: extra-task-1
-        run: |
-          ${{ inputs.extra_task_1 }}
-
-      - name: Task ${{ inputs.extra_task_2_name }}
-        if: inputs.extra_task_2 != ''
-        id: extra-task-2
-        run: |
-          ${{ inputs.extra_task_2 }}
-
-      - name: Task ${{ inputs.extra_task_3_name }}
-        if: inputs.extra_task_3 != ''
-        id: extra-task-3
-        run: |
-          ${{ inputs.extra_task_3 }}
-
-      - name: Build Production OCI Image
+      - name: Build Production OCI Image and  Run additional tasks
         id: build-production
         run: |
           BUILD_PRODUCTION_COMMAND=""
@@ -253,30 +235,13 @@ jobs:
           BUILDX_LOAD_PRODUCTION_COMMAND="docker buildx build --load $COMMON -t app:production ."
           echo "BUILDX_LOAD_PRODUCTION_COMMAND=$BUILDX_LOAD_PRODUCTION_COMMAND" >> $GITHUB_OUTPUT
 
-          DOCKER_BUILDKIT=1 $BUILD_PRODUCTION_COMMAND
+          DOCKER_BUILDKIT=1 $BUILD_PRODUCTION_COMMAND &
+          ${{ inputs.extra_task_1 }} &
 
       - name: Load Production OCI Image
         if: steps.env2.outputs.USE_BUILDX == 'true'
         id: load-production
         run: $(${{ steps.build-production.outputs.BUILDX_LOAD_PRODUCTION_COMMAND }})
-
-      - name: Task ${{ inputs.production_build_task_1_name }}
-        if: inputs.production_build_task_1 != ''
-        id: production-extra-task-1
-        run: |
-          ${{ inputs.production_build_task_1 }}
-
-      - name: Task ${{ inputs.production_build_task_2_name }}
-        if: inputs.production_build_task_2 != ''
-        id: production-extra-task-2
-        run: |
-          ${{ inputs.production_build_task_2 }}
-
-      - name: Task ${{ inputs.production_build_task_3_name }}
-        if: inputs.production_build_task_3 != ''
-        id: production-extra-task-3
-        run: |
-          ${{ inputs.production_build_task_3 }}
 
       - name: Push to ECR
         if: (inputs.event_name == 'push' && steps.env1.outputs.BRANCH_NAME == inputs.default_branch) ||  inputs.event_name == 'issue_comment' || (steps.env1.outputs.BRANCH_NAME == inputs.default_develop_branch &&  inputs.event_name == 'push')
