@@ -235,8 +235,8 @@ jobs:
           BUILDX_LOAD_PRODUCTION_COMMAND="docker buildx build --load $COMMON -t app:production ."
           echo "BUILDX_LOAD_PRODUCTION_COMMAND=$BUILDX_LOAD_PRODUCTION_COMMAND" >> $GITHUB_OUTPUT
 
-          DOCKER_BUILDKIT=1 $BUILD_PRODUCTION_COMMAND &
-          ${{ inputs.extra_task_1 }} &
+          export BUILD_PRODUCTION_COMMAND="$BUILD_PRODUCTION_COMMAND"
+          ${{ inputs.extra_task_1 }}
 
       - name: Load Production OCI Image
         if: steps.env2.outputs.USE_BUILDX == 'true'
