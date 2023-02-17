@@ -137,16 +137,16 @@ jobs:
           image_tag=$(echo "$image_tag" | tr / _)
           echo "IMAGE_TAG=$image_tag" >> $GITHUB_OUTPUT
 
+      - uses: actions/checkout@v2
+        with:
+          ref: ${{ steps.env1.outputs.BRANCH_NAME }}
+
       - name: Checkout reusable workflow dir
         uses: actions/checkout@v3
         with:
           repository: ausaccessfed/workflows
           token: ${{ secrets.GITHUB_TOKEN }}
-          path: workflows
-
-      - uses: actions/checkout@v2
-        with:
-          ref: ${{ steps.env1.outputs.BRANCH_NAME }}
+          path: .github/reusable_workflow
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@master
@@ -252,7 +252,7 @@ jobs:
           export EXTRA_TASK_4="${{ inputs.extra_task_4 }}"
           export EXTRA_TASK_5="${{ inputs.extra_task_5 }}"
           export EXTRA_TASK_6="${{ inputs.extra_task_6 }}"
-          ./workflows/additional_tasks.sh
+          ./.github/reusable_workflow/additional_tasks.sh
 
       - name: Push to ECR
         if: (inputs.event_name == 'push' && steps.env1.outputs.BRANCH_NAME == inputs.default_branch) ||  inputs.event_name == 'issue_comment' || (steps.env1.outputs.BRANCH_NAME == inputs.default_develop_branch &&  inputs.event_name == 'push')
