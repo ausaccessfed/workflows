@@ -259,6 +259,8 @@ jobs:
           export EXTRA_TASK_6="${{ inputs.extra_task_6 }}"
           export DOCKER_TASK_COMMAND="${{ inputs.docker_task_command }}"
           ./.github/reusable_workflow/additional_tasks.sh
+          ls .
+          ls ./.github/reusable_workflow/
 
       - name: ${{ inputs.extra_task_1_name }} Result
         if: inputs.extra_task_1 != ''

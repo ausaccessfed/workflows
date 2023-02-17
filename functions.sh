@@ -21,8 +21,8 @@ async() {
 
     {
     command_parts=($(echo $command | tr " " "@" | tr " ~ " " "))
-    _result=$($( echo ${command_parts[0]} | tr '@' ' ') "$( echo ${command_parts[1]} | tr '@' ' ')")
-	status=$?
+    __result=$($( echo ${command_parts[0]} | tr '@' ' ') "$( echo ${command_parts[1]} | tr '@' ' ')")
+    status=$?
 
 	(( status == 0 )) && {
 	    $resolve "${__result}" "${JOBS}"
