@@ -1,5 +1,5 @@
 #!/bin/bash
-source ./functions
+source ./.github/reusable_workflow/functions.sh
 
 success() {
     local _content="$1"
