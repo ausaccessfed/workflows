@@ -15,4 +15,4 @@ wait
 
 [ "$LOAD_PRODUCTION_COMMAND" != "" ] && $LOAD_PRODUCTION_COMMAND &
 
-echo "Finished!
+echo "Finished!"
