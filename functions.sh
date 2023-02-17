@@ -23,7 +23,7 @@ async() {
 
         echo "hello $commandToExec"
 
-	__result=$($commandToExec)
+	__result=$commandToExec
 
 	status=$?
 
