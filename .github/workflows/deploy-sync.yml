@@ -137,16 +137,21 @@ jobs:
           image_tag=$(echo "$image_tag" | tr / _)
           echo "IMAGE_TAG=$image_tag" >> $GITHUB_OUTPUT
 
-      - uses: actions/checkout@v2
-        with:
-          ref: ${{ steps.env1.outputs.BRANCH_NAME }}
-
       - name: Checkout reusable workflow dir
         uses: actions/checkout@v3
         with:
           repository: ausaccessfed/workflows
           token: ${{ secrets.GITHUB_TOKEN }}
-          path: .github/reusable_workflow
+          path: workflows
+
+      - run: ls workflows
+
+      - uses: actions/checkout@v2
+        with:
+          ref: ${{ steps.env1.outputs.BRANCH_NAME }}
+      
+      - run: ls workflows
+
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@master
