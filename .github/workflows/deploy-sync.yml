@@ -237,7 +237,7 @@ jobs:
           fi
           [ "${{ steps.env2.outputs.USE_BUILDX }}" == "true" ] && export BUILDX_LOAD_TEST_COMMAND="$BUILDX_LOAD_TEST_COMMAND"
 
-          export LOAD_TEST_COMMAND="${{ steps.build-test.outputs.BUILDX_LOAD_TEST_COMMAND }}""
+          export LOAD_TEST_COMMAND="${{ steps.build-test.outputs.BUILDX_LOAD_TEST_COMMAND }}"
           export BUILD_PRODUCTION_COMMAND="$BUILD_PRODUCTION_COMMAND"
           export EXTRA_TASK_1="${{ inputs.extra_task_1 }}"
           export EXTRA_TASK_2="${{ inputs.extra_task_2 }}"
