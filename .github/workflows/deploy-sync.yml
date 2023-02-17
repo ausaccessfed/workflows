@@ -39,24 +39,6 @@ on:
       runner:
         default: "ubuntu-latest"
         type: string
-      production_build_task_1_name:
-        default: "N/A"
-        type: string
-      production_build_task_1:
-        default: ""
-        type: string
-      production_build_task_2_name:
-        default: "N/A"
-        type: string
-      production_build_task_2:
-        default: ""
-        type: string
-      production_build_task_3_name:
-        default: "N/A"
-        type: string
-      production_build_task_3:
-        default: ""
-        type: string
       extra_task_1_name:
         default: "N/A"
         type: string
@@ -73,6 +55,24 @@ on:
         default: "N/A"
         type: string
       extra_task_3:
+        default: ""
+        type: string
+      extra_task_4_name:
+        default: "N/A"
+        type: string
+      extra_task_4:
+        default: ""
+        type: string
+      extra_task_5_name:
+        default: "N/A"
+        type: string
+      extra_task_5:
+        default: ""
+        type: string
+      extra_task_6_name:
+        default: "N/A"
+        type: string
+      extra_task_6:
         default: ""
         type: string
       development_environments:
