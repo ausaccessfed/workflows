@@ -22,7 +22,7 @@ async() {
     {
 
         echo "hello $commandToExec"
-	__result=$($commandToExec)
+	__result=$($(echo "$commandToExec" | sed -r 's/"/\\"/g'))
 
 	status=$?
 
