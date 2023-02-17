@@ -19,35 +19,6 @@ async() {
     local resolve="$2"
     local reject="$3"
 
-    [[ -z "$commandToExec" ]] || [[ -z "$reject" ]] || [[ -z "$resolve" ]] && {
-	printf "%s\n" "Insufficient number of arguments";
-	return 1;
-    }
-
-
-
-    local __temp=( "$commandToExec" "$reject" "$resolve" )
-
-
-    for _c in "${__temp[@]}";do
-
-
-	read -d " " comm <<<"${_c}"
-
-	type "${comm}" &>/dev/null
-
-    	local status=$?
-
-    	(( status != 0 )) && {
-    	    printf "\"%s\" is neither a function nor a recognized command\n" "${_c}";
-	    unset _c
-	    return 1;
-    	}
-
-    done
-
-    unset __temp ;  unset _c
-
     {
 
 	__result=$($commandToExec)
