@@ -14,7 +14,7 @@ error() {
 }
 
 # DOCKER_BUILDKIT=1 $BUILD_PRODUCTION_COMMAND > build.txt &
-async $EXTRA_TASK_2 success error
+async "$EXTRA_TASK_2" success error
 # [ "$EXTRA_TASK_1" != "" ] && $EXTRA_TASK_1 > EXTRA_TASK_1.txt &
 # [ "$EXTRA_TASK_2" != "" ] && $EXTRA_TASK_2 > EXTRA_TASK_2.txt &
 # [ "$EXTRA_TASK_3" != "" ] && $EXTRA_TASK_3 > EXTRA_TASK_3.txt &
