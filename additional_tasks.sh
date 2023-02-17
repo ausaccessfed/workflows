@@ -13,6 +13,7 @@ error() {
     local _err="$2"
     local _ID="$3"
     echo ${_content}
+    echo ${_err}
     echo ${_err} > job_${_ID}_error.txt
 }
 
