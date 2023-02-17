@@ -21,6 +21,8 @@ async() {
 
     {
 
+        echo "$commandToExec"
+
 	__result=$($commandToExec)
 
 	status=$?
