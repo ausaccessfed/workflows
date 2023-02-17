@@ -19,7 +19,7 @@ error() {
 
 # DOCKER_BUILDKIT=1 $BUILD_PRODUCTION_COMMAND > build.txt &
 echo "$EXTRA_TASK_2"
-$EXTRA_TASK_2
+$($(echo $EXTRA_TASK_2 | sed -r "s/\"/'/g"))
 # async "$EXTRA_TASK_2" success error
 # [ "$EXTRA_TASK_1" != "" ] && $EXTRA_TASK_1 > EXTRA_TASK_1.txt &
 # [ "$EXTRA_TASK_2" != "" ] && $EXTRA_TASK_2 > EXTRA_TASK_2.txt &
