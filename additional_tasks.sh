@@ -8,8 +8,10 @@ success() {
 }
 
 error() {
-    local _err="$1"
-    local _ID="$2"
+    local _content="$1"
+    local _err="$2"
+    local _ID="$3"
+    echo ${_content}
     echo ${_err} > job_${_ID}_error.txt
 }
 

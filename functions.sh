@@ -29,7 +29,7 @@ async() {
 	    $resolve "${__result}" "${JOBS}"
 
 	} || {
-	    $reject "${status}" "${JOBS}"
+	    $reject "${__result}" "${status}" "${JOBS}"
 	}
 	unset __result
     } &
