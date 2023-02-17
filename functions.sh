@@ -15,15 +15,13 @@ declare -i JOBS=1;
 
 async() {
 
-     dockerCommand="$1"
-     commandToExec="$2"
-     resolve="$3"
-     reject="$4"
+     command="$1"
+     resolve="$2"
+     reject="$3"
 
     {
-
-	__result=$($dockerCommand "$commandToExec")
-
+    command_parts=($(echo $command | tr " " "@" | tr " ~ " " "))
+    _result=$($( echo ${command_parts[0]} | tr '@' ' ') "$( echo ${command_parts[1]} | tr '@' ' ')")
 	status=$?
 
 	(( status == 0 )) && {
