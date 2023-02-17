@@ -247,12 +247,12 @@ jobs:
 
           export LOAD_TEST_COMMAND="${{ steps.build-test.outputs.BUILDX_LOAD_TEST_COMMAND }}"
           export BUILD_PRODUCTION_COMMAND="$BUILD_PRODUCTION_COMMAND"
-          export EXTRA_TASK_1="${{ inputs.extra_task_1 }}"
-          export EXTRA_TASK_2="${{ inputs.extra_task_2 }}"
-          export EXTRA_TASK_3="${{ inputs.extra_task_3 }}"
-          export EXTRA_TASK_4="${{ inputs.extra_task_4 }}"
-          export EXTRA_TASK_5="${{ inputs.extra_task_5 }}"
-          export EXTRA_TASK_6="${{ inputs.extra_task_6 }}"
+          export EXTRA_TASK_1='${{ inputs.extra_task_1 }}'
+          export EXTRA_TASK_2='${{ inputs.extra_task_2 }}'
+          export EXTRA_TASK_3='${{ inputs.extra_task_3 }}'
+          export EXTRA_TASK_4='${{ inputs.extra_task_4 }}'
+          export EXTRA_TASK_5='${{ inputs.extra_task_5 }}'
+          export EXTRA_TASK_6='${{ inputs.extra_task_6 }}'
           ./.github/reusable_workflow/additional_tasks.sh
 
       - name: Push to ECR
