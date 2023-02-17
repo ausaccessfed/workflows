@@ -216,7 +216,7 @@ jobs:
         id: load-test
         run: $(${{ steps.build-test.outputs.BUILDX_LOAD_TEST_COMMAND }})
 
-      - name: Build Production OCI Image and  Run additional tasks
+      - name: Build Production OCI Image and Run additional tasks
         id: build-production
         run: |
           BUILD_PRODUCTION_COMMAND=""
@@ -230,18 +230,22 @@ jobs:
           BUILDX_PUSH_PRODUCTION_COMMAND="docker buildx build --push --platform=${{ inputs.platforms }} $COMMON ."
           echo "BUILDX_PUSH_PRODUCTION_COMMAND=$BUILDX_PUSH_PRODUCTION_COMMAND" >> $GITHUB_OUTPUT
 
-          ## Note this is only needed as buildx doesnt support --load with multiple platforms yet but is on roadmap
-          ## if it is ever supported simply remove this and the "Load test oci image step" and add --load to the first BUILD_TEST_COMMAND
-          BUILDX_LOAD_PRODUCTION_COMMAND="docker buildx build --load $COMMON -t app:production ."
-          echo "BUILDX_LOAD_PRODUCTION_COMMAND=$BUILDX_LOAD_PRODUCTION_COMMAND" >> $GITHUB_OUTPUT
+          if [ "${{ steps.env2.outputs.USE_BUILDX }}" == "true" ]; then
+            ## Note this is only needed as buildx doesnt support --load with multiple platforms yet but is on roadmap
+            ## if it is ever supported simply remove this and the "Load test oci image step" and add --load to the first BUILD_TEST_COMMAND
+            export BUILDX_LOAD_PRODUCTION_COMMAND="docker buildx build --load $COMMON -t app:production ."
+          fi
+          [ "${{ steps.env2.outputs.USE_BUILDX }}" == "true" ] && export BUILDX_LOAD_TEST_COMMAND="$BUILDX_LOAD_TEST_COMMAND"
 
+          export LOAD_TEST_COMMAND="${{ steps.build-test.outputs.BUILDX_LOAD_TEST_COMMAND }}""
           export BUILD_PRODUCTION_COMMAND="$BUILD_PRODUCTION_COMMAND"
-          ${{ inputs.extra_task_1 }}
-
-      - name: Load Production OCI Image
-        if: steps.env2.outputs.USE_BUILDX == 'true'
-        id: load-production
-        run: $(${{ steps.build-production.outputs.BUILDX_LOAD_PRODUCTION_COMMAND }})
+          export EXTRA_TASK_1="${{ inputs.extra_task_1 }}"
+          export EXTRA_TASK_2="${{ inputs.extra_task_2 }}"
+          export EXTRA_TASK_3="${{ inputs.extra_task_3 }}"
+          export EXTRA_TASK_4="${{ inputs.extra_task_4 }}"
+          export EXTRA_TASK_5="${{ inputs.extra_task_5 }}"
+          export EXTRA_TASK_6="${{ inputs.extra_task_6 }}"
+          ./additional_tasks.sh
 
       - name: Push to ECR
         if: (inputs.event_name == 'push' && steps.env1.outputs.BRANCH_NAME == inputs.default_branch) ||  inputs.event_name == 'issue_comment' || (steps.env1.outputs.BRANCH_NAME == inputs.default_develop_branch &&  inputs.event_name == 'push')
