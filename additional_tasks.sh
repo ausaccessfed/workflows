@@ -4,6 +4,7 @@ source ./.github/reusable_workflow/functions.sh
 success() {
     local _content="$1"
     local _ID="$2"
+    echo ${_content}
     echo ${_content} > job_${_ID}.txt
 }
 
