@@ -255,6 +255,42 @@ jobs:
           export EXTRA_TASK_6="${{ inputs.extra_task_6 }}"
           ./.github/reusable_workflow/additional_tasks.sh
 
+      - name: ${{ inputs.extra_task_1_name }} Result
+        if: inputs.extra_task_1 != ''
+        run: |
+          cat job_1.txt || echo "failed"
+          cat job_1_error.txt || echo "success"
+
+      - name: ${{ inputs.extra_task_2_name }} Result
+        if: inputs.extra_task_2 != ''
+        run: |
+          cat job_2.txt || echo "failed"
+          cat job_2_error.txt || echo "success"
+
+      - name: ${{ inputs.extra_task_3_name }} Result
+        if: inputs.extra_task_3 != ''
+        run: |
+          cat job_3.txt || echo "failed"
+          cat job_3_error.txt || echo "success"
+
+      - name: ${{ inputs.extra_task_4_name }} Result
+        if: inputs.extra_task_4 != ''
+        run: |
+          cat job_4.txt || echo "failed"
+          cat job_4_error.txt || echo "success"
+
+      - name: ${{ inputs.extra_task_5_name }} Result
+        if: inputs.extra_task_5 != ''
+        run: |
+          cat job_5.txt || echo "failed"
+          cat job_5_error.txt || echo "success"
+
+      - name: ${{ inputs.extra_task_6_name }} Result
+        if: inputs.extra_task_6 != ''
+        run: |
+          cat job_6.txt || echo "failed"
+          cat job_6_error.txt || echo "success"
+
       - name: Push to ECR
         if: (inputs.event_name == 'push' && steps.env1.outputs.BRANCH_NAME == inputs.default_branch) ||  inputs.event_name == 'issue_comment' || (steps.env1.outputs.BRANCH_NAME == inputs.default_develop_branch &&  inputs.event_name == 'push')
         run: |

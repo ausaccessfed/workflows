@@ -1,5 +1,17 @@
 #!/bin/bash
-set -e
+source ./functions
+
+success() {
+    local _content="$1"
+    local _ID="$2"
+    echo ${_content} > job_${_ID}.txt
+}
+
+error() {
+    local _err="$1"
+    local _ID="$2"
+    echo ${_err} > job_${_ID}_error.txt
+}
 
 # DOCKER_BUILDKIT=1 $BUILD_PRODUCTION_COMMAND > build.txt &
 echo "$EXTRA_TASK_2"
