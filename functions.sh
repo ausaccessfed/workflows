@@ -21,7 +21,7 @@ async() {
 
     {
 
-        echo "$commandToExec"
+        echo "hello $commandToExec"
 
 	__result=$($commandToExec)
 
