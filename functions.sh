@@ -15,14 +15,14 @@ declare -i JOBS=1;
 
 async() {
 
-    local commandToExec="$1"
-    local resolve="$2"
-    local reject="$3"
+     dockerCommand="$1"
+     commandToExec="$2"
+     resolve="$3"
+     reject="$4"
 
     {
 
-        echo "hello $commandToExec"
-	$commandToExec
+	__result=$($dockerCommand "$commandToExec")
 
 	status=$?
 
