@@ -260,40 +260,46 @@ jobs:
           export DOCKER_TASK_COMMAND="${{ inputs.docker_task_command }}"
           ./.github/reusable_workflow/additional_tasks.sh
 
-      - name: ${{ inputs.extra_task_1_name }} Result
-        if: inputs.extra_task_1 != ''
+      - name: Build Production Result
+        if: always()
         run: |
-          cat job_1.txt || echo "failed"
+          cat build.txt || echo "failed"
+          cat build.txt || echo "success"
+
+      - name: ${{ inputs.extra_task_1_name }} Result
+        if: inputs.extra_task_1 != '' && always()
+        run: |
+          cat job_1.txt 
           cat job_1_error.txt || echo "success"
 
       - name: ${{ inputs.extra_task_2_name }} Result
-        if: inputs.extra_task_2 != ''
+        if: inputs.extra_task_2 != '' && always()
         run: |
-          cat job_2.txt || echo "failed"
+          cat job_2.txt 
           cat job_2_error.txt || echo "success"
 
       - name: ${{ inputs.extra_task_3_name }} Result
-        if: inputs.extra_task_3 != ''
+        if: inputs.extra_task_3 != '' && always()
         run: |
-          cat job_3.txt || echo "failed"
+          cat job_3.txt 
           cat job_3_error.txt || echo "success"
 
       - name: ${{ inputs.extra_task_4_name }} Result
-        if: inputs.extra_task_4 != ''
+        if: inputs.extra_task_4 != '' && always()
         run: |
-          cat job_4.txt || echo "failed"
+          cat job_4.txt 
           cat job_4_error.txt || echo "success"
 
       - name: ${{ inputs.extra_task_5_name }} Result
-        if: inputs.extra_task_5 != ''
+        if: inputs.extra_task_5 != '' && always()
         run: |
-          cat job_5.txt || echo "failed"
+          cat job_5.txt 
           cat job_5_error.txt || echo "success"
 
       - name: ${{ inputs.extra_task_6_name }} Result
-        if: inputs.extra_task_6 != ''
+        if: inputs.extra_task_6 != '' && always()
         run: |
-          cat job_6.txt || echo "failed"
+          cat job_6.txt 
           cat job_6_error.txt || echo "success"
 
       - name: Push to ECR
