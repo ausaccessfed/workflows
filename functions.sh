@@ -19,7 +19,7 @@ async() {
      reject="$3"
     {
     echo "$command"
-    __result=$($command)
+    __result="$($command)"
     status=$?
 
 	(( status == 0 )) && {

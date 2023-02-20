@@ -4,15 +4,15 @@ source ./.github/reusable_workflow/functions.sh
 success() {
     local _content="$1"
     local _ID="$2"
-    echo ${_content} > job_${_ID}.txt
+    echo "${_content}" > job_${_ID}.txt
 }
 
 error() {
     local _content="$1"
     local _err="$2"
     local _ID="$3"
-    echo ${_content} > job_${_ID}.txt
-    echo ${_err} > job_${_ID}_error.txt
+    echo "${_content}" > job_${_ID}.txt
+    echo "${_err}" > job_${_ID}_error.txt
 }
 
 export DOCKER_BUILDKIT=1
