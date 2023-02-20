@@ -11,7 +11,9 @@ error() {
     local _content="$1"
     local _err="$2"
     local _ID="$3"
+    echo "result ${_content}"
     echo "${_content}" > job_${_ID}.txt
+    echo "error ${_err}"
     echo "${_err}" > job_${_ID}_error.txt
 }
 
