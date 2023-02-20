@@ -19,8 +19,8 @@ async() {
      reject="$3"
     {
     $command > temp_${JOBS}.txt 2>&1
-    __result="$(cat temp_${JOBS}.txt)"
     status=$?
+    __result="$(cat temp_${JOBS}.txt)"
 
 	(( status == 0 )) && {
 	    $resolve "${__result}" "${JOBS}"
