@@ -17,6 +17,7 @@ error() {
     echo ${_err} > job_${_ID}_error.txt
 }
 
+## TODO: might be nicer to mount this to the contianer then map the outputs also to be used by workflow
 # DOCKER_BUILDKIT=1 $BUILD_PRODUCTION_COMMAND > build.txt &
 [ "$EXTRA_TASK_1" != "" ] && async "$EXTRA_TASK_1" success error
 [ "$EXTRA_TASK_2" != "" ] && async "$EXTRA_TASK_2" success error

@@ -1,5 +1,4 @@
-#!/usr/bin/env bash
-
+#!/bin/bash
 
 # This script implements 3 asynchronous function
 # setTimeout
@@ -18,10 +17,8 @@ async() {
      command="$1"
      resolve="$2"
      reject="$3"
-
     {
-    command_parts=($(echo $command | tr " " "@" | tr " ~ " " "))
-    __result=$($( echo ${command_parts[0]} | tr '@' ' ') "$( echo ${command_parts[1]} | tr '@' ' ')")
+    __result=$($command)
     status=$?
 
 	(( status == 0 )) && {
