@@ -18,6 +18,7 @@ async() {
      resolve="$2"
      reject="$3"
     {
+    echo "$command"
     __result=$($command)
     status=$?
 
