@@ -18,8 +18,8 @@ async() {
      resolve="$2"
      reject="$3"
     {
-    echo "$command"
-    __result="$($command)"
+    "$($command)" > temp_${JOBS}.txt 2>&1
+    __result="$(cat temp_${JOBS}.txt)"
     status=$?
 
 	(( status == 0 )) && {
