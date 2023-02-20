@@ -260,46 +260,46 @@ jobs:
           export DOCKER_TASK_COMMAND="${{ inputs.docker_task_command }}"
           ./.github/reusable_workflow/additional_tasks.sh
 
-      - name: ${{ inputs.extra_task_1_name }} Result
-        if: inputs.extra_task_1 != '' && always()
+      - name: Build Production Result
+        if: always()
         run: |
-          cat job_1.txt 
+          cat job_1.txt
           [ -f job_1_error.txt ] && exit 1
 
-      - name: ${{ inputs.extra_task_2_name }} Result
-        if: inputs.extra_task_2 != '' && always()
+      - name: ${{ inputs.extra_task_1_name }} Result
+        if: inputs.extra_task_1 != '' && always()
         run: |
           cat job_2.txt 
           [ -f job_2_error.txt ] && exit 1
 
-      - name: ${{ inputs.extra_task_3_name }} Result
-        if: inputs.extra_task_3 != '' && always()
+      - name: ${{ inputs.extra_task_2_name }} Result
+        if: inputs.extra_task_2 != '' && always()
         run: |
           cat job_3.txt 
           [ -f job_3_error.txt ] && exit 1
 
-      - name: ${{ inputs.extra_task_4_name }} Result
-        if: inputs.extra_task_4 != '' && always()
+      - name: ${{ inputs.extra_task_3_name }} Result
+        if: inputs.extra_task_3 != '' && always()
         run: |
           cat job_4.txt 
           [ -f job_4_error.txt ] && exit 1
 
-      - name: ${{ inputs.extra_task_5_name }} Result
-        if: inputs.extra_task_5 != '' && always()
+      - name: ${{ inputs.extra_task_4_name }} Result
+        if: inputs.extra_task_4 != '' && always()
         run: |
           cat job_5.txt 
           [ -f job_5_error.txt ] && exit 1
 
-      - name: ${{ inputs.extra_task_6_name }} Result
-        if: inputs.extra_task_6 != '' && always()
+      - name: ${{ inputs.extra_task_5_name }} Result
+        if: inputs.extra_task_5 != '' && always()
         run: |
           cat job_6.txt 
           [ -f job_6_error.txt ] && exit 1
 
-      - name: Build Production Result
-        if: always()
+      - name: ${{ inputs.extra_task_6_name }} Result
+        if: inputs.extra_task_6 != '' && always()
         run: |
-          cat job_7.txt
+          cat job_7.txt 
           [ -f job_7_error.txt ] && exit 1
 
       - name: Push to ECR

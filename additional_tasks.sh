@@ -16,7 +16,8 @@ error() {
 }
 
 ## TODO: might be nicer to mount this to the contianer then map the outputs also to be used by workflow
-# DOCKER_BUILDKIT=1 $BUILD_PRODUCTION_COMMAND > build.txt &
+export DOCKER_BUILDKIT=1
+async "$BUILD_PRODUCTION_COMMAND" success error
 [ "$EXTRA_TASK_1" != "" ] && async "$EXTRA_TASK_1" success error
 [ "$EXTRA_TASK_2" != "" ] && async "$EXTRA_TASK_2" success error
 [ "$EXTRA_TASK_3" != "" ] && async "$EXTRA_TASK_3" success error
