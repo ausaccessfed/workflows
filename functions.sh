@@ -18,7 +18,7 @@ async() {
      resolve="$2"
      reject="$3"
     {
-    "$($command)" > temp_${JOBS}.txt 2>&1
+    $command > temp_${JOBS}.txt 2>&1
     __result="$(cat temp_${JOBS}.txt)"
     status=$?
 
