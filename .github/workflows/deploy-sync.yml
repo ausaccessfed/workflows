@@ -270,6 +270,7 @@ jobs:
         if: inputs.extra_task_1 != '' && always()
         run: |
           cat job_2.txt 
+          cat job_2_error.txt
           [[ -f job_2_error.txt ]] && exit 1
 
       - name: ${{ inputs.extra_task_2_name }} Result
