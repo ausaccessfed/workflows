@@ -250,76 +250,90 @@ jobs:
 
           export LOAD_TEST_COMMAND="${{ steps.build-test.outputs.BUILDX_LOAD_TEST_COMMAND }}"
           export BUILD_PRODUCTION_COMMAND="$BUILD_PRODUCTION_COMMAND"
-          export EXTRA_TASK_1='${{ inputs.extra_task_1 }}'
-          export EXTRA_TASK_2='${{ inputs.extra_task_2 }}'
-          export EXTRA_TASK_3='${{ inputs.extra_task_3 }}'
-          export EXTRA_TASK_4='${{ inputs.extra_task_4 }}'
-          export EXTRA_TASK_5='${{ inputs.extra_task_5 }}'
-          export EXTRA_TASK_6='${{ inputs.extra_task_6 }}'
-          export EXTRA_TASK_6='${{ inputs.extra_task_6 }}'
+          if [ "${{inputs.event_name}}" != "issue_comment" ]; then
+            export EXTRA_TASK_1='${{ inputs.extra_task_1 }}'
+            export EXTRA_TASK_2='${{ inputs.extra_task_2 }}'
+            export EXTRA_TASK_3='${{ inputs.extra_task_3 }}'
+            export EXTRA_TASK_4='${{ inputs.extra_task_4 }}'
+            export EXTRA_TASK_5='${{ inputs.extra_task_5 }}'
+            export EXTRA_TASK_6='${{ inputs.extra_task_6 }}'
+          fi
           export DOCKER_TASK_COMMAND="${{ inputs.docker_task_command }}"
-          ./.github/reusable_workflow/additional_tasks.sh
+          ./.github/reusable_workflow/scripts/additional_tasks.sh
 
       - name: Build Production Result
+        id: build-production-result
         if: always()
         run: |
-          cat job_1.txt
-          [[ -f job_1_error.txt ]] && cat job_1_error.txt && exit 1 || echo ""
+          cat build.txt
+          [[ -f build_error.txt ]] && cat build_error.txt && exit 1 || echo ""
 
       - name: ${{ inputs.extra_task_1_name }} Result
-        if: inputs.extra_task_1 != '' && always()
+        if: inputs.event_name != 'issue_comment' && inputs.extra_task_1 != '' && always()
         run: |
-          cat job_2.txt 
-          [[ -f job_2_error.txt ]] && cat job_2_error.txt && exit 1 ||  echo ""
+          cat task_1.txt 
+          [[ -f task_1_error.txt ]] && cat task_1_error.txt && exit 1 ||  echo ""
 
       - name: ${{ inputs.extra_task_2_name }} Result
-        if: inputs.extra_task_2 != '' && always()
+        if: inputs.event_name != 'issue_comment' && inputs.extra_task_2 != '' && always()
         run: |
-          cat job_3.txt 
-          [[ -f job_3_error.txt ]] && cat job_3_error.txt && exit 1 ||  echo ""
+          cat task_2.txt 
+          [[ -f task_2_error.txt ]] && cat task_2_error.txt && exit 1 ||  echo ""
 
       - name: ${{ inputs.extra_task_3_name }} Result
-        if: inputs.extra_task_3 != '' && always()
+        if: inputs.event_name != 'issue_comment' && inputs.extra_task_3 != '' && always()
         run: |
-          cat job_4.txt 
-          [[ -f job_4_error.txt ]] && cat job_4_error.txt && exit 1 ||  echo ""
+          cat task_3.txt 
+          [[ -f task_3_error.txt ]] && cat task_3_error.txt && exit 1 ||  echo ""
 
       - name: ${{ inputs.extra_task_4_name }} Result
-        if: inputs.extra_task_4 != '' && always()
+        if: inputs.event_name != 'issue_comment' && inputs.extra_task_4 != '' && always()
         run: |
-          cat job_5.txt 
-          [[ -f job_5_error.txt ]] && cat job_5_error.txt && exit 1 ||  echo ""
+          cat task_4.txt 
+          [[ -f task_4_error.txt ]] && cat task_4_error.txt && exit 1 ||  echo ""
 
       - name: ${{ inputs.extra_task_5_name }} Result
-        if: inputs.extra_task_5 != '' && always()
+        if: inputs.event_name != 'issue_comment' && inputs.extra_task_5 != '' && always()
         run: |
-          cat job_6.txt 
-          [[ -f job_6_error.txt ]] && cat job_6_error.txt && exit 1 ||  echo ""
+          cat task_5.txt 
+          [[ -f task_5_error.txt ]] && cat task_5_error.txt && exit 1 ||  echo ""
 
       - name: ${{ inputs.extra_task_6_name }} Result
-        if: inputs.extra_task_6 != '' && always()
+        if: inputs.event_name != 'issue_comment' && inputs.extra_task_6 != '' && always()
         run: |
-          cat job_7.txt 
-          [[ -f job_7_error.txt ]] && cat job_7_error.txt && exit 1 ||  echo ""
+          cat task_6.txt 
+          [[ -f task_6_error.txt ]] && cat task_6_error.txt && exit 1 ||  echo ""
 
       - name: Push to ECR
-        if: (inputs.event_name == 'push' && steps.env1.outputs.BRANCH_NAME == inputs.default_branch) ||  inputs.event_name == 'issue_comment' || (steps.env1.outputs.BRANCH_NAME == inputs.default_develop_branch &&  inputs.event_name == 'push')
         run: |
-          if [ "${{ steps.env2.outputs.USE_BUILDX }}" == "true" ]; then
-            $(${{ steps.build-production.outputs.BUILDX_PUSH_PRODUCTION_COMMAND }})
-          else 
-            docker push ${{ steps.env2.outputs.IMAGE_ID }}:${{ steps.env1.outputs.IMAGE_TAG }}
+          if [ "${{inputs.event_name}}" == "push" ] && [ "${{steps.env1.outputs.BRANCH_NAME}}" == "${{inputs.default_branch}}"] || [ "${{inputs.event_name}}" == "issue_comment" ] || [ "${{steps.env1.outputs.BRANCH_NAME}}" == "${{inputs.default_develop_branch}}" ] && [ "${{inputs.event_name}}" == "push" ]; then
+            if [ "${{ steps.env2.outputs.USE_BUILDX }}" == "true" ]; then
+              export PRODUCTION_PUSH_COMMAND="${{ steps.build-production.outputs.BUILDX_PUSH_PRODUCTION_COMMAND }}"
+            else 
+              export PRODUCTION_PUSH_COMMAND="docker push ${{ steps.env2.outputs.IMAGE_ID }}:${{ steps.env1.outputs.IMAGE_TAG }}"
+            fi
           fi
 
-      - name: Push cache to ECR
-        if: (inputs.event_name == 'push' && steps.env1.outputs.BRANCH_NAME == steps.env2.outputs.DEFAULT_BRANCH_FOR_CACHING)
-        run: |
-          if [ "${{ steps.env2.outputs.USE_BUILDX }}" == "true" ]; then
-            $(${{ steps.build-test.outputs.BUILDX_PUSH_TEST_COMMAND }})
-          else
-            docker push ${{ steps.env2.outputs.IMAGE_ID }}:cache
+          if [ "${{inputs.event_name}}" == "push" ] && [ "${{steps.env1.outputs.BRANCH_NAME}}" == "${{steps.env2.outputs.DEFAULT_BRANCH_FOR_CACHING}}" ]; then
+            if [ "${{ steps.env2.outputs.USE_BUILDX }}" == "true" ]; then
+              export CACHE_PUSH_COMMAND="${{ steps.build-test.outputs.BUILDX_PUSH_TEST_COMMAND }}"
+            else
+              export CACHE_PUSH_COMMAND="docker push ${{ steps.env2.outputs.IMAGE_ID }}:cache"
+            fi
+          fi
+          ./.github/reusable_workflow/scripts/push_images.sh
+          ## TODO: test \ coomands
+          if [ "${{inputs.event_name}}" == "push" ] && [ "${{steps.env1.outputs.BRANCH_NAME}}" == "${{inputs.default_branch}}"] || [ "${{inputs.event_name}}" == "issue_comment" ] || [ "${{steps.env1.outputs.BRANCH_NAME}}" == "${{inputs.default_develop_branch}}" ] && [ "${{inputs.event_name}}" == "push" ]; then
+            cat push_production.txt
+            [[ -f push_production_error.txt ]] && cat push_production_error.txt && exit 1 || echo ""
+          fi
+          if [ "${{inputs.event_name}}" == "push" ] && [ "${{steps.env1.outputs.BRANCH_NAME}}" == "${{steps.env2.outputs.DEFAULT_BRANCH_FOR_CACHING}}" ]; then
+            cat push_cache.txt 
+            [[ -f push_cache_error.txt ]] && cat push_cache_error.txt && exit 1 || echo ""
           fi
 
+      ## no point making the gitops repo triggers async, they will fight each other
+      ## and usually only 1 if statement is called anyway
       - name: Update GitOps Repo to trigger deploys
         if: steps.env1.outputs.BRANCH_NAME == inputs.default_branch &&  inputs.event_name == 'push'
         run: |
@@ -365,32 +379,8 @@ jobs:
             output="${output}Building the Test image has failed!"
           fi
 
-          if [ "${{ steps.extra-task-1.outcome }}" == "failure" ]; then 
-            output="${output}${{ inputs.extra_task_1_name }} failed!"
-          fi
-
-          if [ "${{ steps.extra-task-2.outcome }}" == "failure" ]; then 
-            output="${output}${{ inputs.extra_task_2_name }} failed!"
-          fi
-
-          if [ "${{ steps.extra-task-3.outcome }}" == "failure" ]; then 
-            output="${output}${{ inputs.extra_task_3_name }} failed!"
-          fi
-
-          if [ "${{ steps.build-production.outcome }}" == "failure" ]; then 
+          if [ "${{ steps.build-production-result.outcome }}" == "failure" ]; then 
             output="${output}Building the Production image has failed!"
-          fi
-
-          if [ "${{ steps.production-extra-task-1.outcome }}" == "failure" ]; then 
-            output="${output}${{ inputs.production_extra_task_1_name }} failed!"
-          fi
-
-          if [ "${{ steps.production-extra-task-2.outcome }}" == "failure" ]; then 
-            output="${output}${{ inputs.production_extra_task_2_name }} failed!"
-          fi
-
-          if [ "${{ steps.production-extra-task-3.outcome }}" == "failure" ]; then 
-            output="${output}${{ inputs.production_extra_task_3_name }} failed!"
           fi
 
           if [ "$output" == "" ]; then 
