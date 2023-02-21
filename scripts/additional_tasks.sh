@@ -13,6 +13,4 @@ async "$BUILD_PRODUCTION_COMMAND" "build" success error
 
 wait
 
-[ "$LOAD_PRODUCTION_COMMAND" != "" ] && $LOAD_PRODUCTION_COMMAND
-
 echo "Finished!"

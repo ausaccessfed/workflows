@@ -241,14 +241,11 @@ jobs:
           BUILDX_PUSH_PRODUCTION_COMMAND="docker buildx build --push --platform=${{ inputs.platforms }} $COMMON ."
           echo "BUILDX_PUSH_PRODUCTION_COMMAND=$BUILDX_PUSH_PRODUCTION_COMMAND" >> $GITHUB_OUTPUT
 
-          if [ "${{ steps.env2.outputs.USE_BUILDX }}" == "true" ]; then
-            ## Note this is only needed as buildx doesnt support --load with multiple platforms yet but is on roadmap
-            ## if it is ever supported simply remove this and the "Load test oci image step" and add --load to the first BUILD_TEST_COMMAND
-            export BUILDX_LOAD_PRODUCTION_COMMAND="docker buildx build --load $COMMON -t app:production ."
-          fi
-          [ "${{ steps.env2.outputs.USE_BUILDX }}" == "true" ] && export BUILDX_LOAD_TEST_COMMAND="$BUILDX_LOAD_TEST_COMMAND"
+          ## Note this is only needed as buildx doesnt support --load with multiple platforms yet but is on roadmap
+          ## if it is ever supported simply remove this and the "Load test oci image step" and add --load to the first BUILD_TEST_COMMAND
+          BUILDX_LOAD_PRODUCTION_COMMAND="docker buildx build --load $COMMON -t app:production ."
+          echo "BUILDX_LOAD_PRODUCTION_COMMAND=$BUILDX_LOAD_PRODUCTION_COMMAND" >> $GITHUB_OUTPUT
 
-          export LOAD_TEST_COMMAND="${{ steps.build-test.outputs.BUILDX_LOAD_TEST_COMMAND }}"
           export BUILD_PRODUCTION_COMMAND="$BUILD_PRODUCTION_COMMAND"
           if [ "${{inputs.event_name}}" != "issue_comment" ]; then
             export EXTRA_TASK_1='${{ inputs.extra_task_1 }}'
@@ -260,6 +257,11 @@ jobs:
           fi
           export DOCKER_TASK_COMMAND="${{ inputs.docker_task_command }}"
           ./.github/reusable_workflow/scripts/additional_tasks.sh
+
+      - name: Load Production OCI Image
+        if: steps.env2.outputs.USE_BUILDX == 'true'
+        id: load-production
+        run: $(${{ steps.build-production.outputs.BUILDX_LOAD_PRODUCTION_COMMAND }})
 
       - name: Build Production Result
         id: build-production-result
