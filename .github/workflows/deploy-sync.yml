@@ -75,9 +75,6 @@ on:
       extra_task_6:
         default: ""
         type: string
-      docker_task_command:
-        default: ""
-        type: string
       development_environments:
         default: "development"
         type: string
@@ -255,7 +252,6 @@ jobs:
             export EXTRA_TASK_5='${{ inputs.extra_task_5 }}'
             export EXTRA_TASK_6='${{ inputs.extra_task_6 }}'
           fi
-          export DOCKER_TASK_COMMAND="${{ inputs.docker_task_command }}"
           ./.github/reusable_workflow/scripts/additional_tasks.sh
 
       - name: Load Production OCI Image
@@ -271,36 +267,42 @@ jobs:
           [[ -f build_error.txt ]] && cat build_error.txt && exit 1 || echo ""
 
       - name: ${{ inputs.extra_task_1_name }} Result
+        id: extra-task-1
         if: inputs.event_name != 'issue_comment' && inputs.extra_task_1 != '' && always()
         run: |
           cat task_1.txt 
           [[ -f task_1_error.txt ]] && cat task_1_error.txt && exit 1 ||  echo ""
 
       - name: ${{ inputs.extra_task_2_name }} Result
+        id: extra-task-2
         if: inputs.event_name != 'issue_comment' && inputs.extra_task_2 != '' && always()
         run: |
           cat task_2.txt 
           [[ -f task_2_error.txt ]] && cat task_2_error.txt && exit 1 ||  echo ""
 
       - name: ${{ inputs.extra_task_3_name }} Result
+        id: extra-task-3
         if: inputs.event_name != 'issue_comment' && inputs.extra_task_3 != '' && always()
         run: |
           cat task_3.txt 
           [[ -f task_3_error.txt ]] && cat task_3_error.txt && exit 1 ||  echo ""
 
       - name: ${{ inputs.extra_task_4_name }} Result
+        id: extra-task-4
         if: inputs.event_name != 'issue_comment' && inputs.extra_task_4 != '' && always()
         run: |
           cat task_4.txt 
           [[ -f task_4_error.txt ]] && cat task_4_error.txt && exit 1 ||  echo ""
 
       - name: ${{ inputs.extra_task_5_name }} Result
+        id: extra-task-5
         if: inputs.event_name != 'issue_comment' && inputs.extra_task_5 != '' && always()
         run: |
           cat task_5.txt 
           [[ -f task_5_error.txt ]] && cat task_5_error.txt && exit 1 ||  echo ""
 
       - name: ${{ inputs.extra_task_6_name }} Result
+        id: extra-task-6
         if: inputs.event_name != 'issue_comment' && inputs.extra_task_6 != '' && always()
         run: |
           cat task_6.txt 
@@ -324,7 +326,7 @@ jobs:
             fi
           fi
           ./.github/reusable_workflow/scripts/push_images.sh
-          ## TODO: test \ coomands
+
           if [ "${{inputs.event_name}}" == "push" ] && [ "${{steps.env1.outputs.BRANCH_NAME}}" == "${{inputs.default_branch}}"] || [ "${{inputs.event_name}}" == "issue_comment" ] || [ "${{steps.env1.outputs.BRANCH_NAME}}" == "${{inputs.default_develop_branch}}" ] && [ "${{inputs.event_name}}" == "push" ]; then
             cat push_production.txt
             [[ -f push_production_error.txt ]] && cat push_production_error.txt && exit 1 || echo ""
@@ -378,7 +380,7 @@ jobs:
           url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 
           if [ "${{ steps.build-test.outcome }}" == "failure" ]; then 
-            output="${output}Building the Test image has failed!"
+            output="${output}Building the Test image has failed! "
           fi
 
           if [ "${{ steps.build-production-result.outcome }}" == "failure" ]; then 
