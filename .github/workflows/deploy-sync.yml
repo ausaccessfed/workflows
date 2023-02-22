@@ -146,7 +146,7 @@ jobs:
         with:
           repository: ausaccessfed/workflows
           token: ${{ secrets.GITHUB_TOKEN }}
-          ref: feature/test-async
+          ref: main
           path: .github/reusable_workflow
 
       - name: Configure AWS Credentials
