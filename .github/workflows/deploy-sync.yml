@@ -310,7 +310,13 @@ jobs:
 
       - name: Push to ECR
         run: |
-          if [ "${{inputs.event_name}}" == "push" ] && [ "${{steps.env1.outputs.BRANCH_NAME}}" == "${{inputs.default_branch}}" ] || [ "${{inputs.event_name}}" == "issue_comment" ] || [ "${{steps.env1.outputs.BRANCH_NAME}}" == "${{inputs.default_develop_branch}}" ] && [ "${{inputs.event_name}}" == "push" ]; then
+          if [ \
+              "${{inputs.event_name}}" == "push" -a "${{steps.env1.outputs.BRANCH_NAME}}" == "${{inputs.default_branch}}" \
+              -o \
+              "${{inputs.event_name}}" == "issue_comment" \
+              -o \
+              "${{steps.env1.outputs.BRANCH_NAME}}" == "${{inputs.default_develop_branch}}" -a "${{inputs.event_name}}" == "push" \
+            ]; then
             if [ "${{ steps.env2.outputs.USE_BUILDX }}" == "true" ]; then
               export PRODUCTION_PUSH_COMMAND="${{ steps.build-production.outputs.BUILDX_PUSH_PRODUCTION_COMMAND }}"
             else 
@@ -327,9 +333,15 @@ jobs:
           fi
           ./.github/reusable_workflow/scripts/push_images.sh
 
-          if [ "${{inputs.event_name}}" == "push" ] && [ "${{steps.env1.outputs.BRANCH_NAME}}" == "${{inputs.default_branch}}" ] || [ "${{inputs.event_name}}" == "issue_comment" ] || [ "${{steps.env1.outputs.BRANCH_NAME}}" == "${{inputs.default_develop_branch}}" ] && [ "${{inputs.event_name}}" == "push" ]; then
-            cat push_production.txt
-            [[ -f push_production_error.txt ]] && cat push_production_error.txt && exit 1 || echo ""
+          if [ \
+              "${{inputs.event_name}}" == "push" -a "${{steps.env1.outputs.BRANCH_NAME}}" == "${{inputs.default_branch}}" \
+              -o \
+              "${{inputs.event_name}}" == "issue_comment" \
+              -o \
+              "${{steps.env1.outputs.BRANCH_NAME}}" == "${{inputs.default_develop_branch}}" -a "${{inputs.event_name}}" == "push" \
+            ]; then
+              cat push_production.txt
+              [[ -f push_production_error.txt ]] && cat push_production_error.txt && exit 1 || echo ""
           fi
           if [ "${{inputs.event_name}}" == "push" ] && [ "${{steps.env1.outputs.BRANCH_NAME}}" == "${{steps.env2.outputs.DEFAULT_BRANCH_FOR_CACHING}}" ]; then
             cat push_cache.txt 
