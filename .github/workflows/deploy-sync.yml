@@ -310,7 +310,8 @@ jobs:
 
       - name: Push to ECR
         run: |
-          if [ "${{inputs.event_name}}" == "push" -a "${{steps.env1.outputs.BRANCH_NAME}}" == "${{inputs.default_branch}}" \
+          if [ \
+              "${{inputs.event_name}}" == "push" -a "${{steps.env1.outputs.BRANCH_NAME}}" == "${{inputs.default_branch}}" \
               -o \
               "${{inputs.event_name}}" == "issue_comment" \
               -o \
@@ -332,7 +333,8 @@ jobs:
           fi
           ./.github/reusable_workflow/scripts/push_images.sh
 
-           if [ "${{inputs.event_name}}" == "push" -a "${{steps.env1.outputs.BRANCH_NAME}}" == "${{inputs.default_branch}}" \
+          if [ \
+              "${{inputs.event_name}}" == "push" -a "${{steps.env1.outputs.BRANCH_NAME}}" == "${{inputs.default_branch}}" \
               -o \
               "${{inputs.event_name}}" == "issue_comment" \
               -o \
