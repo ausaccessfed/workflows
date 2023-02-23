@@ -14,6 +14,9 @@ on:
       event_comment_body:
         default: ""
         type: string
+      event_comment_id:
+        default: ""
+        type: string
       default_branch:
         default: "master"
         type: string
