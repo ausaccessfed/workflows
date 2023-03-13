@@ -390,7 +390,7 @@ jobs:
         id: failure-check
         if: inputs.event_name == 'issue_comment' && always()
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           output=
           status="failure"
