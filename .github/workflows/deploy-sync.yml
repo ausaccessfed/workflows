@@ -96,10 +96,6 @@ jobs:
   run:
     runs-on: ${{ inputs.runner }}
     name: run
-    permissions:
-      contents: read
-      statuses: write
-      pull-requests: write
     if: inputs.event_name != 'issue_comment' || (contains(inputs.event_comment_body, '/deploy')  && contains('phyzical,ArthurZheng,ritchiey,matthew-puku,rianniello,Kfoster14,waldofouche,Bo', github.event.author.login))
     services:
       mysql:
