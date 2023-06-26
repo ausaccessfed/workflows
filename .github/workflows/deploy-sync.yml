@@ -109,7 +109,7 @@ jobs:
         ports:
           - "3306:3306"
     steps:
-      - uses: xt0rted/pull-request-comment-branch@f41bb10e4d6e6747619def4cc299fb08508732a7 # v1
+      - uses: xt0rted/pull-request-comment-branch@v2 
         if: inputs.event_name == 'issue_comment'
         id: comment-branch
 
