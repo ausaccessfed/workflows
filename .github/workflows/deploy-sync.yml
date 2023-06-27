@@ -105,7 +105,7 @@ jobs:
         ports:
           - "3306:3306"
     steps:
-      - uses: xt0rted/pull-request-comment-branch@f41bb10e4d6e6747619def4cc299fb08508732a7 # v1
+      - uses: xt0rted/pull-request-comment-branch@d97294d304604fa98a2600a6e2f916a84b596dc7 # v2
         if: inputs.event_name == 'issue_comment'
         id: comment-branch
 
@@ -145,7 +145,7 @@ jobs:
           ref: ${{ steps.env1.outputs.BRANCH_NAME }}
 
       - name: Checkout reusable workflow dir
-        uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # v3
+        uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3
         with:
           repository: ausaccessfed/workflows
           token: ${{ secrets.GITHUB_TOKEN }}
