@@ -6,8 +6,6 @@
 # async
 # killJob function is not asynchronous
 
-# check the README.md for information on how to use this script
-
 declare -a JOB_IDS
 
 declare -i JOBS=1;
@@ -34,6 +32,9 @@ async() {
     resolve="$3"
     reject="$4"
     {
+        echo "`date "+%Y-%m-%d %H:%M:%S"` Running $command"
+        ## this just starts the timers
+        _x=$SECONDS
         $command > temp_${JOBS}.txt 2>&1
         status=$?
         __result="$(cat temp_${JOBS}.txt)"
@@ -45,13 +46,12 @@ async() {
             $reject "${__result}" "${log_name}" "${status}" "${JOBS}"
         }
         unset __result
+        echo "`date "+%Y-%m-%d %H:%M:%S"` Finished $command Took $SECONDS"
     } &
 
     JOB_IDS+=( "${JOBS} ${command}" )
 
     read -d " " -a __kunk__ <<< "${JOB_IDS[$(( ${#JOB_IDS[@]} - 1))]}"
-
-    echo ${__kunk__}
 
     : $(( JOBS++ ))
 }

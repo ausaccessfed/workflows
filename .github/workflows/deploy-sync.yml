@@ -247,6 +247,8 @@ jobs:
           echo "BUILDX_LOAD_PRODUCTION_COMMAND=$BUILDX_LOAD_PRODUCTION_COMMAND" >> $GITHUB_OUTPUT
 
           export BUILD_PRODUCTION_COMMAND="$BUILD_PRODUCTION_COMMAND"
+          export EXTRA_TASK_INC=10
+          # Make sure EXTRA_TASK_INC inc is greater than the amount of EXTRA_TASKS
           if [ "${{inputs.event_name}}" != "issue_comment" ]; then
             export EXTRA_TASK_1='${{ inputs.extra_task_1 }}'
             export EXTRA_TASK_2='${{ inputs.extra_task_2 }}'
