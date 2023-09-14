@@ -1,0 +1,21 @@
+name: "Renovate Dependency Check"
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 0 * * SUN"
+jobs:
+  renovate:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3.6.0
+      - name: Renovate
+        uses: renovatebot/github-action@3cef36a9aba515d8726b491905b3bc766832e221 # v39.0.5
+        with:
+          configurationFile: .github/renovate-config.js
+          token: ${{ secrets.REPO_SCOPED_TOKEN }}
+        env:
+          LOG_LEVEL: "debug"
+          RENOVATE_GIT_PRIVATE_KEY: ${{ secrets.RENOVATE_GPG_PRIVATE_KEY }}
