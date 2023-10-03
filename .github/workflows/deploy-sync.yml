@@ -296,9 +296,8 @@ jobs:
         id: build-production-result
         if: always()
         run: |
-          cat build.txt 2>/dev/null
-          cat build_error.txt 2>/dev/null
-          ([[ -f build_error.txt ]] || [[ ! -f build.txt ]]) && exit 1
+          cat build.txt 
+          [[ -f build_error.txt ]] && cat build_error.txt && exit 1 ||  echo ""
 
       - name: ${{ inputs.extra_task_1_name }} Result
         id: extra-task-1
