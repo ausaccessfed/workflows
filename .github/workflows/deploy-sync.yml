@@ -298,7 +298,7 @@ jobs:
         run: |
           cat build.txt 2>/dev/null || echo ""
           cat build_error.txt 2>/dev/null || echo ""
-          ([[ -f build_error.txt ]] || [[ ! -f build.txt ]]) && exit 1
+          [[ ! -f build_error.txt ]] || [[ -f build.txt ]]
 
       - name: ${{ inputs.extra_task_1_name }} Result
         id: extra-task-1
@@ -308,7 +308,7 @@ jobs:
         run: |
           cat task_$TASK_NUM.txt 2>/dev/null || echo ""
           cat task_$TASK_NUM_error.txt 2>/dev/null || echo ""
-          ([[ -f task_$TASK_NUM_error.txt ]] || [[ ! -f task_$TASK_NUM.txt ]]) && exit 1
+          [[ ! -f task_$TASK_NUM_error.txt ]] || [[ -f task_$TASK_NUM.txt ]]
 
       - name: ${{ inputs.extra_task_2_name }} Result
         id: extra-task-2
@@ -318,7 +318,7 @@ jobs:
         run: |
           cat task_$TASK_NUM.txt 2>/dev/null || echo ""
           cat task_$TASK_NUM_error.txt 2>/dev/null || echo ""
-          ([[ -f task_$TASK_NUM_error.txt ]] || [[ ! -f task_$TASK_NUM.txt ]]) && exit 1
+          [[ ! -f task_$TASK_NUM_error.txt ]] || [[ -f task_$TASK_NUM.txt ]]
 
       - name: ${{ inputs.extra_task_3_name }} Result
         id: extra-task-3
@@ -328,7 +328,7 @@ jobs:
         run: |
           cat task_$TASK_NUM.txt 2>/dev/null || echo ""
           cat task_$TASK_NUM_error.txt 2>/dev/null || echo ""
-          ([[ -f task_$TASK_NUM_error.txt ]] || [[ ! -f task_$TASK_NUM.txt ]]) && exit 1
+          [[ ! -f task_$TASK_NUM_error.txt ]] || [[ -f task_$TASK_NUM.txt ]]
 
       - name: ${{ inputs.extra_task_4_name }} Result
         id: extra-task-4
@@ -338,7 +338,7 @@ jobs:
         run: |
           cat task_$TASK_NUM.txt 2>/dev/null || echo ""
           cat task_$TASK_NUM_error.txt 2>/dev/null || echo ""
-          ([[ -f task_$TASK_NUM_error.txt ]] || [[ ! -f task_$TASK_NUM.txt ]]) && exit 1
+          [[ ! -f task_$TASK_NUM_error.txt ]] || [[ -f task_$TASK_NUM.txt ]]
 
       - name: ${{ inputs.extra_task_5_name }} Result
         id: extra-task-5
@@ -348,7 +348,7 @@ jobs:
         run: |
           cat task_$TASK_NUM.txt 2>/dev/null || echo ""
           cat task_$TASK_NUM_error.txt 2>/dev/null || echo ""
-          ([[ -f task_$TASK_NUM_error.txt ]] || [[ ! -f task_$TASK_NUM.txt ]]) && exit 1
+          [[ ! -f task_$TASK_NUM_error.txt ]] || [[ -f task_$TASK_NUM.txt ]]
 
       - name: ${{ inputs.extra_task_6_name }} Result
         id: extra-task-6
@@ -358,7 +358,7 @@ jobs:
         run: |
           cat task_$TASK_NUM.txt 2>/dev/null || echo ""
           cat task_$TASK_NUM_error.txt 2>/dev/null || echo ""
-          ([[ -f task_$TASK_NUM_error.txt ]] || [[ ! -f task_$TASK_NUM.txt ]]) && exit 1
+          [[ ! -f task_$TASK_NUM_error.txt ]] || [[ -f task_$TASK_NUM.txt ]]
 
       - name: Image lint results
         id: image-lint
@@ -366,7 +366,7 @@ jobs:
         run: |
           cat image_lint.txt 2>/dev/null || echo ""
           cat image_lint_error.txt 2>/dev/null || echo ""
-          ([[ -f image_lint_error.txt ]] || [[ ! -f image_lint.txt ]]) && exit 1
+          [[ ! -f image_lint_error.txt ]] || [[ -f image_lint.txt ]]
 
       - name: Run Image scan on production image for cves
         if: inputs.event_name != 'issue_comment'
