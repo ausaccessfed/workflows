@@ -2,7 +2,8 @@ name: Build Docker Image
 on:
   workflow_call:
     inputs:
-      hardcoded_image_tag:
+      # If not provided then assumes auto generated stable-SHA256
+      image_tag:
         default: ""
         type: string
       ecr_repository:
@@ -135,8 +136,8 @@ jobs:
           fi
           echo "BRANCH_NAME=$branch_name" >> $GITHUB_OUTPUT
 
-          if [ "${{ inputs.hardcoded_image_tag }}" != "" ]; then
-            image_tag="${{ inputs.hardcoded_image_tag }}"
+          if [ "${{ inputs.image_tag }}" != "" ]; then
+            image_tag="${{ inputs.image_tag }}"
           elif [ "${{ inputs.event_name }}" == "issue_comment" ]; then
             image_tag=adhoc-${{steps.comment-branch.outputs.head_ref}}-${{steps.comment-branch.outputs.head_sha}}
           else
