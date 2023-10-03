@@ -296,56 +296,56 @@ jobs:
         id: build-production-result
         if: always()
         run: |
-          cat build.txt
+          cat build.txt || echo ""
           [[ -f build_error.txt ]] && cat build_error.txt && exit 1 || echo ""
 
       - name: ${{ inputs.extra_task_1_name }} Result
         id: extra-task-1
         if: inputs.event_name != 'issue_comment' && inputs.extra_task_1 != '' && always()
         run: |
-          cat task_1.txt 
+          cat task_1.txt || echo ""
           [[ -f task_1_error.txt ]] && cat task_1_error.txt && exit 1 ||  echo ""
 
       - name: ${{ inputs.extra_task_2_name }} Result
         id: extra-task-2
         if: inputs.event_name != 'issue_comment' && inputs.extra_task_2 != '' && always()
         run: |
-          cat task_2.txt 
+          cat task_2.txt || echo ""
           [[ -f task_2_error.txt ]] && cat task_2_error.txt && exit 1 ||  echo ""
 
       - name: ${{ inputs.extra_task_3_name }} Result
         id: extra-task-3
         if: inputs.event_name != 'issue_comment' && inputs.extra_task_3 != '' && always()
         run: |
-          cat task_3.txt 
+          cat task_3.txt || echo "" 
           [[ -f task_3_error.txt ]] && cat task_3_error.txt && exit 1 ||  echo ""
 
       - name: ${{ inputs.extra_task_4_name }} Result
         id: extra-task-4
         if: inputs.event_name != 'issue_comment' && inputs.extra_task_4 != '' && always()
         run: |
-          cat task_4.txt 
+          cat task_4.txt || echo "" 
           [[ -f task_4_error.txt ]] && cat task_4_error.txt && exit 1 ||  echo ""
 
       - name: ${{ inputs.extra_task_5_name }} Result
         id: extra-task-5
         if: inputs.event_name != 'issue_comment' && inputs.extra_task_5 != '' && always()
         run: |
-          cat task_5.txt 
+          cat task_5.txt  || echo ""
           [[ -f task_5_error.txt ]] && cat task_5_error.txt && exit 1 ||  echo ""
 
       - name: ${{ inputs.extra_task_6_name }} Result
         id: extra-task-6
         if: inputs.event_name != 'issue_comment' && inputs.extra_task_6 != '' && always()
         run: |
-          cat task_6.txt 
+          cat task_6.txt || echo ""
           [[ -f task_6_error.txt ]] && cat task_6_error.txt && exit 1 ||  echo ""
 
       - name: Image lint results
         id: image-lint
         if: inputs.event_name != 'issue_comment' && always()
         run: |
-          cat image_lint.txt 
+          cat image_lint.txt || echo ""
           [[ -f image_lint_error.txt ]] && cat image_lint_error.txt && exit 1 ||  echo ""
 
       - name: Run Image scan on production image for cves

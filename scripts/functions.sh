@@ -32,7 +32,7 @@ async() {
     resolve="$3"
     reject="$4"
     {
-        echo "`date "+%Y-%m-%d %H:%M:%S"` Running $command"
+        echo "`date "+%Y-%m-%d %H:%M:%S"` Running $log_name ($command)"
         ## this just starts the timers
         _x=$SECONDS
         $command > temp_${JOBS}.txt 2>&1
@@ -46,7 +46,7 @@ async() {
             $reject "${__result}" "${log_name}" "${status}" "${JOBS}"
         }
         unset __result
-        echo "`date "+%Y-%m-%d %H:%M:%S"` Finished $command Took $SECONDS"
+        echo "`date "+%Y-%m-%d %H:%M:%S"` Finished $log_name Took $SECONDS"
     } &
 
     JOB_IDS+=( "${JOBS} ${command}" )
