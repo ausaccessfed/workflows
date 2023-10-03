@@ -296,8 +296,7 @@ jobs:
         id: build-production-result
         if: always()
         run: |
-          cat build.txt 
-          [[ -f build_error.txt ]] && cat build_error.txt && exit 1 ||  echo ""
+          cat build.txt || (cat build_error.txt && exit 1)
 
       - name: ${{ inputs.extra_task_1_name }} Result
         id: extra-task-1
@@ -357,8 +356,7 @@ jobs:
         id: image-lint
         if: inputs.event_name != 'issue_comment' && always()
         run: |
-          cat image_lint.txt 
-          [[ -f image_lint_error.txt ]] && cat image_lint_error.txt && exit 1 ||  echo ""
+          cat image_lint.txt || (cat image_lint_error.txt && exit 1)
 
       - name: Run Image scan on production image for cves
         if: inputs.event_name != 'issue_comment'
