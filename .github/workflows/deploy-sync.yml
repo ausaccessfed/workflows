@@ -349,7 +349,7 @@ jobs:
         if: inputs.event_name != 'issue_comment'
         run: |
           SCAN_COMMAND="./scripts/scan '${{ steps.env1.outputs.IMAGE_TAG }}' '$(shell docker images --no-trunc --quiet ${{ steps.env1.outputs.IMAGE_TAG }})' '/app/repo/Dockerfile' '${{ secrets.SNYK_TOKEN }}'"
-          $(shell ${{ steps.build-production.outputs.IMAGE_SCANNER_COMMON }} $SCAN_COMMAND)
+          $("${{ steps.build-production.outputs.IMAGE_SCANNER_COMMON }} $SCAN_COMMAND")
 
       - name: Push to ECR
         run: |
