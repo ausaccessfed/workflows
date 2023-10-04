@@ -5,7 +5,10 @@ module.exports = {
     requireConfig: "optional",
     platform: 'github',
     forkProcessing: "disabled",
-    repositories: ['ausaccessfed/saml-service'],
+    repositories: [
+        'ausaccessfed/saml-service',
+        'ausaccessfed/image-scanner'
+    ],
     labels: ["dependencies"],
     ignorePaths: [
         "**/node_modules/**",
