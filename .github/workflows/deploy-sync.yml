@@ -354,9 +354,10 @@ jobs:
           image_sha="$(docker images --no-trunc --quiet ${{ steps.env2.outputs.PRODUCTION_IMAGE_TAG }})"
           ${{ steps.build-production.outputs.IMAGE_SCANNER_COMMON }} \
             ./scripts/scan \
-            '${{ steps.env2.outputs.PRODUCTION_IMAGE_TAG }}' \
-            '${image_sha}' \
-            '/app/repo/Dockerfile' '${{ secrets.SNYK_TOKEN }}'
+            ${{ steps.env2.outputs.PRODUCTION_IMAGE_TAG }} \
+            $image_sha \
+            /app/repo/Dockerfile \
+            ${{ secrets.SNYK_TOKEN }}
 
       - name: Push to ECR
         run: |
