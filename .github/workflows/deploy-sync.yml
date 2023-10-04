@@ -185,8 +185,8 @@ jobs:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         run: |
           echo "ECR_REGISTRY=$ECR_REGISTRY" >> $GITHUB_OUTPUT
-          echo "PUBLISH_APP_IMAGE_TAG=$ECR_REGISTRY/publish_app:latest" >> $GITHUB_OUTPUT
-          echo "IMAGE_SCANNER_IMAGE_TAG=$ECR_REGISTRY/image-scanner:latest" >> $GITHUB_OUTPUT
+          echo "PUBLISH_APP_IMAGE_ID_TAG=$ECR_REGISTRY/publish_app:latest" >> $GITHUB_OUTPUT
+          echo "IMAGE_SCANNER_IMAGE_ID_TAG=$ECR_REGISTRY/image-scanner:latest" >> $GITHUB_OUTPUT
 
           VERSION=$(${{ inputs.version_command }})
           BASE_IMAGE="${{ secrets.DOCKER_ECR }}ruby-base:${VERSION}"
@@ -196,12 +196,12 @@ jobs:
           IMAGE_ID=$(echo "$ECR_REGISTRY/${{ inputs.ecr_repository }}" | tr '[A-Z]' '[a-z]')
           echo "IMAGE_ID=$IMAGE_ID" >> $GITHUB_OUTPUT
 
-          echo "PRODUCTION_IMAGE_TAG=$IMAGE_ID:${{ steps.env1.outputs.IMAGE_TAG }}" >> $GITHUB_OUTPUT
+          echo "PRODUCTION_IMAGE_ID_TAG=$IMAGE_ID:${{ steps.env1.outputs.IMAGE_TAG }}" >> $GITHUB_OUTPUT
 
-          echo "CACHE_IMAGE_TAG=$IMAGE_ID:cache" >> $GITHUB_OUTPUT
+          echo "CACHE_IMAGE_ID_TAG=$IMAGE_ID:cache" >> $GITHUB_OUTPUT
 
           # This is just a image tag without ecr to avoid ever grabbing from ecr
-          echo "LOCAL_CACHE_IMAGE_TAG=app:cache" >> $GITHUB_OUTPUT
+          echo "LOCAL_CACHE_IMAGE_ID_TAG=app:cache" >> $GITHUB_OUTPUT
 
           PROJECTS="${{ inputs.ecr_repository }}"
           if [ "${{ inputs.projects }}" != "" ]; then
@@ -233,21 +233,21 @@ jobs:
         id: build-test
         run: |
           BUILD_TEST_COMMAND=""
-          COMMON="--target development --build-arg BUILDKIT_INLINE_CACHE=1 --build-arg BASE_IMAGE=${{ steps.env2.outputs.BASE_IMAGE }}  --cache-from ${{ steps.env2.outputs.CACHE_IMAGE_TAG }} "
+          COMMON="--target development --build-arg BUILDKIT_INLINE_CACHE=1 --build-arg BASE_IMAGE=${{ steps.env2.outputs.BASE_IMAGE }}  --cache-from ${{ steps.env2.outputs.CACHE_IMAGE_ID_TAG }} "
 
           if [ "${{ steps.env2.outputs.USE_BUILDX }}" == "true" ]; then
-            BUILD_TEST_COMMAND="docker buildx build --platform=${{ inputs.platforms }} $COMMON -t ${{ steps.env2.outputs.CACHE_IMAGE_TAG }} -t ${{ steps.env2.outputs.LOCAL_CACHE_IMAGE_TAG }} ."
+            BUILD_TEST_COMMAND="docker buildx build --platform=${{ inputs.platforms }} $COMMON -t ${{ steps.env2.outputs.CACHE_IMAGE_ID_TAG }} -t ${{ steps.env2.outputs.LOCAL_CACHE_IMAGE_ID_TAG }} ."
           else
-            docker pull ${{ steps.env2.outputs.CACHE_IMAGE_TAG }} || echo "true"
-            BUILD_TEST_COMMAND="docker build $COMMON -t ${{ steps.env2.outputs.CACHE_IMAGE_TAG }} -t ${{ steps.env2.outputs.LOCAL_CACHE_IMAGE_TAG }} ."
+            docker pull ${{ steps.env2.outputs.CACHE_IMAGE_ID_TAG }} || echo "true"
+            BUILD_TEST_COMMAND="docker build $COMMON -t ${{ steps.env2.outputs.CACHE_IMAGE_ID_TAG }} -t ${{ steps.env2.outputs.LOCAL_CACHE_IMAGE_ID_TAG }} ."
           fi
 
-          BUILDX_PUSH_TEST_COMMAND="docker buildx build --push --platform=${{ inputs.platforms }} $COMMON -t ${{ steps.env2.outputs.CACHE_IMAGE_TAG }} ."
+          BUILDX_PUSH_TEST_COMMAND="docker buildx build --push --platform=${{ inputs.platforms }} $COMMON -t ${{ steps.env2.outputs.CACHE_IMAGE_ID_TAG }} ."
           echo "BUILDX_PUSH_TEST_COMMAND=$BUILDX_PUSH_TEST_COMMAND" >> $GITHUB_OUTPUT
 
           ## Note this is only needed as buildx doesnt support --load with multiple platforms yet but is on roadmap
           ## if it is ever supported simply remove this and the "Load test oci image step" and add --load to the first BUILD_TEST_COMMAND
-          BUILDX_LOAD_TEST_COMMAND="docker buildx build --load $COMMON -t ${{ steps.env2.outputs.LOCAL_CACHE_IMAGE_TAG }} ."
+          BUILDX_LOAD_TEST_COMMAND="docker buildx build --load $COMMON -t ${{ steps.env2.outputs.LOCAL_CACHE_IMAGE_ID_TAG }} ."
           echo "BUILDX_LOAD_TEST_COMMAND=$BUILDX_LOAD_TEST_COMMAND" >> $GITHUB_OUTPUT
 
           DOCKER_BUILDKIT=1 $BUILD_TEST_COMMAND
@@ -261,7 +261,7 @@ jobs:
         id: build-production
         run: |
           BUILD_PRODUCTION_COMMAND=""
-          COMMON="--target production --build-arg BUILDKIT_INLINE_CACHE=1 --build-arg RELEASE_VERSION=${{ steps.env1.outputs.IMAGE_TAG }} --build-arg BASE_IMAGE=${{ steps.env2.outputs.BASE_IMAGE }}  --cache-from ${{ steps.env2.outputs.CACHE_IMAGE_TAG }} -t ${{ steps.env2.outputs.PRODUCTION_IMAGE_TAG }}"
+          COMMON="--target production --build-arg BUILDKIT_INLINE_CACHE=1 --build-arg RELEASE_VERSION=${{ steps.env1.outputs.IMAGE_TAG }} --build-arg BASE_IMAGE=${{ steps.env2.outputs.BASE_IMAGE }}  --cache-from ${{ steps.env2.outputs.CACHE_IMAGE_ID_TAG }} -t ${{ steps.env2.outputs.PRODUCTION_IMAGE_ID_TAG }}"
           if [ "${{ steps.env2.outputs.USE_BUILDX }}" == "true" ]; then
             BUILD_PRODUCTION_COMMAND="docker buildx build --platform=${{ inputs.platforms }} $COMMON ."
           else
@@ -290,10 +290,10 @@ jobs:
           fi
 
           # must run as root to access the docker socket
-          IMAGE_SCANNER_COMMON="docker run -u 0 -v /var/run/docker.sock:/var/run/docker.sock -v ${PWD}/Dockerfile:/app/Dockerfile ${{ steps.env2.outputs.IMAGE_SCANNER_IMAGE_TAG }}"
+          IMAGE_SCANNER_COMMON="docker run -u 0 -v /var/run/docker.sock:/var/run/docker.sock -v ${PWD}/Dockerfile:/app/Dockerfile ${{ steps.env2.outputs.IMAGE_SCANNER_IMAGE_ID_TAG }}"
           echo "IMAGE_SCANNER_COMMON=$IMAGE_SCANNER_COMMON" >> $GITHUB_OUTPUT
 
-          export EXTRA_TASK_IMAGE_LINT_COMMAND="$IMAGE_SCANNER_COMMON ./scripts/lint ${{ steps.env2.outputs.LOCAL_CACHE_IMAGE_TAG }} /app/Dockerfile ${{ inputs.supress_task_failures }}"
+          export EXTRA_TASK_IMAGE_LINT_COMMAND="$IMAGE_SCANNER_COMMON ./scripts/lint ${{ steps.env2.outputs.LOCAL_CACHE_IMAGE_ID_TAG }} /app/Dockerfile ${{ inputs.supress_task_failures }}"
 
           ./.github/reusable_workflow/scripts/additional_tasks.sh
 
@@ -357,10 +357,10 @@ jobs:
       - name: Run Image scan on production image for cves
         if: inputs.event_name != 'issue_comment'
         run: |
-          image_sha="$(docker images --no-trunc --quiet ${{ steps.env2.outputs.PRODUCTION_IMAGE_TAG }})"
+          image_sha="$(docker images --no-trunc --quiet ${{ steps.env2.outputs.PRODUCTION_IMAGE_ID_TAG }})"
           ${{ steps.build-production.outputs.IMAGE_SCANNER_COMMON }} \
             ./scripts/scan \
-            ${{ steps.env2.outputs.PRODUCTION_IMAGE_TAG }} \
+            ${{ steps.env2.outputs.PRODUCTION_IMAGE_ID_TAG }} \
             $image_sha \
             /app/Dockerfile \
             ${{ secrets.SNYK_TOKEN }} \
@@ -378,7 +378,7 @@ jobs:
             if [ "${{ steps.env2.outputs.USE_BUILDX }}" == "true" ]; then
               export PRODUCTION_PUSH_COMMAND="${{ steps.build-production.outputs.BUILDX_PUSH_PRODUCTION_COMMAND }}"
             else 
-              export PRODUCTION_PUSH_COMMAND="docker push ${{ steps.env2.outputs.PRODUCTION_IMAGE_TAG }}"
+              export PRODUCTION_PUSH_COMMAND="docker push ${{ steps.env2.outputs.PRODUCTION_IMAGE_ID_TAG }}"
             fi
           fi
 
@@ -386,7 +386,7 @@ jobs:
             if [ "${{ steps.env2.outputs.USE_BUILDX }}" == "true" ]; then
               export CACHE_PUSH_COMMAND="${{ steps.build-test.outputs.BUILDX_PUSH_TEST_COMMAND }}"
             else
-              export CACHE_PUSH_COMMAND="docker push ${{ steps.env2.outputs.CACHE_IMAGE_TAG }}"
+              export CACHE_PUSH_COMMAND="docker push ${{ steps.env2.outputs.CACHE_IMAGE_ID_TAG }}"
             fi
           fi
           ./.github/reusable_workflow/scripts/push_images.sh
@@ -420,7 +420,7 @@ jobs:
            -e IMAGE_TAG=${{ steps.env1.outputs.IMAGE_TAG }} \
            -e ENVIRONMENTS="${{ inputs.production_environments }}" \
            -e ECR_REPOSITORY="${{ inputs.ecr_repository }}" \
-           ${{ steps.env2.outputs.PUBLISH_APP_IMAGE_TAG }}
+           ${{ steps.env2.outputs.PUBLISH_APP_IMAGE_ID_TAG }}
 
       - name: Update GitOps Repo to trigger deploys for test
         if: |
@@ -434,7 +434,7 @@ jobs:
            -e IMAGE_TAG=${{ steps.env1.outputs.IMAGE_TAG }} \
            -e ENVIRONMENTS="${{ inputs.test_environments }}" \
            -e ECR_REPOSITORY="${{ inputs.ecr_repository }}" \
-           ${{ steps.env2.outputs.PUBLISH_APP_IMAGE_TAG }}
+           ${{ steps.env2.outputs.PUBLISH_APP_IMAGE_ID_TAG }}
 
       - name: Update GitOps Repo to trigger deploys for development
         if: |
@@ -447,7 +447,7 @@ jobs:
            -e IMAGE_TAG=${{ steps.env1.outputs.IMAGE_TAG }} \
            -e ENVIRONMENTS="${{ inputs.development_environments }}" \
            -e ECR_REPOSITORY="${{ inputs.ecr_repository }}" \
-           ${{ steps.env2.outputs.PUBLISH_APP_IMAGE_TAG }}
+           ${{ steps.env2.outputs.PUBLISH_APP_IMAGE_ID_TAG }}
 
       - name: check for failures
         id: failure-check
