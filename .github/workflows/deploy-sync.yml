@@ -348,8 +348,12 @@ jobs:
       - name: Run Image scan on production image for cves
         if: inputs.event_name != 'issue_comment'
         run: |
-          SCAN_COMMAND="./scripts/scan '${{ steps.env1.outputs.IMAGE_TAG }}' '$(docker images --no-trunc --quiet ${{ steps.env1.outputs.IMAGE_TAG }})' '/app/repo/Dockerfile' '${{ secrets.SNYK_TOKEN }}'"
-          $("${{ steps.build-production.outputs.IMAGE_SCANNER_COMMON }} $SCAN_COMMAND")
+          image_sha="$(docker images --no-trunc --quiet ${{ steps.env1.outputs.IMAGE_TAG }})"
+          ${{ steps.build-production.outputs.IMAGE_SCANNER_COMMON }} \
+            ./scripts/scan \
+            '${{ steps.env1.outputs.IMAGE_TAG }}' \
+            '${image_sha}' \
+            '/app/repo/Dockerfile' '${{ secrets.SNYK_TOKEN }}'
 
       - name: Push to ECR
         run: |
