@@ -46,7 +46,7 @@ async() {
             $reject "${__result}" "${log_name}" "${status}" "${JOBS}"
         }
         unset __result
-        echo "`date "+%Y-%m-%d %H:%M:%S"` Finished $log_name Took $SECONDS"
+        echo "`date "+%Y-%m-%d %H:%M:%S"` Finished $log_name (Code: $status) Took $SECONDS"
     } &
 
     JOB_IDS+=( "${JOBS} ${command}" )
