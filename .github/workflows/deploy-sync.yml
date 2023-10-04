@@ -189,6 +189,8 @@ jobs:
           IMAGE_ID=$(echo "$ECR_REGISTRY/${{ inputs.ecr_repository }}" | tr '[A-Z]' '[a-z]')
           echo "IMAGE_ID=$IMAGE_ID" >> $GITHUB_OUTPUT
 
+          echo "PRODUCTION_IMAGE_TAG=$IMAGE_ID:${{ steps.env1.outputs.IMAGE_TAG }}" >> $GITHUB_OUTPUT
+
           echo "CACHE_IMAGE_TAG=$IMAGE_ID:cache" >> $GITHUB_OUTPUT
 
           # This is just a image tag without ecr to avoid ever grabbing from ecr
@@ -252,7 +254,7 @@ jobs:
         id: build-production
         run: |
           BUILD_PRODUCTION_COMMAND=""
-          COMMON="--target production --build-arg BUILDKIT_INLINE_CACHE=1 --build-arg RELEASE_VERSION=${{ steps.env1.outputs.IMAGE_TAG }} --build-arg BASE_IMAGE=${{ steps.env2.outputs.BASE_IMAGE }}  --cache-from ${{ steps.env2.outputs.CACHE_IMAGE_TAG }} -t ${{ steps.env2.outputs.IMAGE_ID }}:${{ steps.env1.outputs.IMAGE_TAG }}"
+          COMMON="--target production --build-arg BUILDKIT_INLINE_CACHE=1 --build-arg RELEASE_VERSION=${{ steps.env1.outputs.IMAGE_TAG }} --build-arg BASE_IMAGE=${{ steps.env2.outputs.BASE_IMAGE }}  --cache-from ${{ steps.env2.outputs.CACHE_IMAGE_TAG }} -t ${{ steps.env2.outputs.PRODUCTION_IMAGE_TAG }}"
           if [ "${{ steps.env2.outputs.USE_BUILDX }}" == "true" ]; then
             BUILD_PRODUCTION_COMMAND="docker buildx build --platform=${{ inputs.platforms }} $COMMON ."
           else
@@ -349,10 +351,10 @@ jobs:
       - name: Run Image scan on production image for cves
         if: inputs.event_name != 'issue_comment'
         run: |
-          image_sha="$(docker images --no-trunc --quiet ${{ steps.env1.outputs.IMAGE_TAG }})"
+          image_sha="$(docker images --no-trunc --quiet ${{ steps.env2.outputs.PRODUCTION_IMAGE_TAG }})"
           ${{ steps.build-production.outputs.IMAGE_SCANNER_COMMON }} \
             ./scripts/scan \
-            '${{ steps.env1.outputs.IMAGE_TAG }}' \
+            '${{ steps.env2.outputs.PRODUCTION_IMAGE_TAG }}' \
             '${image_sha}' \
             '/app/repo/Dockerfile' '${{ secrets.SNYK_TOKEN }}'
 
@@ -368,7 +370,7 @@ jobs:
             if [ "${{ steps.env2.outputs.USE_BUILDX }}" == "true" ]; then
               export PRODUCTION_PUSH_COMMAND="${{ steps.build-production.outputs.BUILDX_PUSH_PRODUCTION_COMMAND }}"
             else 
-              export PRODUCTION_PUSH_COMMAND="docker push ${{ steps.env2.outputs.IMAGE_ID }}:${{ steps.env1.outputs.IMAGE_TAG }}"
+              export PRODUCTION_PUSH_COMMAND="docker push ${{ steps.env2.outputs.PRODUCTION_IMAGE_TAG }}"
             fi
           fi
 
