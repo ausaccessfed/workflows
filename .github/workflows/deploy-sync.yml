@@ -280,7 +280,8 @@ jobs:
             export EXTRA_TASK_6='${{ inputs.extra_task_6 }}'
           fi
 
-          IMAGE_SCANNER_COMMON="docker run -v /var/run/docker.sock:/var/run/docker.sock -v ${PWD}:/app/repo ${{ steps.env2.outputs.IMAGE_SCANNER_IMAGE_TAG }}"
+          # must run as root to access the docker socket
+          IMAGE_SCANNER_COMMON="docker run -u 0 -v /var/run/docker.sock:/var/run/docker.sock -v ${PWD}:/app/repo ${{ steps.env2.outputs.IMAGE_SCANNER_IMAGE_TAG }}"
           echo "IMAGE_SCANNER_COMMON=$IMAGE_SCANNER_COMMON" >> $GITHUB_OUTPUT
 
           LINT_COMMAND="./scripts/lint ${{ steps.env2.outputs.LOCAL_IMAGE_TAG }} /app/repo/Dockerfile"
