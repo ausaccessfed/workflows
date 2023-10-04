@@ -201,7 +201,7 @@ jobs:
           echo "CACHE_IMAGE_TAG=$IMAGE_ID:cache" >> $GITHUB_OUTPUT
 
           # This is just a image tag without ecr to avoid ever grabbing from ecr
-          echo "LOCAL_IMAGE_TAG=app:cache" >> $GITHUB_OUTPUT
+          echo "LOCAL_CACHE_IMAGE_TAG=app:cache" >> $GITHUB_OUTPUT
 
           PROJECTS="${{ inputs.ecr_repository }}"
           if [ "${{ inputs.projects }}" != "" ]; then
@@ -236,10 +236,10 @@ jobs:
           COMMON="--target development --build-arg BUILDKIT_INLINE_CACHE=1 --build-arg BASE_IMAGE=${{ steps.env2.outputs.BASE_IMAGE }}  --cache-from ${{ steps.env2.outputs.CACHE_IMAGE_TAG }} "
 
           if [ "${{ steps.env2.outputs.USE_BUILDX }}" == "true" ]; then
-            BUILD_TEST_COMMAND="docker buildx build --platform=${{ inputs.platforms }} $COMMON -t ${{ steps.env2.outputs.CACHE_IMAGE_TAG }} -t ${{ steps.env2.outputs.LOCAL_IMAGE_TAG }} ."
+            BUILD_TEST_COMMAND="docker buildx build --platform=${{ inputs.platforms }} $COMMON -t ${{ steps.env2.outputs.CACHE_IMAGE_TAG }} -t ${{ steps.env2.outputs.LOCAL_CACHE_IMAGE_TAG }} ."
           else
             docker pull ${{ steps.env2.outputs.CACHE_IMAGE_TAG }} || echo "true"
-            BUILD_TEST_COMMAND="docker build $COMMON -t ${{ steps.env2.outputs.CACHE_IMAGE_TAG }} -t ${{ steps.env2.outputs.LOCAL_IMAGE_TAG }} ."
+            BUILD_TEST_COMMAND="docker build $COMMON -t ${{ steps.env2.outputs.CACHE_IMAGE_TAG }} -t ${{ steps.env2.outputs.LOCAL_CACHE_IMAGE_TAG }} ."
           fi
 
           BUILDX_PUSH_TEST_COMMAND="docker buildx build --push --platform=${{ inputs.platforms }} $COMMON -t ${{ steps.env2.outputs.CACHE_IMAGE_TAG }} ."
@@ -247,7 +247,7 @@ jobs:
 
           ## Note this is only needed as buildx doesnt support --load with multiple platforms yet but is on roadmap
           ## if it is ever supported simply remove this and the "Load test oci image step" and add --load to the first BUILD_TEST_COMMAND
-          BUILDX_LOAD_TEST_COMMAND="docker buildx build --load $COMMON -t ${{ steps.env2.outputs.LOCAL_IMAGE_TAG }} ."
+          BUILDX_LOAD_TEST_COMMAND="docker buildx build --load $COMMON -t ${{ steps.env2.outputs.LOCAL_CACHE_IMAGE_TAG }} ."
           echo "BUILDX_LOAD_TEST_COMMAND=$BUILDX_LOAD_TEST_COMMAND" >> $GITHUB_OUTPUT
 
           DOCKER_BUILDKIT=1 $BUILD_TEST_COMMAND
@@ -293,7 +293,7 @@ jobs:
           IMAGE_SCANNER_COMMON="docker run -u 0 -v /var/run/docker.sock:/var/run/docker.sock -v ${PWD}/Dockerfile:/app/Dockerfile ${{ steps.env2.outputs.IMAGE_SCANNER_IMAGE_TAG }}"
           echo "IMAGE_SCANNER_COMMON=$IMAGE_SCANNER_COMMON" >> $GITHUB_OUTPUT
 
-          export EXTRA_TASK_IMAGE_LINT_COMMAND="$IMAGE_SCANNER_COMMON ./scripts/lint ${{ steps.env2.outputs.LOCAL_IMAGE_TAG }} /app/Dockerfile ${{ inputs.supress_task_failures }}"
+          export EXTRA_TASK_IMAGE_LINT_COMMAND="$IMAGE_SCANNER_COMMON ./scripts/lint ${{ steps.env2.outputs.LOCAL_CACHE_IMAGE_TAG }} /app/Dockerfile ${{ inputs.supress_task_failures }}"
 
           ./.github/reusable_workflow/scripts/additional_tasks.sh
 
