@@ -191,7 +191,7 @@ jobs:
           fi
           echo "USE_BUILDX=$USE_BUILDX" >> $GITHUB_OUTPUT
 
-      - name: modify .FORCE_NEW_DOCKER_BUILD
+      - name: Force docker image to be rebuilt from scratch
         if: inputs.event_name == 'schedule'
         run: |
           echo "`date "+%Y-%m-%d %H:%M:%S"` REBUILD" >> .FORCE_NEW_DOCKER_BUILD
