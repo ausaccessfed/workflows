@@ -191,6 +191,11 @@ jobs:
           fi
           echo "USE_BUILDX=$USE_BUILDX" >> $GITHUB_OUTPUT
 
+      - name: Force docker image to be rebuilt from scratch
+        if: inputs.event_name == 'schedule'
+        run: |
+          echo "`date "+%Y-%m-%d %H:%M:%S"` REBUILD" >> .FORCE_NEW_DOCKER_BUILD
+
       - name: Set up QEMU
         if: steps.env2.outputs.USE_BUILDX == 'true'
         uses: docker/setup-qemu-action@27d0a4f181a40b142cce983c5393082c365d1480 # v1
