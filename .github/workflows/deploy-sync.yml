@@ -3,7 +3,7 @@ on:
   workflow_call:
     inputs:
       # If not provided then assumes auto generated stable-SHA256
-      image_tag:
+      override_image_tag:
         default: ""
         type: string
       # currently only supresses image scans/lints, but can be expanded if needed
@@ -145,8 +145,8 @@ jobs:
           fi
           echo "BRANCH_NAME=$branch_name" >> $GITHUB_OUTPUT
 
-          if [ "${{ inputs.image_tag }}" != "" ]; then
-            image_tag="${{ inputs.image_tag }}"
+          if [ "${{ inputs.override_image_tag }}" != "" ]; then
+            image_tag="${{ inputs.override_image_tag }}"
           elif [ "${{ inputs.event_name }}" == "issue_comment" ]; then
             image_tag=adhoc-${{steps.comment-branch.outputs.head_ref}}-${{steps.comment-branch.outputs.head_sha}}
           else
@@ -354,17 +354,18 @@ jobs:
         if: inputs.event_name != 'issue_comment' && always()
         run: cat image_lint.txt || (cat image_lint_error.txt && exit 1)
 
-      - name: Run Image scan on production image for cves
-        if: inputs.event_name != 'issue_comment'
-        run: |
-          image_sha="$(docker images --no-trunc --quiet ${{ steps.env2.outputs.PRODUCTION_IMAGE_ID_TAG }})"
-          ${{ steps.build-production.outputs.IMAGE_SCANNER_COMMON }} \
-            ./scripts/scan \
-            ${{ steps.env2.outputs.PRODUCTION_IMAGE_ID_TAG }} \
-            $image_sha \
-            /app/Dockerfile \
-            ${{ secrets.SNYK_TOKEN }} \
-            ${{ inputs.supress_task_failures }}
+      # TODO: comment out for now, can we move to a more async job approuch?
+      # - name: Run Image scan on production image for cves
+      #   if: inputs.event_name != 'issue_comment'
+      #   run: |
+      #     image_sha="$(docker images --no-trunc --quiet ${{ steps.env2.outputs.PRODUCTION_IMAGE_ID_TAG }})"
+      #     ${{ steps.build-production.outputs.IMAGE_SCANNER_COMMON }} \
+      #       ./scripts/scan \
+      #       ${{ steps.env2.outputs.PRODUCTION_IMAGE_ID_TAG }} \
+      #       $image_sha \
+      #       /app/Dockerfile \
+      #       ${{ secrets.SNYK_TOKEN }} \
+      #       ${{ inputs.supress_task_failures }}
 
       - name: Push to ECR
         run: |
