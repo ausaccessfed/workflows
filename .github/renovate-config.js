@@ -33,5 +33,21 @@ module.exports = {
     prConcurrentLimit: 0,
     commitMessageAction: "Upgrade",
     commitMessageTopic: "{{packageName}}/{{depName}}",
-    commitMessageExtra: "{{currentVersion}} -> {{newVersion}}"
+    commitMessageExtra: "{{currentVersion}} -> {{newVersion}}",
+    regexManagers: [
+        {
+            "description": "Update dockerfile github releases",
+            "fileMatch": [
+                "Dockerfile"
+            ],
+            // i.e
+            // # renovate: datasource=github-releases depName=goodwithtech/dockle
+            // ARG DOCKLE_VERSION=0.4.0
+            "matchStrings": [
+                "#\\s*renovate:\\s*datasource=(?<datasource>.*?)\\s*depName=(?<depName>.*?)\\s*ARG\\s.*?_VERSION\\s*=\\s*\"*(?<currentValue>.*)\"*"
+            ]
+        }
+    ],
+    packageRules: [
+    ]
 };
