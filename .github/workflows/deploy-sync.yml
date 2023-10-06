@@ -6,10 +6,6 @@ on:
       override_image_tag:
         default: ""
         type: string
-      # currently only supresses image scans/lints, but can be expanded if needed
-      supress_task_failures:
-        default: true
-        type: boolean
       ecr_repository:
         required: true
         type: string
@@ -318,7 +314,7 @@ jobs:
           IMAGE_SCANNER_COMMON="docker run -u 0 -v /var/run/docker.sock:/var/run/docker.sock ${IMAGE_SCANNER_EXTRAS} ${{ steps.env2.outputs.IMAGE_SCANNER_IMAGE_ID_TAG }}"
           echo "IMAGE_SCANNER_COMMON=$IMAGE_SCANNER_COMMON" >> $GITHUB_OUTPUT
 
-          export EXTRA_TASK_IMAGE_LINT_COMMAND="$IMAGE_SCANNER_COMMON ./scripts/lint ${{ steps.env2.outputs.LOCAL_CACHE_IMAGE_ID_TAG }} /app/Dockerfile ${{ inputs.supress_task_failures }}"
+          export EXTRA_TASK_IMAGE_LINT_COMMAND="$IMAGE_SCANNER_COMMON ./scripts/lint ${{ steps.env2.outputs.LOCAL_CACHE_IMAGE_ID_TAG }} /app/Dockerfile"
 
           ./.github/reusable_workflow/scripts/additional_tasks.sh
 
@@ -390,8 +386,8 @@ jobs:
             $image_sha \
             /app/Dockerfile \
             ${{ secrets.SNYK_TOKEN }} \
-            ${{ inputs.supress_task_failures }}
-
+            true
+      # TODO: change the true above when were ready to enforce
       - name: Push to ECR
         run: |
           if [ \
