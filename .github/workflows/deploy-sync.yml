@@ -105,12 +105,12 @@ jobs:
         ports:
           - "3306:3306"
     steps:
-      - uses: xt0rted/pull-request-comment-branch@d97294d304604fa98a2600a6e2f916a84b596dc7 # v2
+      - uses: xt0rted/pull-request-comment-branch@d97294d304604fa98a2600a6e2f916a84b596dc7 # v2.0.0
         if: inputs.event_name == 'issue_comment'
         id: comment-branch
 
       - name: Set commit status as pending
-        uses: myrotvorets/set-commit-status-action@master
+        uses: myrotvorets/set-commit-status-action@38f3f27c7d52fb381273e95542f07f0fba301307 # v2.0.0
         if: inputs.event_name == 'issue_comment'
         with:
           sha: ${{ steps.comment-branch.outputs.head_sha }}
@@ -140,12 +140,12 @@ jobs:
           image_tag=$(echo "$image_tag" | tr / _)
           echo "IMAGE_TAG=$image_tag" >> $GITHUB_OUTPUT
 
-      - uses: actions/checkout@ee0669bd1cc54295c223e0bb666b733df41de1c5 # v2
+      - uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v4.1.0
         with:
           ref: ${{ steps.env1.outputs.BRANCH_NAME }}
 
       - name: Checkout reusable workflow dir
-        uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3
+        uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v4.1.0
         with:
           repository: ausaccessfed/workflows
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -161,7 +161,7 @@ jobs:
 
       - name: Login to Amazon ECR
         id: login-ecr
-        uses: aws-actions/amazon-ecr-login@2f9f10ea3fa2eed41ac443fee8bfbd059af2d0a4 # v1
+        uses: aws-actions/amazon-ecr-login@2f9f10ea3fa2eed41ac443fee8bfbd059af2d0a4 # v1.6.0
 
       - name: set more envs
         id: env2
@@ -198,11 +198,11 @@ jobs:
 
       - name: Set up QEMU
         if: steps.env2.outputs.USE_BUILDX == 'true'
-        uses: docker/setup-qemu-action@27d0a4f181a40b142cce983c5393082c365d1480 # v1
+        uses: docker/setup-qemu-action@27d0a4f181a40b142cce983c5393082c365d1480 # v1.2.0
 
       - name: Set up Docker Buildx
         if: steps.env2.outputs.USE_BUILDX == 'true'
-        uses: docker/setup-buildx-action@f211e3e9ded2d9377c8cadc4489a4e38014bc4c9 # v1
+        uses: docker/setup-buildx-action@f211e3e9ded2d9377c8cadc4489a4e38014bc4c9 # v1.7.0
 
       - name: Build Test OCI Image
         id: build-test
@@ -429,7 +429,7 @@ jobs:
 
       - name: Set final commit status
         if: inputs.event_name == 'issue_comment' && always()
-        uses: myrotvorets/set-commit-status-action@master
+        uses: myrotvorets/set-commit-status-action@38f3f27c7d52fb381273e95542f07f0fba301307 # v2.0.0
         with:
           sha: ${{ steps.comment-branch.outputs.head_sha }}
           token: ${{ secrets.GITHUB_TOKEN }}
