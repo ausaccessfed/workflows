@@ -296,8 +296,19 @@ jobs:
             export EXTRA_TASK_6='${{ inputs.extra_task_6 }}'
           fi
 
+          IMAGE_SCANNER_EXTRAS=""
+          if [ -f "${PWD}/Dockerfile" ]; then
+            IMAGE_SCANNER_EXTRAS="-v ${PWD}/Dockerfile:/app/Dockerfile ${IMAGE_SCANNER_EXTRAS}"
+          fi
+          if [ -f "${PWD}/.dockleignore" ]; then
+            IMAGE_SCANNER_EXTRAS="-v ${PWD}/.dockleignore:/app/.dockleignore ${IMAGE_SCANNER_EXTRAS}"
+          fi
+          if [ -f "${PWD}/.hadolint.yaml" ]; then
+            IMAGE_SCANNER_EXTRAS="-v ${PWD}/.hadolint.yaml:/app/.hadolint.yaml ${IMAGE_SCANNER_EXTRAS}"
+          fi
+
           # must run as root to access the docker socket
-          IMAGE_SCANNER_COMMON="docker run -u 0 -v /var/run/docker.sock:/var/run/docker.sock -v ${PWD}/Dockerfile:/app/Dockerfile ${{ steps.env2.outputs.IMAGE_SCANNER_IMAGE_ID_TAG }}"
+          IMAGE_SCANNER_COMMON="docker run -u 0 -v /var/run/docker.sock:/var/run/docker.sock ${IMAGE_SCANNER_EXTRAS} ${{ steps.env2.outputs.IMAGE_SCANNER_IMAGE_ID_TAG }}"
           echo "IMAGE_SCANNER_COMMON=$IMAGE_SCANNER_COMMON" >> $GITHUB_OUTPUT
 
           export EXTRA_TASK_IMAGE_LINT_COMMAND="$IMAGE_SCANNER_COMMON ./scripts/lint ${{ steps.env2.outputs.LOCAL_CACHE_IMAGE_ID_TAG }} /app/Dockerfile ${{ inputs.supress_task_failures }}"
@@ -361,7 +372,7 @@ jobs:
         if: steps.env1.outputs.IS_SLASH_DEPLOY == 'false' && always()
         run: cat image_lint.txt || (cat image_lint_error.txt && exit 1)
 
-      # TODO: masster/main branch merges only for now
+      # TODO: master/main branch merges only for now
       - name: Run Image scan on production image for cves
         if: steps.env1.outputs.IS_DEFAULT_BRANCH_PUSH == 'true'
         run: |
