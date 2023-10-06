@@ -94,6 +94,9 @@ on:
         required: true
       SNYK_TOKEN:
         required: true
+env:
+  DOCKER_CONTENT_TRUST: 1
+  DOCKER_BUILDKIT: 1
 jobs:
   run:
     runs-on: ${{ inputs.runner }}
