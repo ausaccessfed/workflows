@@ -308,8 +308,6 @@ jobs:
           IMAGE_SCANNER_COMMON="docker run -u 0 -v /var/run/docker.sock:/var/run/docker.sock ${IMAGE_SCANNER_EXTRAS} ${{ steps.env2.outputs.IMAGE_SCANNER_IMAGE_ID_TAG }}"
           echo "IMAGE_SCANNER_COMMON=$IMAGE_SCANNER_COMMON" >> $GITHUB_OUTPUT
 
-          export EXTRA_TASK_IMAGE_LINT_COMMAND="$IMAGE_SCANNER_COMMON ./scripts/lint ${{ steps.env2.outputs.LOCAL_CACHE_IMAGE_ID_TAG }} /app/Dockerfile"
-
           ./.github/reusable_workflow/scripts/additional_tasks.sh
 
       - name: Load Production OCI Image
@@ -402,6 +400,14 @@ jobs:
             cat image_lint_error.txt
             exit 1
           fi
+
+      - name: Run Image lint on production image
+        if: steps.env1.outputs.IS_SLASH_DEPLOY == 'false'
+        run: |
+          ${{ steps.build-production.outputs.IMAGE_SCANNER_COMMON }} \
+            ./scripts/lint \
+            ${{ steps.env2.outputs.PRODUCTION_IMAGE_ID_TAG }} \
+            /app/Dockerfile
 
       # TODO: master/main branch merges only for now
       - name: Run Image scan on production image for cves
