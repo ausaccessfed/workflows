@@ -92,6 +92,8 @@ on:
         required: true
       ROLE:
         required: true
+      SNYK_TOKEN:
+        required: true
 jobs:
   run:
     runs-on: ${{ inputs.runner }}
@@ -105,6 +107,9 @@ jobs:
         ports:
           - "3306:3306"
     steps:
+      - name: Delete huge unnecessary tools folder
+        run: rm -rf /opt/hostedtoolcache
+
       - uses: xt0rted/pull-request-comment-branch@d97294d304604fa98a2600a6e2f916a84b596dc7 # v2.0.0
         if: inputs.event_name == 'issue_comment'
         id: comment-branch
@@ -196,6 +201,8 @@ jobs:
 
           echo "PRODUCTION_IMAGE_ID_TAG=$IMAGE_ID:${{ steps.env1.outputs.IMAGE_TAG }}" >> $GITHUB_OUTPUT
 
+          echo "LATEST_IMAGE_ID_TAG=$IMAGE_ID:latest" >> $GITHUB_OUTPUT
+
           echo "CACHE_IMAGE_ID_TAG=$IMAGE_ID:cache" >> $GITHUB_OUTPUT
 
           # This is just a image tag without ecr to avoid ever grabbing from ecr
@@ -258,7 +265,7 @@ jobs:
         id: build-production
         run: |
           BUILD_PRODUCTION_COMMAND=""
-          COMMON="--target production --build-arg BUILDKIT_INLINE_CACHE=1 --build-arg RELEASE_VERSION=${{ steps.env1.outputs.IMAGE_TAG }} --build-arg BASE_IMAGE=${{ steps.env2.outputs.BASE_IMAGE }}  --cache-from ${{ steps.env2.outputs.CACHE_IMAGE_ID_TAG }} -t ${{ steps.env2.outputs.PRODUCTION_IMAGE_ID_TAG }}"
+          COMMON="--target production --build-arg BUILDKIT_INLINE_CACHE=1 --build-arg RELEASE_VERSION=${{ steps.env1.outputs.IMAGE_TAG }} --build-arg BASE_IMAGE=${{ steps.env2.outputs.BASE_IMAGE }}  --cache-from ${{ steps.env2.outputs.CACHE_IMAGE_ID_TAG }} -t ${{ steps.env2.outputs.PRODUCTION_IMAGE_ID_TAG }} -t ${{ steps.env2.outputs.LATEST_IMAGE_ID_TAG }}"
           if [ "${{ steps.env2.outputs.USE_BUILDX }}" == "true" ]; then
             BUILD_PRODUCTION_COMMAND="docker buildx build --platform=${{ inputs.platforms }} $COMMON ."
           else
@@ -274,6 +281,7 @@ jobs:
           echo "BUILDX_LOAD_PRODUCTION_COMMAND=$BUILDX_LOAD_PRODUCTION_COMMAND" >> $GITHUB_OUTPUT
 
           export BUILD_PRODUCTION_COMMAND="$BUILD_PRODUCTION_COMMAND"
+
           export EXTRA_TASK_INC=10
           # Make sure EXTRA_TASK_INC inc is greater than the amount of EXTRA_TASKS
           if [ "${{steps.env1.outputs.IS_SLASH_DEPLOY}}" == "false" ]; then
@@ -284,6 +292,24 @@ jobs:
             export EXTRA_TASK_5='${{ inputs.extra_task_5 }}'
             export EXTRA_TASK_6='${{ inputs.extra_task_6 }}'
           fi
+
+          IMAGE_SCANNER_EXTRAS=""
+          if [ -f "${PWD}/Dockerfile" ]; then
+            IMAGE_SCANNER_EXTRAS="-v ${PWD}/Dockerfile:/app/Dockerfile ${IMAGE_SCANNER_EXTRAS}"
+          fi
+          if [ -f "${PWD}/.dockleignore" ]; then
+            IMAGE_SCANNER_EXTRAS="-v ${PWD}/.dockleignore:/app/.dockleignore ${IMAGE_SCANNER_EXTRAS}"
+          fi
+          if [ -f "${PWD}/.hadolint.yaml" ]; then
+            IMAGE_SCANNER_EXTRAS="-v ${PWD}/.hadolint.yaml:/app/.hadolint.yaml ${IMAGE_SCANNER_EXTRAS}"
+          fi
+
+          # must run as root to access the docker socket
+          IMAGE_SCANNER_COMMON="docker run -u 0 -v /var/run/docker.sock:/var/run/docker.sock ${IMAGE_SCANNER_EXTRAS} ${{ steps.env2.outputs.IMAGE_SCANNER_IMAGE_ID_TAG }}"
+          echo "IMAGE_SCANNER_COMMON=$IMAGE_SCANNER_COMMON" >> $GITHUB_OUTPUT
+
+          export EXTRA_TASK_IMAGE_LINT_COMMAND="$IMAGE_SCANNER_COMMON ./scripts/lint ${{ steps.env2.outputs.LOCAL_CACHE_IMAGE_ID_TAG }} /app/Dockerfile"
+
           ./.github/reusable_workflow/scripts/additional_tasks.sh
 
       - name: Load Production OCI Image
@@ -312,7 +338,7 @@ jobs:
 
       - name: ${{ inputs.extra_task_3_name }} Result
         id: extra-task-3
-        if: inputs.event_name != 'issue_comment' && inputs.extra_task_3 != '' && always()
+        if: steps.env1.outputs.IS_SLASH_DEPLOY == 'false' && inputs.extra_task_3 != '' && always()
         env:
           NUMBER: 3
         run: cat task_${NUMBER}.txt || (cat task_${NUMBER}_error.txt && exit 1)
@@ -338,6 +364,24 @@ jobs:
           NUMBER: 6
         run: cat task_${NUMBER}.txt || (cat task_${NUMBER}_error.txt && exit 1)
 
+      - name: Image lint results
+        id: image-lint
+        if: steps.env1.outputs.IS_SLASH_DEPLOY == 'false' && always()
+        run: cat image_lint.txt || (cat image_lint_error.txt && exit 1)
+
+      # TODO: master/main branch merges only for now
+      - name: Run Image scan on production image for cves
+        if: steps.env1.outputs.IS_DEFAULT_BRANCH_PUSH == 'true'
+        run: |
+          image_sha="$(docker images --no-trunc --quiet ${{ steps.env2.outputs.PRODUCTION_IMAGE_ID_TAG }})"
+          ${{ steps.build-production.outputs.IMAGE_SCANNER_COMMON }} \
+            ./scripts/scan \
+            ${{ steps.env2.outputs.PRODUCTION_IMAGE_ID_TAG }} \
+            $image_sha \
+            /app/Dockerfile \
+            ${{ secrets.SNYK_TOKEN }} \
+            true
+      # TODO: change the true above when were ready to enforce
       - name: Push to ECR
         run: |
           if [ \
@@ -350,11 +394,11 @@ jobs:
             if [ "${{ steps.env2.outputs.USE_BUILDX }}" == "true" ]; then
               export PRODUCTION_PUSH_COMMAND="${{ steps.build-production.outputs.BUILDX_PUSH_PRODUCTION_COMMAND }}"
             else 
-              export PRODUCTION_PUSH_COMMAND="docker push ${{ steps.env2.outputs.PRODUCTION_IMAGE_ID_TAG }}"
+              export PRODUCTION_PUSH_COMMAND="docker push ${{ steps.env2.outputs.PRODUCTION_IMAGE_ID_TAG }} && docker push ${{ steps.env2.outputs.LATEST_IMAGE_ID_TAG }}"
             fi
           fi
 
-          if [ "${{inputs.event_name}}" == "push" ] && [ "${{steps.env1.outputs.BRANCH_NAME}}" == "${{steps.env2.outputs.DEFAULT_BRANCH_FOR_CACHING}}" ]; then
+          if [ "${{steps.env1.outputs.IS_DEFAULT_CACHE_BRANCH_PUSH}}" == "true" ]; then
             if [ "${{ steps.env2.outputs.USE_BUILDX }}" == "true" ]; then
               export CACHE_PUSH_COMMAND="${{ steps.build-test.outputs.BUILDX_PUSH_TEST_COMMAND }}"
             else
@@ -401,7 +445,7 @@ jobs:
            ${{ steps.env2.outputs.PUBLISH_APP_IMAGE_ID_TAG }}
 
       - name: Update GitOps Repo to trigger deploys for development
-        if: steps.env1.outputs.IS_SLASH_DEPLOY == 'true'
+        if: inputs.development_environments != '' && steps.env1.outputs.IS_SLASH_DEPLOY == 'true'
         run: |
           printenv > .envs
            docker run --env-file .envs \
