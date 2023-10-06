@@ -137,7 +137,7 @@ jobs:
           fi
           echo "BRANCH_NAME=$branch_name" >> $GITHUB_OUTPUT
 
-          is_slash_deploy=$([ "${{ inputs.event_name }}" == "issue-comment" ] && echo "true" || echo "false")
+          is_slash_deploy=$([ "${{ inputs.event_name }}" == "issue_comment" ] && echo "true" || echo "false")
           echo "IS_SLASH_DEPLOY=$is_slash_deploy" >> $GITHUB_OUTPUT
 
           is_default_branch_push=$(([ "${{ inputs.event_name }}" == "push" ] && [ "$branch_name" == "${{ inputs.default_branch }}" ]) && echo "true" || echo "false")
