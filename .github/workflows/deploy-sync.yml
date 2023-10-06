@@ -2,10 +2,6 @@ name: Build Docker Image
 on:
   workflow_call:
     inputs:
-      # If not provided then assumes auto generated stable-SHA256
-      override_image_tag:
-        default: ""
-        type: string
       ecr_repository:
         required: true
         type: string
@@ -154,10 +150,7 @@ jobs:
           is_default_cache_branch_push=$(([ "${{ inputs.event_name }}" == "push" ] && [ "$branch_name" == "$default_branch_for_caching" ]) && echo "true" || echo "false")
           echo "IS_DEFAULT_CACHE_BRANCH_PUSH=$is_default_cache_branch_push" >> $GITHUB_OUTPUT
 
-
-          if [ "${{ inputs.override_image_tag }}" != "" ]; then
-            image_tag="${{ inputs.override_image_tag }}"
-          elif [ "$IS_SLASH_DEPLOY" == "true" ]; then
+          if [ "$IS_SLASH_DEPLOY" == "true" ]; then
             image_tag=adhoc-${{steps.comment-branch.outputs.head_ref}}-${{steps.comment-branch.outputs.head_sha}}
           else
             image_tag=stable-${{ github.sha }}
@@ -208,6 +201,8 @@ jobs:
           echo "IMAGE_ID=$IMAGE_ID" >> $GITHUB_OUTPUT
 
           echo "PRODUCTION_IMAGE_ID_TAG=$IMAGE_ID:${{ steps.env1.outputs.IMAGE_TAG }}" >> $GITHUB_OUTPUT
+
+          echo "LATEST_IMAGE_ID_TAG=$IMAGE_ID:latest" >> $GITHUB_OUTPUT
 
           echo "CACHE_IMAGE_ID_TAG=$IMAGE_ID:cache" >> $GITHUB_OUTPUT
 
@@ -271,7 +266,7 @@ jobs:
         id: build-production
         run: |
           BUILD_PRODUCTION_COMMAND=""
-          COMMON="--target production --build-arg BUILDKIT_INLINE_CACHE=1 --build-arg RELEASE_VERSION=${{ steps.env1.outputs.IMAGE_TAG }} --build-arg BASE_IMAGE=${{ steps.env2.outputs.BASE_IMAGE }}  --cache-from ${{ steps.env2.outputs.CACHE_IMAGE_ID_TAG }} -t ${{ steps.env2.outputs.PRODUCTION_IMAGE_ID_TAG }}"
+          COMMON="--target production --build-arg BUILDKIT_INLINE_CACHE=1 --build-arg RELEASE_VERSION=${{ steps.env1.outputs.IMAGE_TAG }} --build-arg BASE_IMAGE=${{ steps.env2.outputs.BASE_IMAGE }}  --cache-from ${{ steps.env2.outputs.CACHE_IMAGE_ID_TAG }} -t ${{ steps.env2.outputs.PRODUCTION_IMAGE_ID_TAG }} -t ${{ steps.env2.outputs.LATEST_IMAGE_ID_TAG }}"
           if [ "${{ steps.env2.outputs.USE_BUILDX }}" == "true" ]; then
             BUILD_PRODUCTION_COMMAND="docker buildx build --platform=${{ inputs.platforms }} $COMMON ."
           else
@@ -400,7 +395,7 @@ jobs:
             if [ "${{ steps.env2.outputs.USE_BUILDX }}" == "true" ]; then
               export PRODUCTION_PUSH_COMMAND="${{ steps.build-production.outputs.BUILDX_PUSH_PRODUCTION_COMMAND }}"
             else 
-              export PRODUCTION_PUSH_COMMAND="docker push ${{ steps.env2.outputs.PRODUCTION_IMAGE_ID_TAG }}"
+              export PRODUCTION_PUSH_COMMAND="docker push ${{ steps.env2.outputs.PRODUCTION_IMAGE_ID_TAG }} && docker push ${{ steps.env2.outputs.LATEST_IMAGE_ID_TAG }}"
             fi
           fi
 
