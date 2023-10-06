@@ -367,7 +367,12 @@ jobs:
       - name: Image lint results
         id: image-lint
         if: steps.env1.outputs.IS_SLASH_DEPLOY == 'false' && always()
-        run: cat image_lint.txt || (cat image_lint_error.txt && exit 1)
+        run: |
+          cat image_lint.txt || echo "no output"
+          if [ -f image_lint_error.txt ]; then
+            cat image_lint_error.txt
+            exit 1
+          fi
 
       # TODO: master/main branch merges only for now
       - name: Run Image scan on production image for cves
