@@ -320,54 +320,88 @@ jobs:
       - name: Build Production Result
         id: build-production-result
         if: always()
-        run: cat build.txt || (cat build_error.txt && exit 1)
-
+        run: |
+          cat build.txt || echo "no output"
+          if [ -f build_error.txt ]; then
+            cat build_error.txt.txt
+            exit 1
+          fi
       - name: ${{ inputs.extra_task_1_name }} Result
         id: extra-task-1
         if: steps.env1.outputs.IS_SLASH_DEPLOY == 'false' && inputs.extra_task_1 != '' && always()
         env:
           NUMBER: 1
-        run: cat task_${NUMBER}.txt || (cat task_${NUMBER}_error.txt && exit 1)
-
+        run: |
+          cat task_${NUMBER}.txt || echo "no output"
+          if [ -f task_${NUMBER}_error.txt ]; then
+            cat task_${NUMBER}_error.txt
+            exit 1
+          fi
       - name: ${{ inputs.extra_task_2_name }} Result
         id: extra-task-2
         if: steps.env1.outputs.IS_SLASH_DEPLOY == 'false' && inputs.extra_task_2 != '' && always()
         env:
           NUMBER: 2
-        run: cat task_${NUMBER}.txt || (cat task_${NUMBER}_error.txt && exit 1)
-
+        run: |
+          cat task_${NUMBER}.txt || echo "no output"
+          if [ -f task_${NUMBER}_error.txt ]; then
+            cat task_${NUMBER}_error.txt
+            exit 1
+          fi
       - name: ${{ inputs.extra_task_3_name }} Result
         id: extra-task-3
         if: steps.env1.outputs.IS_SLASH_DEPLOY == 'false' && inputs.extra_task_3 != '' && always()
         env:
           NUMBER: 3
-        run: cat task_${NUMBER}.txt || (cat task_${NUMBER}_error.txt && exit 1)
-
+        run: |
+          cat task_${NUMBER}.txt || echo "no output"
+          if [ -f task_${NUMBER}_error.txt ]; then
+            cat task_${NUMBER}_error.txt
+            exit 1
+          fi
       - name: ${{ inputs.extra_task_4_name }} Result
         id: extra-task-4
         if: steps.env1.outputs.IS_SLASH_DEPLOY == 'false' && inputs.extra_task_4 != '' && always()
         env:
           NUMBER: 4
-        run: cat task_${NUMBER}.txt || (cat task_${NUMBER}_error.txt && exit 1)
-
+        run: |
+          cat task_${NUMBER}.txt || echo "no output"
+          if [ -f task_${NUMBER}_error.txt ]; then
+            cat task_${NUMBER}_error.txt
+            exit 1
+          fi
       - name: ${{ inputs.extra_task_5_name }} Result
         id: extra-task-5
         if: steps.env1.outputs.IS_SLASH_DEPLOY == 'false' && inputs.extra_task_5 != '' && always()
         env:
           NUMBER: 5
-        run: cat task_${NUMBER}.txt || (cat task_${NUMBER}_error.txt && exit 1)
-
+        run: |
+          cat task_${NUMBER}.txt || echo "no output"
+          if [ -f task_${NUMBER}_error.txt ]; then
+            cat task_${NUMBER}_error.txt
+            exit 1
+          fi
       - name: ${{ inputs.extra_task_6_name }} Result
         id: extra-task-6
         if: steps.env1.outputs.IS_SLASH_DEPLOY == 'false' && inputs.extra_task_6 != '' && always()
         env:
           NUMBER: 6
-        run: cat task_${NUMBER}.txt || (cat task_${NUMBER}_error.txt && exit 1)
+        run: |
+          cat task_${NUMBER}.txt || echo "no output"
+          if [ -f task_${NUMBER}_error.txt ]; then
+            cat task_${NUMBER}_error.txt
+            exit 1
+          fi
 
       - name: Image lint results
         id: image-lint
         if: steps.env1.outputs.IS_SLASH_DEPLOY == 'false' && always()
-        run: cat image_lint.txt || (cat image_lint_error.txt && exit 1)
+        run: |
+          cat image_lint.txt || echo "no output"
+          if [ -f image_lint_error.txt ]; then
+            cat image_lint_error.txt
+            exit 1
+          fi
 
       # TODO: master/main branch merges only for now
       - name: Run Image scan on production image for cves
@@ -414,10 +448,18 @@ jobs:
               -o \
               "${{steps.env1.outputs.IS_DEFAULT_DEVELOPMENT_BRANCH_PUSH}}" == "true" \
             ]; then
-              cat push_production.txt || (cat push_production_error.txt && exit 1)
+              cat push_production.txt || echo "no output"
+              if [ -f push_production_error.txt ]; then
+                cat push_production_error.txt
+                exit 1
+              fi
           fi
           if [ "${{steps.env1.outputs.IS_DEFAULT_CACHE_BRANCH_PUSH}}" == "true" ]; then
-            cat push_cache.txt || (cat push_cache_error.txt && exit 1)
+            cat push_cache.txt || echo "no output"
+            if [ -f push_cache_error.txt ]; then
+              cat push_cache_error.txt
+              exit 1
+            fi
           fi
 
       ## no point making the gitops repo triggers async, they will fight each other
