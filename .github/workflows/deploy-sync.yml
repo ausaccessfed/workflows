@@ -254,7 +254,7 @@ jobs:
           BUILDX_LOAD_TEST_COMMAND="docker buildx build --load $COMMON -t ${{ steps.env2.outputs.LOCAL_CACHE_IMAGE_ID_TAG }} ."
           echo "BUILDX_LOAD_TEST_COMMAND=$BUILDX_LOAD_TEST_COMMAND" >> $GITHUB_OUTPUT
 
-          DOCKER_BUILDKIT=1 $BUILD_TEST_COMMAND
+          DOCKER_CONTENT_TRUST=1 DOCKER_BUILDKIT=1 $BUILD_TEST_COMMAND
 
       - name: Load Test OCI Image
         if: steps.env2.outputs.USE_BUILDX == 'true'
