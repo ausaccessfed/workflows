@@ -433,8 +433,10 @@ jobs:
             ]; then
             if [ "${{ steps.env2.outputs.USE_BUILDX }}" == "true" ]; then
               export PRODUCTION_PUSH_COMMAND="${{ steps.build-production.outputs.BUILDX_PUSH_PRODUCTION_COMMAND }}"
+              export PRODUCTION_LATEST_PUSH_COMMAND="echo 'BUILDX doesnt do anything here'"
             else 
-              export PRODUCTION_PUSH_COMMAND="docker push ${{ steps.env2.outputs.PRODUCTION_IMAGE_ID_TAG }} && docker push ${{ steps.env2.outputs.LATEST_IMAGE_ID_TAG }}"
+              export PRODUCTION_PUSH_COMMAND="docker push ${{ steps.env2.outputs.PRODUCTION_IMAGE_ID_TAG }}"
+              export PRODUCTION_LATEST_PUSH_COMMAND="docker push ${{ steps.env2.outputs.LATEST_IMAGE_ID_TAG }}"
             fi
           fi
 
@@ -457,6 +459,12 @@ jobs:
               cat push_production.txt || echo "no output"
               if [ -f push_production_error.txt ]; then
                 cat push_production_error.txt
+                exit 1
+              fi
+
+              cat push_production_latest.txt || echo "no output"
+              if [ -f push_production_latest_error.txt ]; then
+                cat push_production_latest_error.txt
                 exit 1
               fi
           fi
