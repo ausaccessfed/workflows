@@ -406,7 +406,8 @@ jobs:
         run: |
           ${{ steps.build-production.outputs.IMAGE_SCANNER_COMMON }} \
             ./scripts/lint \
-            ${{ steps.env2.outputs.PRODUCTION_IMAGE_ID_TAG }}
+            ${{ steps.env2.outputs.PRODUCTION_IMAGE_ID_TAG }} \
+            /app/Dockerfile
 
       # TODO: master/main branch merges only for now
       - name: Run Image scan on production image for cves
