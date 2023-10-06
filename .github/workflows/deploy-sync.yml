@@ -320,7 +320,6 @@ jobs:
       - name: Build Production Result
         id: build-production-result
         if: always()
-        run: cat build.txt || (cat build_error.txt && exit 1)
         run: |
           cat build.txt || echo "no output"
           if [ -f build_error.txt ]; then
@@ -417,7 +416,6 @@ jobs:
             ${{ secrets.SNYK_TOKEN }} \
             true
       # TODO: change the true above when were ready to enforce
-
       - name: Push to ECR
         run: |
           if [ \
