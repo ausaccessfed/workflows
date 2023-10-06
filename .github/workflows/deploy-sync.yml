@@ -132,7 +132,20 @@ jobs:
           fi
           echo "BRANCH_NAME=$branch_name" >> $GITHUB_OUTPUT
 
-          if [ "${{ inputs.event_name }}" == "issue_comment" ]; then
+          is_slash_deploy=$([ "${{ inputs.event_name }}" == "issue-comment" ] && echo "true" || echo "false")
+          echo "IS_SLASH_DEPLOY=$is_slash_deploy" >> $GITHUB_OUTPUT
+
+          is_default_branch_push=$(([ "${{ inputs.event_name }}" == "push" ] && [ "$branch_name" == "${{ inputs.default_branch }}" ]) && echo "true" || echo "false")
+          echo "IS_DEFAULT_BRANCH_PUSH=$is_default_branch_push" >> $GITHUB_OUTPUT
+
+          is_default_development_branch_push=$(([ "${{ inputs.event_name }}" == "push" ] && [ "$branch_name" == "${{ inputs.default_develop_branch }}" ]) && echo "true" || echo "false")
+          echo "IS_DEFAULT_DEVELOPMENT_BRANCH_PUSH=$is_default_development_branch_push" >> $GITHUB_OUTPUT
+
+          default_branch_for_caching=$([ "$default_branch_for_caching" == "" ] && echo "${{ inputs.default_branch }}" || echo "${{ inputs.default_branch_for_caching }}")
+          is_default_cache_branch_push=$(([ "${{ inputs.event_name }}" == "push" ] && [ "$branch_name" == "$default_branch_for_caching" ]) && echo "true" || echo "false")
+          echo "IS_DEFAULT_CACHE_BRANCH_PUSH=$is_default_cache_branch_push" >> $GITHUB_OUTPUT
+
+          if [ "$IS_SLASH_DEPLOY" == "true" ]; then
             image_tag=adhoc-${{steps.comment-branch.outputs.head_ref}}-${{steps.comment-branch.outputs.head_sha}}
           else
             image_tag=stable-${{ github.sha }}
@@ -168,23 +181,32 @@ jobs:
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         run: |
+          echo "ECR_REGISTRY=$ECR_REGISTRY" >> $GITHUB_OUTPUT
+          echo "PUBLISH_APP_IMAGE_ID_TAG=$ECR_REGISTRY/publish_app:latest" >> $GITHUB_OUTPUT
+          echo "IMAGE_SCANNER_IMAGE_ID_TAG=$ECR_REGISTRY/image-scanner:latest" >> $GITHUB_OUTPUT
+
           VERSION=$(${{ inputs.version_command }})
           BASE_IMAGE="${{ secrets.DOCKER_ECR }}ruby-base:${VERSION}"
           echo "BASE_IMAGE=$BASE_IMAGE" >> $GITHUB_OUTPUT
+
           # Strip git ref prefix from version
           IMAGE_ID=$(echo "$ECR_REGISTRY/${{ inputs.ecr_repository }}" | tr '[A-Z]' '[a-z]')
-          echo "ECR_REGISTRY=$ECR_REGISTRY" >> $GITHUB_OUTPUT
+
           echo "IMAGE_ID=$IMAGE_ID" >> $GITHUB_OUTPUT
+
+          echo "PRODUCTION_IMAGE_ID_TAG=$IMAGE_ID:${{ steps.env1.outputs.IMAGE_TAG }}" >> $GITHUB_OUTPUT
+
+          echo "CACHE_IMAGE_ID_TAG=$IMAGE_ID:cache" >> $GITHUB_OUTPUT
+
+          # This is just a image tag without ecr to avoid ever grabbing from ecr
+          echo "LOCAL_CACHE_IMAGE_ID_TAG=app:cache" >> $GITHUB_OUTPUT
+
           PROJECTS="${{ inputs.ecr_repository }}"
           if [ "${{ inputs.projects }}" != "" ]; then
             PROJECTS="${{ inputs.projects }}"
           fi
           echo "PROJECTS=$PROJECTS" >> $GITHUB_OUTPUT
-          DEFAULT_BRANCH_FOR_CACHING="${{ inputs.default_branch_for_caching }}"
-          if [ "$DEFAULT_BRANCH_FOR_CACHING" == "" ]; then
-            DEFAULT_BRANCH_FOR_CACHING="${{ inputs.default_branch }}"
-          fi
-          echo "DEFAULT_BRANCH_FOR_CACHING=$DEFAULT_BRANCH_FOR_CACHING" >> $GITHUB_OUTPUT
+
           USE_BUILDX="false"
           if [ "${{ inputs.platforms }}" != "" ]; then
             USE_BUILDX="true"
@@ -208,21 +230,21 @@ jobs:
         id: build-test
         run: |
           BUILD_TEST_COMMAND=""
-          COMMON="--target development --build-arg BUILDKIT_INLINE_CACHE=1 --build-arg BASE_IMAGE=${{ steps.env2.outputs.BASE_IMAGE }}  --cache-from ${{ steps.env2.outputs.IMAGE_ID }}:cache "
+          COMMON="--target development --build-arg BUILDKIT_INLINE_CACHE=1 --build-arg BASE_IMAGE=${{ steps.env2.outputs.BASE_IMAGE }}  --cache-from ${{ steps.env2.outputs.CACHE_IMAGE_ID_TAG }} "
 
           if [ "${{ steps.env2.outputs.USE_BUILDX }}" == "true" ]; then
-            BUILD_TEST_COMMAND="docker buildx build --platform=${{ inputs.platforms }} $COMMON -t ${{ steps.env2.outputs.IMAGE_ID }}:cache -t app:cache ."
+            BUILD_TEST_COMMAND="docker buildx build --platform=${{ inputs.platforms }} $COMMON -t ${{ steps.env2.outputs.CACHE_IMAGE_ID_TAG }} -t ${{ steps.env2.outputs.LOCAL_CACHE_IMAGE_ID_TAG }} ."
           else
-            docker pull ${{ steps.env2.outputs.IMAGE_ID }}:cache || echo "true"
-            BUILD_TEST_COMMAND="docker build $COMMON -t ${{ steps.env2.outputs.IMAGE_ID }}:cache -t app:cache ."
+            docker pull ${{ steps.env2.outputs.CACHE_IMAGE_ID_TAG }} || echo "true"
+            BUILD_TEST_COMMAND="docker build $COMMON -t ${{ steps.env2.outputs.CACHE_IMAGE_ID_TAG }} -t ${{ steps.env2.outputs.LOCAL_CACHE_IMAGE_ID_TAG }} ."
           fi
 
-          BUILDX_PUSH_TEST_COMMAND="docker buildx build --push --platform=${{ inputs.platforms }} $COMMON -t ${{ steps.env2.outputs.IMAGE_ID }}:cache ."
+          BUILDX_PUSH_TEST_COMMAND="docker buildx build --push --platform=${{ inputs.platforms }} $COMMON -t ${{ steps.env2.outputs.CACHE_IMAGE_ID_TAG }} ."
           echo "BUILDX_PUSH_TEST_COMMAND=$BUILDX_PUSH_TEST_COMMAND" >> $GITHUB_OUTPUT
 
           ## Note this is only needed as buildx doesnt support --load with multiple platforms yet but is on roadmap
           ## if it is ever supported simply remove this and the "Load test oci image step" and add --load to the first BUILD_TEST_COMMAND
-          BUILDX_LOAD_TEST_COMMAND="docker buildx build --load $COMMON -t app:cache ."
+          BUILDX_LOAD_TEST_COMMAND="docker buildx build --load $COMMON -t ${{ steps.env2.outputs.LOCAL_CACHE_IMAGE_ID_TAG }} ."
           echo "BUILDX_LOAD_TEST_COMMAND=$BUILDX_LOAD_TEST_COMMAND" >> $GITHUB_OUTPUT
 
           DOCKER_BUILDKIT=1 $BUILD_TEST_COMMAND
@@ -236,7 +258,7 @@ jobs:
         id: build-production
         run: |
           BUILD_PRODUCTION_COMMAND=""
-          COMMON="--target production --build-arg BUILDKIT_INLINE_CACHE=1 --build-arg RELEASE_VERSION=${{ steps.env1.outputs.IMAGE_TAG }} --build-arg BASE_IMAGE=${{ steps.env2.outputs.BASE_IMAGE }}  --cache-from ${{ steps.env2.outputs.IMAGE_ID }}:cache -t ${{ steps.env2.outputs.IMAGE_ID }}:${{ steps.env1.outputs.IMAGE_TAG }}"
+          COMMON="--target production --build-arg BUILDKIT_INLINE_CACHE=1 --build-arg RELEASE_VERSION=${{ steps.env1.outputs.IMAGE_TAG }} --build-arg BASE_IMAGE=${{ steps.env2.outputs.BASE_IMAGE }}  --cache-from ${{ steps.env2.outputs.CACHE_IMAGE_ID_TAG }} -t ${{ steps.env2.outputs.PRODUCTION_IMAGE_ID_TAG }}"
           if [ "${{ steps.env2.outputs.USE_BUILDX }}" == "true" ]; then
             BUILD_PRODUCTION_COMMAND="docker buildx build --platform=${{ inputs.platforms }} $COMMON ."
           else
@@ -254,7 +276,7 @@ jobs:
           export BUILD_PRODUCTION_COMMAND="$BUILD_PRODUCTION_COMMAND"
           export EXTRA_TASK_INC=10
           # Make sure EXTRA_TASK_INC inc is greater than the amount of EXTRA_TASKS
-          if [ "${{inputs.event_name}}" != "issue_comment" ]; then
+          if [ "${{steps.env1.outputs.IS_SLASH_DEPLOY}}" == "false" ]; then
             export EXTRA_TASK_1='${{ inputs.extra_task_1 }}'
             export EXTRA_TASK_2='${{ inputs.extra_task_2 }}'
             export EXTRA_TASK_3='${{ inputs.extra_task_3 }}'
@@ -272,65 +294,63 @@ jobs:
       - name: Build Production Result
         id: build-production-result
         if: always()
-        run: |
-          cat build.txt
-          [[ -f build_error.txt ]] && cat build_error.txt && exit 1 || echo ""
+        run: cat build.txt || (cat build_error.txt && exit 1)
 
       - name: ${{ inputs.extra_task_1_name }} Result
         id: extra-task-1
-        if: inputs.event_name != 'issue_comment' && inputs.extra_task_1 != '' && always()
-        run: |
-          cat task_1.txt 
-          [[ -f task_1_error.txt ]] && cat task_1_error.txt && exit 1 ||  echo ""
+        if: steps.env1.outputs.IS_SLASH_DEPLOY == 'false' && inputs.extra_task_1 != '' && always()
+        env:
+          NUMBER: 1
+        run: cat task_${NUMBER}.txt || (cat task_${NUMBER}_error.txt && exit 1)
 
       - name: ${{ inputs.extra_task_2_name }} Result
         id: extra-task-2
-        if: inputs.event_name != 'issue_comment' && inputs.extra_task_2 != '' && always()
-        run: |
-          cat task_2.txt 
-          [[ -f task_2_error.txt ]] && cat task_2_error.txt && exit 1 ||  echo ""
+        if: steps.env1.outputs.IS_SLASH_DEPLOY == 'false' && inputs.extra_task_2 != '' && always()
+        env:
+          NUMBER: 2
+        run: cat task_${NUMBER}.txt || (cat task_${NUMBER}_error.txt && exit 1)
 
       - name: ${{ inputs.extra_task_3_name }} Result
         id: extra-task-3
         if: inputs.event_name != 'issue_comment' && inputs.extra_task_3 != '' && always()
-        run: |
-          cat task_3.txt 
-          [[ -f task_3_error.txt ]] && cat task_3_error.txt && exit 1 ||  echo ""
+        env:
+          NUMBER: 3
+        run: cat task_${NUMBER}.txt || (cat task_${NUMBER}_error.txt && exit 1)
 
       - name: ${{ inputs.extra_task_4_name }} Result
         id: extra-task-4
-        if: inputs.event_name != 'issue_comment' && inputs.extra_task_4 != '' && always()
-        run: |
-          cat task_4.txt 
-          [[ -f task_4_error.txt ]] && cat task_4_error.txt && exit 1 ||  echo ""
+        if: steps.env1.outputs.IS_SLASH_DEPLOY == 'false' && inputs.extra_task_4 != '' && always()
+        env:
+          NUMBER: 4
+        run: cat task_${NUMBER}.txt || (cat task_${NUMBER}_error.txt && exit 1)
 
       - name: ${{ inputs.extra_task_5_name }} Result
         id: extra-task-5
-        if: inputs.event_name != 'issue_comment' && inputs.extra_task_5 != '' && always()
-        run: |
-          cat task_5.txt 
-          [[ -f task_5_error.txt ]] && cat task_5_error.txt && exit 1 ||  echo ""
+        if: steps.env1.outputs.IS_SLASH_DEPLOY == 'false' && inputs.extra_task_5 != '' && always()
+        env:
+          NUMBER: 5
+        run: cat task_${NUMBER}.txt || (cat task_${NUMBER}_error.txt && exit 1)
 
       - name: ${{ inputs.extra_task_6_name }} Result
         id: extra-task-6
-        if: inputs.event_name != 'issue_comment' && inputs.extra_task_6 != '' && always()
-        run: |
-          cat task_6.txt 
-          [[ -f task_6_error.txt ]] && cat task_6_error.txt && exit 1 ||  echo ""
+        if: steps.env1.outputs.IS_SLASH_DEPLOY == 'false' && inputs.extra_task_6 != '' && always()
+        env:
+          NUMBER: 6
+        run: cat task_${NUMBER}.txt || (cat task_${NUMBER}_error.txt && exit 1)
 
       - name: Push to ECR
         run: |
           if [ \
-              "${{inputs.event_name}}" == "push" -a "${{steps.env1.outputs.BRANCH_NAME}}" == "${{inputs.default_branch}}" \
+              "${{steps.env1.outputs.IS_DEFAULT_BRANCH_PUSH}}" == "true" \
               -o \
-              "${{inputs.event_name}}" == "issue_comment" \
+              "${{steps.env1.outputs.IS_SLASH_DEPLOY}}" == "true" \
               -o \
-              "${{steps.env1.outputs.BRANCH_NAME}}" == "${{inputs.default_develop_branch}}" -a "${{inputs.event_name}}" == "push" \
+              "${{steps.env1.outputs.IS_DEFAULT_DEVELOPMENT_BRANCH_PUSH}}" == "true" \
             ]; then
             if [ "${{ steps.env2.outputs.USE_BUILDX }}" == "true" ]; then
               export PRODUCTION_PUSH_COMMAND="${{ steps.build-production.outputs.BUILDX_PUSH_PRODUCTION_COMMAND }}"
             else 
-              export PRODUCTION_PUSH_COMMAND="docker push ${{ steps.env2.outputs.IMAGE_ID }}:${{ steps.env1.outputs.IMAGE_TAG }}"
+              export PRODUCTION_PUSH_COMMAND="docker push ${{ steps.env2.outputs.PRODUCTION_IMAGE_ID_TAG }}"
             fi
           fi
 
@@ -338,30 +358,28 @@ jobs:
             if [ "${{ steps.env2.outputs.USE_BUILDX }}" == "true" ]; then
               export CACHE_PUSH_COMMAND="${{ steps.build-test.outputs.BUILDX_PUSH_TEST_COMMAND }}"
             else
-              export CACHE_PUSH_COMMAND="docker push ${{ steps.env2.outputs.IMAGE_ID }}:cache"
+              export CACHE_PUSH_COMMAND="docker push ${{ steps.env2.outputs.CACHE_IMAGE_ID_TAG }}"
             fi
           fi
           ./.github/reusable_workflow/scripts/push_images.sh
 
           if [ \
-              "${{inputs.event_name}}" == "push" -a "${{steps.env1.outputs.BRANCH_NAME}}" == "${{inputs.default_branch}}" \
+              "${{steps.env1.outputs.IS_DEFAULT_BRANCH_PUSH}}" == "true" \
               -o \
-              "${{inputs.event_name}}" == "issue_comment" \
+              "${{steps.env1.outputs.IS_SLASH_DEPLOY}}" == "true" \
               -o \
-              "${{steps.env1.outputs.BRANCH_NAME}}" == "${{inputs.default_develop_branch}}" -a "${{inputs.event_name}}" == "push" \
+              "${{steps.env1.outputs.IS_DEFAULT_DEVELOPMENT_BRANCH_PUSH}}" == "true" \
             ]; then
-              cat push_production.txt
-              [[ -f push_production_error.txt ]] && cat push_production_error.txt && exit 1 || echo ""
+              cat push_production.txt || (cat push_production_error.txt && exit 1)
           fi
-          if [ "${{inputs.event_name}}" == "push" ] && [ "${{steps.env1.outputs.BRANCH_NAME}}" == "${{steps.env2.outputs.DEFAULT_BRANCH_FOR_CACHING}}" ]; then
-            cat push_cache.txt 
-            [[ -f push_cache_error.txt ]] && cat push_cache_error.txt && exit 1 || echo ""
+          if [ "${{steps.env1.outputs.IS_DEFAULT_CACHE_BRANCH_PUSH}}" == "true" ]; then
+            cat push_cache.txt || (cat push_cache_error.txt && exit 1)
           fi
 
       ## no point making the gitops repo triggers async, they will fight each other
       ## and usually only 1 if statement is called anyway
       - name: Update GitOps Repo to trigger deploys
-        if: steps.env1.outputs.BRANCH_NAME == inputs.default_branch &&  inputs.event_name == 'push'
+        if: inputs.production_environments != '' && steps.env1.outputs.IS_DEFAULT_BRANCH_PUSH == 'true'
         run: |
           printenv > .envs
            docker run --env-file .envs \
@@ -369,10 +387,10 @@ jobs:
            -e IMAGE_TAG=${{ steps.env1.outputs.IMAGE_TAG }} \
            -e ENVIRONMENTS="${{ inputs.production_environments }}" \
            -e ECR_REPOSITORY="${{ inputs.ecr_repository }}" \
-           ${{ steps.env2.outputs.ECR_REGISTRY }}/publish_app:latest
+           ${{ steps.env2.outputs.PUBLISH_APP_IMAGE_ID_TAG }}
 
       - name: Update GitOps Repo to trigger deploys for test
-        if: inputs.test_environments != '' && inputs.default_develop_branch != '' && steps.env1.outputs.BRANCH_NAME == inputs.default_develop_branch &&  inputs.event_name == 'push'
+        if: inputs.test_environments != '' && steps.env1.outputs.IS_DEFAULT_DEVELOPMENT_BRANCH_PUSH == 'true'
         run: |
           printenv > .envs
            docker run --env-file .envs \
@@ -380,10 +398,10 @@ jobs:
            -e IMAGE_TAG=${{ steps.env1.outputs.IMAGE_TAG }} \
            -e ENVIRONMENTS="${{ inputs.test_environments }}" \
            -e ECR_REPOSITORY="${{ inputs.ecr_repository }}" \
-           ${{ steps.env2.outputs.ECR_REGISTRY }}/publish_app:latest
+           ${{ steps.env2.outputs.PUBLISH_APP_IMAGE_ID_TAG }}
 
       - name: Update GitOps Repo to trigger deploys for development
-        if: inputs.event_name == 'issue_comment'
+        if: steps.env1.outputs.IS_SLASH_DEPLOY == 'true'
         run: |
           printenv > .envs
            docker run --env-file .envs \
@@ -391,11 +409,11 @@ jobs:
            -e IMAGE_TAG=${{ steps.env1.outputs.IMAGE_TAG }} \
            -e ENVIRONMENTS="${{ inputs.development_environments }}" \
            -e ECR_REPOSITORY="${{ inputs.ecr_repository }}" \
-           ${{ steps.env2.outputs.ECR_REGISTRY }}/publish_app:latest
+           ${{ steps.env2.outputs.PUBLISH_APP_IMAGE_ID_TAG }}
 
       - name: check for failures
         id: failure-check
-        if: inputs.event_name == 'issue_comment' && always()
+        if: steps.env1.outputs.IS_SLASH_DEPLOY == 'true' && always()
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -428,7 +446,7 @@ jobs:
           fi
 
       - name: Set final commit status
-        if: inputs.event_name == 'issue_comment' && always()
+        if: steps.env1.outputs.IS_SLASH_DEPLOY == 'true' && always()
         uses: myrotvorets/set-commit-status-action@master
         with:
           sha: ${{ steps.comment-branch.outputs.head_sha }}
