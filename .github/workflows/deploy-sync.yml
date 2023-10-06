@@ -167,8 +167,7 @@ jobs:
         with:
           repository: ausaccessfed/workflows
           token: ${{ secrets.GITHUB_TOKEN }}
-          # TODO: change back to main
-          ref: feature/support-generic-containers
+          ref: main
           path: .github/reusable_workflow
 
       - name: Configure AWS Credentials
