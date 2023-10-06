@@ -140,6 +140,9 @@ jobs:
           is_slash_deploy=$([ "${{ inputs.event_name }}" == "issue_comment" ] && echo "true" || echo "false")
           echo "IS_SLASH_DEPLOY=$is_slash_deploy" >> $GITHUB_OUTPUT
 
+          is_monthly_build=$([ "${{ inputs.event_name }}" == "schedule" ] && echo "true" || echo "false")
+          echo "IS_MONTHLY_BUILD=$is_monthly_build" >> $GITHUB_OUTPUT
+
           is_default_branch_push=$(([ "${{ inputs.event_name }}" == "push" ] && [ "$branch_name" == "${{ inputs.default_branch }}" ]) && echo "true" || echo "false")
           echo "IS_DEFAULT_BRANCH_PUSH=$is_default_branch_push" >> $GITHUB_OUTPUT
 
@@ -400,9 +403,9 @@ jobs:
             ${{ steps.env2.outputs.PRODUCTION_IMAGE_ID_TAG }} \
             /app/Dockerfile
 
-      # TODO: master/main branch merges only for now
+      # TODO: master/main branch merges or monthly builds only for now
       - name: Run Image scan on production image for cves
-        if: steps.env1.outputs.IS_DEFAULT_BRANCH_PUSH == 'true'
+        if: steps.env1.outputs.IS_DEFAULT_BRANCH_PUSH == 'true' || steps.env1.outputs.IS_MONTHLY_BUILD == 'true'
         run: |
           image_sha="$(docker images --no-trunc --quiet ${{ steps.env2.outputs.PRODUCTION_IMAGE_ID_TAG }})"
           ${{ steps.build-production.outputs.IMAGE_SCANNER_COMMON }} \
