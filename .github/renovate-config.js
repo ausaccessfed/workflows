@@ -7,7 +7,8 @@ module.exports = {
     forkProcessing: "disabled",
     repositories: [
         'ausaccessfed/saml-service',
-        'ausaccessfed/image-scanner'
+        'ausaccessfed/image-scanner',
+        'ausaccessfed/discovery-service',
     ],
     labels: ["dependencies"],
     ignorePaths: [
