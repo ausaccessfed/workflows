@@ -9,6 +9,7 @@ module.exports = {
         'ausaccessfed/saml-service',
         'ausaccessfed/image-scanner',
         'ausaccessfed/discovery-service',
+        'ausaccessfed/rapid-idp-manager'
     ],
     labels: ["dependencies"],
     ignorePaths: [
@@ -61,5 +62,9 @@ module.exports = {
         }
     ],
     packageRules: [
+        {
+            "matchDepTypes": ["devDependencies"],
+            "automerge": true
+        }
     ]
 };
