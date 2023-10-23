@@ -143,8 +143,8 @@ jobs:
           IS_MONTHLY_BUILD=$([ "${{ inputs.event_name }}" == "schedule" ] && echo "true" || echo "false")
           echo "IS_MONTHLY_BUILD=$IS_MONTHLY_BUILD" >> $GITHUB_OUTPUT
 
-          is_default_branch_push=$(([ "${{ inputs.event_name }}" == "push" ] && [ "$BRANCH_NAME" == "${{ inputs.default_branch }}" ]) && echo "true" || echo "false")
-          echo "IS_DEFAULT_BRANCH_PUSH=$is_default_branch_push" >> $GITHUB_OUTPUT
+          IS_DEFAULT_BRANCH_PUSH=$(([ "${{ inputs.event_name }}" == "push" ] && [ "$BRANCH_NAME" == "${{ inputs.default_branch }}" ]) && echo "true" || echo "false")
+          echo "IS_DEFAULT_BRANCH_PUSH=$IS_DEFAULT_BRANCH_PUSH" >> $GITHUB_OUTPUT
 
           IS_DEFAULT_DEVELOPMENT_BRANCH_PUSH=$(([ "${{ inputs.event_name }}" == "push" ] && [ "$BRANCH_NAME" == "${{ inputs.default_develop_branch }}" ]) && echo "true" || echo "false")
           echo "IS_DEFAULT_DEVELOPMENT_BRANCH_PUSH=$IS_DEFAULT_DEVELOPMENT_BRANCH_PUSH" >> $GITHUB_OUTPUT
@@ -395,8 +395,6 @@ jobs:
           fi
 
       - name: Run Image lint on production image
-        # TODO: remove this once its been used for a bit, we should have this running on /deploy
-        if: steps.env1.outputs.IS_SLASH_DEPLOY == 'false'
         run: |
           ${{ steps.build-production.outputs.IMAGE_SCANNER_COMMON }} \
             ./scripts/lint \
