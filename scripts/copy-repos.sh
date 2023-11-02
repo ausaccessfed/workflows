@@ -16,7 +16,7 @@ expected=$(wc -w <<< "${items[@]}")
 actual=$(ls -1 $dir | wc -l)
 aws s3 sync $dir s3://aaf-archived-repositories
 
-if [ "$actual" == "$expected" ]; then
+if [ "$actual" != "$expected" ]; then
     echo "ERROR! expected to upload $expected but actually uploaded $actual"
     exit 1;
 fi
