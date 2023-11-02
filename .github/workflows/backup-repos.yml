@@ -22,4 +22,4 @@ jobs:
 
       - name: Backup
         run: |
-          ./scripts/copy-reps.sh "${{ secrets.ALL_REPO_SCOPED_TOKEN }}"
+          ./scripts/copy-repos.sh "${{ secrets.ALL_REPO_SCOPED_TOKEN }}"
