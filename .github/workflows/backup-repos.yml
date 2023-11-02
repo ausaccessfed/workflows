@@ -21,7 +21,5 @@ jobs:
           role-session-name: GithubActions-workflows-ci
 
       - name: Backup
-        env:
-          GH_TOKEN: ${{ secrets.ALL_REPO_SCOPED_TOKEN }}
         run: |
-          bash ./scripts/copy-repos.sh "$GH_TOKEN"
+          bash ./scripts/copy-repos.sh "${{ secrets.ALL_REPO_SCOPED_TOKEN }}"
