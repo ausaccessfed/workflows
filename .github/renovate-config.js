@@ -8,6 +8,7 @@ module.exports = {
     repositories: [
         'ausaccessfed/saml-service',
         'ausaccessfed/image-scanner',
+        'ausaccessfed/federationmanager',
         'ausaccessfed/discovery-service',
         'ausaccessfed/rapid-idp-manager'
     ],
