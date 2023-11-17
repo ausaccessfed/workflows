@@ -422,6 +422,8 @@ jobs:
               "${{steps.env1.outputs.IS_SLASH_DEPLOY}}" == "true" \
               -o \
               "${{steps.env1.outputs.IS_DEFAULT_DEVELOPMENT_BRANCH_PUSH}}" == "true" \
+              -o \
+              "${{steps.env1.outputs.IS_MONTHLY_BUILD}}" == "true" \
             ]; then
             if [ "${{ steps.env2.outputs.USE_BUILDX }}" == "true" ]; then
               export PRODUCTION_PUSH_COMMAND="${{ steps.build-production.outputs.BUILDX_PUSH_PRODUCTION_COMMAND }}"
@@ -447,6 +449,8 @@ jobs:
               "${{steps.env1.outputs.IS_SLASH_DEPLOY}}" == "true" \
               -o \
               "${{steps.env1.outputs.IS_DEFAULT_DEVELOPMENT_BRANCH_PUSH}}" == "true" \
+              -o \
+              "${{steps.env1.outputs.IS_MONTHLY_BUILD}}" == "true" \
             ]; then
               cat push_production.txt || echo "no output"
               if [ -f push_production_error.txt ]; then
@@ -471,7 +475,7 @@ jobs:
       ## no point making the gitops repo triggers async, they will fight each other
       ## and usually only 1 if statement is called anyway
       - name: Update GitOps Repo to trigger deploys
-        if: inputs.production_environments != '' && steps.env1.outputs.IS_DEFAULT_BRANCH_PUSH == 'true'
+        if: inputs.production_environments != '' && (steps.env1.outputs.IS_DEFAULT_BRANCH_PUSH == 'true' || steps.env1.outputs.IS_MONTHLY_BUILD == 'true')
         run: |
           printenv > .envs
            docker run --env-file .envs \
