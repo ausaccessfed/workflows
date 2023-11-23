@@ -87,17 +87,14 @@ module.exports = {
         "matchFileNames": ["Dockerfile"],
         "matchDepTypes": ["yum"],
         "groupName": "yum",
-        "autoApprove": true
     },
     // used to group only js linting packages
     {
         "matchPackagePatterns": ["eslint", "prettier"],
         "groupName": "lint",
-        "autoApprove": true
     },
     {
         "matchDepTypes": ["devDependencies"],
-        "autoApprove": true
     }
     ]
 };
