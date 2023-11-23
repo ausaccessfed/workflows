@@ -52,6 +52,9 @@ module.exports = {
             "fileMatch": [
                 "Dockerfile"
             ],
+            // i.e
+            // # renovate: datasource=github-releases depName=goodwithtech/dockle
+            // ARG DOCKLE_VERSION=0.4.0
             "datasourceTemplate": "github-releases",
             "matchStrings": [
                 "\\s*#\\s*renovate:\\s*datasource=(?<datasource>[^\\s]+)\\s*depName=(?<depName>.*?)\\s*ARG\\s.*?_VERSION\\s*=\\s*\"*(?<currentValue>.*)\"*"
@@ -59,6 +62,9 @@ module.exports = {
         },
         {
             "fileMatch": ["Dockerfile"],
+            // i.e
+            // # renovate: datasource=yum repo=rocky-9-appstream-x86_64
+            // jq-1.6-13.el9 \
             "matchStrings": [
                 "\\s*#\\s*renovate:\\s*datasource=(?<datasource>[^\\s]+)\\s*repo=(?<registryUrl>[^\\s]+)\\s+(?<depName>[^\\s]+)-(?<currentValue>[^\\s-]+-[^\\s-]+)"
             ],
@@ -81,11 +87,13 @@ module.exports = {
         "matchDatasources": ["github-releases"],
         "extractVersion": "^v(?<version>.*)$"
     },
+    // used to group only yum installed packages
     {
         "matchFileNames": ["Dockerfile"],
         "matchDepTypes": ["yum"],
         "groupName": "yum"
     },
+    // used to group only js linting packages
     {
         "matchPackagePatterns": ["eslint", "prettier"],
         "groupName": "lint"
