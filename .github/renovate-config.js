@@ -87,14 +87,26 @@ module.exports = {
         "matchFileNames": ["Dockerfile"],
         "matchDepTypes": ["yum"],
         "groupName": "yum",
+        "addLabels": ["dockerDependencies"],
     },
     // used to group only js linting packages
     {
         "matchPackagePatterns": ["eslint", "prettier"],
         "groupName": "lint",
+        "addLabels": ["devDependencies"],
+    },
+    //  Simple fallbacks for label assignment
+    {
+        "matchFileNames": ["Dockerfile"],
+        "addLabels": ["dockerDependencies"],
     },
     {
-        "matchDepTypes": ["devDependencies"],
+        "matchDepTypes": ["development"],
+        "addLabels": ["devDependencies"],
+    },
+    {
+        "matchDepTypes": ["test"],
+        "addLabels": ["testDependencies"],
     }
     ]
 };
