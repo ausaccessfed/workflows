@@ -19,4 +19,4 @@ jobs:
         env:
           LOG_LEVEL: "debug"
           RENOVATE_GIT_PRIVATE_KEY: ${{ secrets.RENOVATE_GPG_PRIVATE_KEY }}
-          RENOVATE_REPOSITORIES: '[ "ausaccessfed/image-scanner","ausaccessfed/federationmanager","ausaccessfed/discovery-service","ausaccessfed/rapid-idp-manager","ausaccessfed/reporting-service"]'
+          RENOVATE_REPOSITORIES: "${{ vars.RENOVATE_REPOSITORIES }}"
