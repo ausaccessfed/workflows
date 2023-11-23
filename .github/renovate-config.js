@@ -6,11 +6,11 @@ module.exports = {
     platform: 'github',
     forkProcessing: "disabled",
     repositories: [
-        'ausaccessfed/saml-service',
         'ausaccessfed/image-scanner',
         'ausaccessfed/federationmanager',
         'ausaccessfed/discovery-service',
-        'ausaccessfed/rapid-idp-manager'
+        'ausaccessfed/rapid-idp-manager',
+        'ausaccessfed/reporting-service'
     ],
     labels: ["dependencies"],
     ignorePaths: [
