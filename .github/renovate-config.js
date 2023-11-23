@@ -3,6 +3,7 @@ module.exports = {
     gitAuthor: 'aaf-terraform <fishwhack9000+terraform@gmail.com>',
     onboarding: false,
     requireConfig: "optional",
+    automerge: true,
     platform: 'github',
     forkProcessing: "disabled",
     labels: ["dependencies"],
