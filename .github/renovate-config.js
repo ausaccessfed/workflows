@@ -39,42 +39,56 @@ module.exports = {
     commitMessageExtra: "{{currentVersion}} -> {{newVersion}}",
     regexManagers: [
         {
+            "description": "Update Kubernetes version for Amazon EKS",
+            "fileMatch": [".+\\.tf$"],
+            "matchStrings": [
+                "\\s*#\\s*renovate:\\s*datasource=(?<datasource>[^\\s]+)\\s*depName=(?<depName>.*?)( versioning=(?<versioning>.*?))?\\s.*?_version\\s*=\\s*\"(?<currentValue>.*)\""
+            ],
+            "datasourceTemplate": "endoflife-date",
+            "versioningTemplate": "{{#if versioning}}{{{versioning}}}{{/if}}"
+        },
+        {
             "description": "Update dockerfile github releases",
-            "fileMatch": ["Dockerfile"],
-            // i.e
-            // # renovate: datasource=github-releases depName=goodwithtech/dockle
-            // ARG DOCKLE_VERSION=0.4.0
+            "fileMatch": [
+                "Dockerfile"
+            ],
             "datasourceTemplate": "github-releases",
             "matchStrings": [
-                "\\s*#\\s*renovate:\\s*datasource=github-releases\\s*depName=(?<depName>.*?)\\s*ARG\\s.*?_VERSION\\s*=\\s*\"*(?<currentValue>.*)\"*"
+                "\\s*#\\s*renovate:\\s*datasource=(?<datasource>[^\\s]+)\\s*depName=(?<depName>.*?)\\s*ARG\\s.*?_VERSION\\s*=\\s*\"*(?<currentValue>.*)\"*"
             ]
         },
         {
             "fileMatch": ["Dockerfile"],
-            // i.e
-            // # renovate: datasource=yum repo=rocky-9-appstream-x86_64
-            // jq-1.6-13.el9 \
             "matchStrings": [
-                "\\s*#\\s*renovate:\\s*datasource=yum\\s*repo=(?<registryUrl>[^\\s]+)\\s+(?<depName>[^\\s]+)-(?<currentValue>[^\\s-]+-[^\\s-]+)"
+                "\\s*#\\s*renovate:\\s*datasource=(?<datasource>[^\\s]+)\\s*repo=(?<registryUrl>[^\\s]+)\\s+(?<depName>[^\\s]+)-(?<currentValue>[^\\s-]+-[^\\s-]+)"
             ],
             "datasourceTemplate": "npm",
+            "depTypeTemplate": "yum",
             "versioningTemplate": "loose",
             "registryUrlTemplate": "https://yum2npm.io/repos/{{replace '/' '/modules/' registryUrl}}/packages"
         }
     ],
-    packageRules: [
-        {
-            "matchDepTypes": ["devDependencies"],
-            "automerge": true
-        },
-        {
-            "matchPackagePatterns": ["eslint", "prettier"],
-            "groupName": "jsLinting"
-        },
-        {
-            "matchFileNames": ["Dockerfile"],
-            "matchDatasources": ["npm"],
-            "groupName": "yumPackages"
-        }
+    packageRules: [{
+        "matchPackageNames": ["cost-analyzer"],
+        "sourceUrl": "https://github.com/kubecost/cost-analyzer-helm-chart",
+        "registryUrl": "https://kubecost.github.io/cost-analyzer",
+    }, {
+        "matchDatasources": ["endoflife-date"],
+        "matchPackageNames": ["amazon-eks"],
+        "extractVersion": "^(?<version>.*)-eks.+$"
+    },
+    {
+        "matchDatasources": ["github-releases"],
+        "extractVersion": "^v(?<version>.*)$"
+    },
+    {
+        "matchFileNames": ["Dockerfile"],
+        "matchDepTypes": ["yum"],
+        "groupName": "yum"
+    },
+    {
+        "matchPackagePatterns": ["eslint", "prettier"],
+        "groupName": "lint"
+    }
     ]
 };
