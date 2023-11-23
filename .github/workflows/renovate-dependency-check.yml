@@ -19,4 +19,4 @@ jobs:
         env:
           LOG_LEVEL: "debug"
           RENOVATE_GIT_PRIVATE_KEY: ${{ secrets.RENOVATE_GPG_PRIVATE_KEY }}
-          RENOVATE_REPOSITORIES: "${{ vars.RENOVATE_REPOSITORIES }}"
+          RENOVATE_REPOSITORIES: '${{ vars.RENOVATE_REPOSITORIES }}'
