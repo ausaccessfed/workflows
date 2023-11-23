@@ -10,7 +10,7 @@ module.exports = {
         'ausaccessfed/federationmanager',
         'ausaccessfed/discovery-service',
         'ausaccessfed/rapid-idp-manager',
-        'ausaccessfed/reporting-service',
+        'ausaccessfed/reporting-service'
     ],
     labels: ["dependencies"],
     ignorePaths: [
