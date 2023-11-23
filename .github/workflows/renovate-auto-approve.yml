@@ -1,0 +1,54 @@
+name: Auto Approve PR
+on:
+  workflow_call:
+    inputs:
+      AUTO_MERGEABLE_LABELS:
+        type: string
+        default: "development,test"
+      PULL_REQUEST_NUMBER:
+        type: string
+        required: true
+      ACTOR:
+        required: true
+        type: string
+    secrets:
+      GITHUB_TOKEN:
+        required: true
+jobs:
+  approve_and_automerge:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+    if: inputs.ACTOR == 'aaf-terraform'
+    steps:
+      - uses: actions/github-script@d7906e4ad0b1822421a7e6a35d5ca353c962f410 # v6.4.1
+        id: update-pull-request
+        with:
+          github-token: ${{ env.GITHUB_TOKEN }}
+          script: |
+            const owner = context.repo.owner
+            const repo = context.repo.repo 
+            const pull_number =  ${{ inputs.PULL_REQUEST_NUMBER }}
+            const pull_request = await github.rest.pulls.get({
+                owner,
+                repo,
+                pull_number,
+            })
+            const labels = pull_request.labels.map(x => x.name)
+            const allowedLabels = "${{inputs.AUTO_MERGEABLE_LABELS}}".split(",")
+
+            await octokit.rest.pulls.merge({
+                owner,
+                repo,
+                pull_number,
+                merge_method: "squash"
+            });
+
+            if (labels.some(item => allowedLabels.includes(item)) ) {
+                await octokit.rest.pulls.createReview({
+                    owner,
+                    repo,
+                    pull_number,
+                    event: "APPROVE"
+                })
+            }
