@@ -5,13 +5,6 @@ module.exports = {
     requireConfig: "optional",
     platform: 'github',
     forkProcessing: "disabled",
-    repositories: [
-        'ausaccessfed/image-scanner',
-        'ausaccessfed/federationmanager',
-        'ausaccessfed/discovery-service',
-        'ausaccessfed/rapid-idp-manager',
-        'ausaccessfed/reporting-service'
-    ],
     labels: ["dependencies"],
     ignorePaths: [
         "**/node_modules/**",
