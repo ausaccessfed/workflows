@@ -3,6 +3,8 @@ module.exports = {
     gitAuthor: 'aaf-terraform <fishwhack9000+terraform@gmail.com>',
     onboarding: false,
     requireConfig: "optional",
+    automerge: true,
+    ignoreTests: false,
     platform: 'github',
     forkProcessing: "disabled",
     labels: ["dependencies"],
@@ -84,12 +86,27 @@ module.exports = {
     {
         "matchFileNames": ["Dockerfile"],
         "matchDepTypes": ["yum"],
-        "groupName": "yum"
+        "groupName": "yum",
+        "addLabels": ["dockerDependencies"],
     },
     // used to group only js linting packages
     {
         "matchPackagePatterns": ["eslint", "prettier"],
-        "groupName": "lint"
+        "groupName": "lint",
+        "addLabels": ["devDependencies"],
+    },
+    //  Simple fallbacks for label assignment
+    {
+        "matchFileNames": ["Dockerfile"],
+        "addLabels": ["dockerDependencies"],
+    },
+    {
+        "matchDepTypes": ["development"],
+        "addLabels": ["devDependencies"],
+    },
+    {
+        "matchDepTypes": ["test"],
+        "addLabels": ["testDependencies"],
     }
     ]
 };
