@@ -66,6 +66,15 @@ module.exports = {
         {
             "matchDepTypes": ["devDependencies"],
             "automerge": true
+        },
+        {
+            "matchPackagePatterns": ["eslint", "prettier"],
+            "groupName": "jsLinting"
+        },
+        {
+            "matchFileNames": ["Dockerfile"],
+            "matchDatasources": ["npm"],
+            "groupName": "yumPackages"
         }
     ]
 };
