@@ -30,20 +30,28 @@ jobs:
             const owner = context.repo.owner
             const repo = context.repo.repo 
             const pull_number =  "${{ inputs.PULL_REQUEST_NUMBER }}"
-            const pull_request = await github.rest.pulls.get({
+            const pull_request_response = await github.rest.pulls.get({
                 owner,
                 repo,
                 pull_number,
             })
-            const labels = pull_request.data.labels.map(x => x.name)
+            const pull_request = pull_request.data
+            const labels = pull_request.labels.map(x => x.name)
             const allowedLabels = "${{inputs.AUTO_MERGEABLE_LABELS}}".split(",")
 
-            await github.rest.pulls.merge({
+
+            // Sadly the rest api does not support enableAutomerge
+
+            // await github.rest.pulls.merge(variables);
+            await github.graphql(`mutation($name:String!, $owner:String!, $pullRequestId:String!) {
+                enablePullRequestAutoMerge(input: {pullRequestId: "$pullRequestId", mergeMethod: SQUASH}) {
+                    clientMutationId
+                }
+            }`, {
+                name: repo,
                 owner,
-                repo,
-                pull_number,
-                merge_method: "squash"
-            });
+                pullRequestId: pull_request.node_id,
+            })
 
             //If anything is common between the two list of labels auto approve
             if (labels.some(item => allowedLabels.includes(item)) ) {
