@@ -35,7 +35,7 @@ jobs:
                 repo,
                 pull_number,
             })
-            const pull_request = pull_request.data
+            const pull_request = pull_request_response.data
             const labels = pull_request.labels.map(x => x.name)
             const allowedLabels = "${{inputs.AUTO_MERGEABLE_LABELS}}".split(",")
 
