@@ -46,7 +46,7 @@ jobs:
                 merge_method: "squash"
             });
 
-            # If anything is common between the two list of labels auto approve
+            //If anything is common between the two list of labels auto approve
             if (labels.some(item => allowedLabels.includes(item)) ) {
                 await octokit.rest.pulls.createReview({
                     owner,
