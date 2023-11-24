@@ -148,8 +148,9 @@ const run = async ({ github, context, fs, glob }) => {
                     while (!endLineReplacement) {
                         endLineReplacement = newContentLines.pop()
                     }
-                    console.log(`/${startLineReplacement}.*${endLineReplacement}/`)
+                    console.log(`/${startLineReplacement}.*${endLineReplacement.trim()}/`)
 
+                    console.log(newContent)
 
                     newContent = currentContent.replace(new RegExp(`/${startLineReplacement}.*${endLineReplacement.trim()}/`, "g"), newContent)
                     console.log(newContent)
