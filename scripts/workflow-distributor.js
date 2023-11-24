@@ -142,10 +142,16 @@ const run = async ({ github, context, fs, glob }) => {
                 if (isPartial) {
                     newContent = newContent.replace('#PARTIAL#\n', '')
                     const newContentLines = newContent.split('\n')
-                    console.log(`/${newContentLines.shift()}.*${newContentLines.pop()}/`)
+
+                    const startLineReplacement = newContentLines.shift().split(":")[0]
+                    let endLineReplacement = null
+                    while (!endLineReplacement) {
+                        endLineReplacement = newContentLines.pop()
+                    }
+                    console.log(`/${startLineReplacement}.*${endLineReplacement}/`)
 
 
-                    newContent = currentContent.replace(new RegExp(`/${newContentLines.shift()}.*${newContentLines.pop()}/`, "g"), newContent)
+                    newContent = currentContent.replace(new RegExp(`/${startLineReplacement}.*${endLineReplacement}/`, "g"), newContent)
                     console.log(newContent)
                     newContentBuffer = new Buffer(newContent)
                 }
