@@ -29,16 +29,16 @@ jobs:
             const files = await globber.glob()
             console.log(files)
 
-            for(let i = 0i;i++;i < files.length) {
+            for(let i = 0;i++;i < files.length) {
               const fileContents = fs.readFileSync(files[i])
               console.log(fileContents)
 
-              for(const repo in repos) {
+              //for(const repo in repos) {
                 //await github.rest.pulls.create({
                 //  owner,
                 //  repo,
                 //  title: "Updating Common Workflows",
                 // body: 
                 //})
-              }
+              //}
             }
