@@ -14,12 +14,13 @@ const getBranch = async (github, owner, repo, branch) => {
 }
 
 const createBranch = async (github, owner, repo, branch, sha) => {
-    return await github.rest.git.createRef({
+    const result = await github.rest.git.createRef({
         owner,
         repo,
         ref: `refs/heads/${branch}`,
         sha
-    })
+    }).catch(() => { })
+    console.log(result)
 }
 
 const createFile = async (
