@@ -89,8 +89,7 @@ const createPR = async ({
             body: message
         })
     } catch (err) {
-        console.log(err.response.data)
-        if (err.response.data.message == "Reference already exists") {
+        if ((err.response.data[0].message ?? "").includes("A pull request already exists")) {
             result = err.response
         } else {
             console.error(err.stack);
