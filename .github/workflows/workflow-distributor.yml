@@ -24,7 +24,7 @@ jobs:
             } = context
             const repos = ${{ vars.RENOVATE_REPOSITORIES }}
             console.log(repos)
-            const globber = await glob.create('~/.github/workflows/distributions/*', {followSymbolicLinks: false})
+            const globber = await glob.create('~/workflows/.github/workflows/distributions/*', {followSymbolicLinks: false})
             const files = await globber.glob()
             console.log(files)
 
