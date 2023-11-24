@@ -36,6 +36,8 @@ jobs:
               const fileNameCleaned = fileName.split("/").pop()
               const content = fs.readFileSync(fileName).toString('base64')
               const branch = `feature/${fileNameCleaned}`
+              const message = `Updating ${fileNameCleaned}`
+
               for(let x = 0;x < repos.length;x++) {
                 const repo = repos[x].split("/").pop()
                 const {
@@ -46,7 +48,6 @@ jobs:
                   owner,
                   repo,
                 });
-                const message = `Updating ${fileNameCleaned}`
                 const {
                   data: {
                     commit: {sha}
@@ -59,7 +60,7 @@ jobs:
                 await github.rest.git.createRef({
                   owner,
                   repo,
-                  ref: branch,
+                  ref: `refs/heads/${branch}`,
                   sha
                 })
                 await github.rest.repos.createOrUpdateFileContents({
