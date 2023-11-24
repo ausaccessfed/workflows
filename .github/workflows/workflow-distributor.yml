@@ -30,7 +30,7 @@ jobs:
             console.log(files)
 
             for(let i = 0;i < files.length;i++) {
-              const fileContents = fs.readFileSync(files[i])
+              const fileContents = fs.readFileSync(files[i],{ encoding: 'utf8', flag: 'r' })
               console.log(fileContents)
 
               //for(const repo in repos) {
