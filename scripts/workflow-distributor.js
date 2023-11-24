@@ -53,21 +53,21 @@ const commitFile = async ({
     owner,
     repo,
     branch,
-    path,
+    repoFilePath,
     message,
     content,
     committer,
-    sha,
+    fileSHA,
 }) => {
     return await github.rest.repos.createOrUpdateFileContents({
         owner,
         repo,
         branch,
-        path,
+        path: repoFilePath,
         message,
-        content,
+        content: content.toString('base64'),
         committer,
-        sha,
+        sha: fileSHA,
     })
 }
 const createPR = async ({
@@ -114,7 +114,8 @@ const run = async ({ github, context, fs, glob }) => {
     for (let i = 0; i < files.length; i++) {
         const fileName = files[i]
         const fileNameCleaned = fileName.split("/").pop()
-        const content = fs.readFileSync(fileName).toString('base64')
+        let newContentBuffer = fs.readFileSync(fileName)
+        let newContent = newContentBuffer.toString('utf8')
         const branch = `feature/${fileNameCleaned}`
         const message = `Updating ${fileNameCleaned}`
         const repoFilePath = `.github/workflows/${fileNameCleaned}`
@@ -129,21 +130,34 @@ const run = async ({ github, context, fs, glob }) => {
             // if status == 422 assume its cause branch exists
             const fileRef = status == 422 ? branch : baseBranchSHA
             const {
-                data: { sha: fileSHA, content: currentContent }
+                data: { sha: fileSHA, content: currentContentBase64 }
             } = await getFile({ github, owner, repo, path: repoFilePath, ref: fileRef })
 
             // TODO: use currentContent to perform partial replacement i.e shared deployment yml, differing tasks probaly replace up to inputs?
+            if (currentContentBase64) {
+                const currentContent = (new Buffer(currentContentBase64, 'base64')).toString('utf8')
+                console.log(currentContent)
 
+                const isPartial = newContent.includes("#PARTIAL#")
+
+                if (isPartial) {
+                    newContent = newContent.replace('#PARTIAL#\n', '')
+                    const newContentLines = newContent.split('\n')
+                    newContent = currentContent.replace(new RegExp(`/${newContentLines.shift()}.*${newContentLines.pop()}/`, "g"), newContent)
+                    console.log(newContent)
+                    newContentBuffer = new Buffer(newContent)
+                }
+            }
             await commitFile({
                 github,
                 owner,
                 repo,
                 branch,
-                path: repoFilePath,
+                repoFilePath,
                 message,
-                content,
+                newContentBuffer,
                 committer,
-                sha: fileSHA,
+                fileSHA,
             })
             await createPR({
                 github,
