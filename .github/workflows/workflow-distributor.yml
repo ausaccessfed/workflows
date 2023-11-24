@@ -29,10 +29,10 @@ jobs:
             console.log(files)
 
             for(const repo in repos) {
-              await github.rest.pulls.create({
-                owner,
-                repo,
-                title: "Updating Common Workflows",
-                body: 
-              })
+              //await github.rest.pulls.create({
+              //  owner,
+              //  repo,
+              //  title: "Updating Common Workflows",
+               // body: 
+              //})
             }
