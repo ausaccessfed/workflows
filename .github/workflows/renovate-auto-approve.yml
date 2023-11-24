@@ -42,8 +42,8 @@ jobs:
             const allowedLabels = "${{inputs.AUTO_MERGEABLE_LABELS}}".split(",")
 
             // TODO: auto assign?
-
-            if (actor == "aaf-terraform") {
+            // TODO: dont forget to change this
+            if (actor != "aaf-terraform") {
                 // Sadly the rest api does not support enableAutomerge
                 await github.graphql(`mutation() {
                     enablePullRequestAutoMerge(input: {pullRequestId: "${pull_request.node_id}", mergeMethod: SQUASH}) {
