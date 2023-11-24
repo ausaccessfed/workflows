@@ -109,14 +109,16 @@ const run = async ({ github, context, fs, glob }) => {
             const repo = repos[x].split("/").pop()
 
 
-            const { data: { default_branch: base } } = await getRepo({ github, owner, repo })
-            const { data: { commit: { sha: baseBranchSHA } } } = await getBranch({ github, owner, repo, base })
+            const { data: { default_branch: baseBranch } } = await getRepo({ github, owner, repo })
+            const { data: { commit: { sha: baseBranchSHA } } } = await getBranch({ github, owner, repo, branch: baseBranch })
             const { status } = await createBranch({ github, owner, repo, branch, sha: baseBranchSHA })
             // if status == 422 assume its cause branch exists
             const fileRef = status == 422 ? branch : baseBranchSHA
             const {
                 data: { sha: fileSHA, content: currentContent }
             } = await getFile({ github, owner, repo, path: repoFilePath, ref: fileRef })
+
+            // TODO: use currentContent to perform partial replacement i.e shared deployment yml, differing tasks probaly replace up to inputs?
 
             await commitFile({
                 github,
@@ -133,8 +135,8 @@ const run = async ({ github, context, fs, glob }) => {
                 github,
                 owner,
                 repo,
-                branch,
-                base,
+                head: branch,
+                base: baseBranch,
                 message,
             })
         }
