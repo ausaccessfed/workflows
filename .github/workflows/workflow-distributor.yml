@@ -24,7 +24,7 @@ jobs:
                 }
             } = context
             console.log(context)
-            const committer = {
+            const committer = context.pusher ?? {
               name: "todo",
               email:  "todo"
             }
