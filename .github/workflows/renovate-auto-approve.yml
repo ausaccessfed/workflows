@@ -36,6 +36,8 @@ jobs:
             const labelNames = labels.map(x => x.name)
             const allowedLabels = "${{inputs.AUTO_MERGEABLE_LABELS}}".split(",")
 
+            console.log(context.payload.pull_request.user)
+
             // Assign to author
             await github.rest.issues.addAssignees({
                 owner,
