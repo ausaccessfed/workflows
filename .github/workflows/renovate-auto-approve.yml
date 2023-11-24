@@ -30,11 +30,11 @@ jobs:
             const owner = context.repo.owner
             const repo = context.repo.repo 
             const pull_number =  "${{ inputs.PULL_REQUEST_NUMBER }}"
-            const pull_request = await github.rest.pulls.get({
+            const pull_request = (await github.rest.pulls.get({
                 owner,
                 repo,
                 pull_number,
-            }).data
+            })).data
             console.log(pull_request)
             const labels = pull_request.labels.map(x => x.name)
             const allowedLabels = "${{inputs.AUTO_MERGEABLE_LABELS}}".split(",")
@@ -46,6 +46,7 @@ jobs:
                 merge_method: "squash"
             });
 
+            # If anything is common between the two list of labels auto approve
             if (labels.some(item => allowedLabels.includes(item)) ) {
                 await octokit.rest.pulls.createReview({
                     owner,
