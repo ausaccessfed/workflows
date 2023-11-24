@@ -46,7 +46,7 @@ jobs:
             if (actor != "aaf-terraform") {
                 // Sadly the rest api does not support enableAutomerge
                 await github.graphql(`mutation() {
-                    enablePullRequestAutoMerge(input: {pullRequestId: "${pull_request.node_id}", mergeMethod: SQUASH}) {
+                    enablePullRequestAutoMerge(input: {pullRequestId: "${pull_request.node_id}", mergeMethod: "SQUASH"}) {
                         clientMutationId
                     }
                 }`)
