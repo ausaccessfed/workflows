@@ -23,7 +23,7 @@ jobs:
                 payload: {
                     pull_request: {
                         number: pull_number, 
-                        user: { login: actor }, 
+                        user: { login: actor, id: actor_id }, 
                         labels,
                         node_id
                     },
