@@ -45,15 +45,11 @@ jobs:
 
             if (actor == "aaf-terraform") {
                 // Sadly the rest api does not support enableAutomerge
-                await github.graphql(`mutation($name:String!, $owner:String!, $pullRequestId:String!) {
-                    enablePullRequestAutoMerge(input: {pullRequestId: "$pullRequestId", mergeMethod: SQUASH}) {
+                await github.graphql(`mutation() {
+                    enablePullRequestAutoMerge(input: {pullRequestId: "${pull_request.node_id}", mergeMethod: SQUASH}) {
                         clientMutationId
                     }
-                }`, {
-                    name: repo,
-                    owner,
-                    pullRequestId: pull_request.node_id,
-                })
+                }`)
 
                 //If anything is common between the two list of labels auto approve
                 if (labels.some(item => allowedLabels.includes(item)) ) {
