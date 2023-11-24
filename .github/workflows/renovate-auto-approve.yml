@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       GITHUB_TOKEN: ${{secrets.REPO_SCOPED_TOKEN}}
-    if: inputs.ACTOR == 'aaf-terraform'
+    # if: inputs.ACTOR == 'aaf-terraform'
     name: "Auto Approver"
     steps:
       - uses: actions/github-script@d7906e4ad0b1822421a7e6a35d5ca353c962f410 # v6.4.1
