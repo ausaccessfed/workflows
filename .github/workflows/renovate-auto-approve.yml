@@ -49,7 +49,7 @@ jobs:
                     enablePullRequestAutoMerge(input: {pullRequestId: "${pull_request.node_id}", mergeMethod: "SQUASH"}) {
                         clientMutationId
                     }
-                }`)
+                }`, {})
 
                 //If anything is common between the two list of labels auto approve
                 if (labels.some(item => allowedLabels.includes(item)) ) {
