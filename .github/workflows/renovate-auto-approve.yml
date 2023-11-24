@@ -30,13 +30,13 @@ jobs:
             const owner = context.repo.owner
             const repo = context.repo.repo 
             const pull_number =  "${{ inputs.PULL_REQUEST_NUMBER }}"
-            const pull_request = (await github.rest.pulls.get({
+            const pull_request = await github.rest.pulls.get({
                 owner,
                 repo,
                 pull_number,
-            })).data
-            console.log(pull_request)
-            const labels = pull_request.labels.map(x => x.name)
+            })
+            console.log(pull_request.data)
+            const labels = pull_request.data.labels.map(x => x.name)
             const allowedLabels = "${{inputs.AUTO_MERGEABLE_LABELS}}".split(",")
 
             await octokit.rest.pulls.merge({
