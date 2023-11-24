@@ -100,14 +100,12 @@ const createPR = async ({
 }
 
 
-const run = async ({ github, context, fs, glob }) => {
+const run = async ({ github, context, repositories, fs, glob }) => {
     let { repo: { owner } } = context
     const committer = context.pusher ?? {
         name: "todo",
         email: "todo"
     }
-    //const repos = ${{ vars.RENOVATE_REPOSITORIES }}
-    const repos = ['ausaccessfed/reporting-service']
     const globber = await glob.create('**/**/distributions/*.yml', { followSymbolicLinks: false })
     const files = await globber.glob()
 
@@ -120,8 +118,8 @@ const run = async ({ github, context, fs, glob }) => {
         const message = `Updating ${fileNameCleaned}`
         const repoFilePath = `.github/workflows/${fileNameCleaned}`
 
-        for (let x = 0; x < repos.length; x++) {
-            const repo = repos[x].split("/").pop()
+        for (let x = 0; x < repositories.length; x++) {
+            const repo = repositories[x].split("/").pop()
 
 
             const { data: { default_branch: baseBranch } } = await getRepo({ github, owner, repo })
