@@ -5,6 +5,14 @@ on:
       AUTO_MERGEABLE_LABELS:
         type: string
         default: "development,test,devDependencies,testDependencies"
+      PULL_REQUEST_NUMBER:
+        type: string
+        required:
+          true
+          #  TODO: remove
+      ACTOR:
+        required: true
+        type: string
     secrets:
       REPO_SCOPED_TOKEN:
         required: true
