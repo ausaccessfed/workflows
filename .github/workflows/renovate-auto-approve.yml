@@ -45,7 +45,7 @@ jobs:
             // TODO: dont forget to change this
             if (actor != "aaf-terraform") {
                 // Sadly the rest api does not support enableAutomerge
-                const mutation = `mutation($pullRequestId:String!, mergeMethod:String!) {
+                const mutation = `mutation($pullRequestId:String!, $mergeMethod:String!) {
                     enablePullRequestAutoMerge(input: {pullRequestId: "$pullRequestId", mergeMethod: "$mergeMethod"}) {
                         clientMutationId
                     }
