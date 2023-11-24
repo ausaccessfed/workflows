@@ -36,7 +36,8 @@ jobs:
               const fileNameCleaned = fileName.split("/").pop()
               const content = fs.readFileSync(fileName,{ encoding: 'utf8', flag: 'r' })
               const branch = `feature/${fileNameCleaned}`
-              for(const repo in repos) {
+              for(let x = 0;x < repos.length;x++) {
+                const repo = repos[x]
                 const {
                   data: {
                     default_branch: base
