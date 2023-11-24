@@ -150,13 +150,13 @@ const run = async ({ github, context, fs, glob }) => {
                         endLineReplacement = newContentLines.pop()
                     }
                     console.log(endLineReplacement)
-
+                    console.log(currentContent.split(endLineReplacement)[1])
                     newContent += currentContent.split(endLineReplacement)[1]
+                    // console.log(newContent)
 
 
 
                     // newContent = currentContent.replace(new RegExp(`/${startLineReplacement}.*${endLineReplacement.trim()}/`, "g"), newContent)
-                    console.log(newContent)
                     newContentBuffer = new Buffer(newContent)
                 }
             }
