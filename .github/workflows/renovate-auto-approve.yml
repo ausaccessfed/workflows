@@ -37,7 +37,7 @@ jobs:
             //    pull_number,
             //})
             //const pull_request = pull_request_response.data
-            console.log(pull_request.labels)
+            //console.log(pull_request.labels)
 
             const {
                 payload: {
