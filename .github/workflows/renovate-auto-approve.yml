@@ -55,7 +55,7 @@ jobs:
                 //    pullRequestId: pull_request.node_id, mergeMethod: "SQUASH"
                 //})
 
-                console.log(labels.some(item => allowedLabels.includes(item))
+                console.log(labels.some(item => allowedLabels.includes(item)))
                 console.log(labels)
                 console.log(allowedLabels)
 
