@@ -35,6 +35,7 @@ jobs:
                 repo,
                 pull_number,
             })
+            console.log(pull_request)
             const labels = pull_request.labels.map(x => x.name)
             const allowedLabels = "${{inputs.AUTO_MERGEABLE_LABELS}}".split(",")
 
