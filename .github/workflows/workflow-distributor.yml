@@ -46,7 +46,7 @@ jobs:
                   owner,
                   repo,
                   branch,
-                  path: `.github/workflows/${fileNameCleaned}`
+                  path: `.github/workflows/${fileNameCleaned}.yml`
                   message,
                   content,
                   committer 
