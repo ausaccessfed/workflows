@@ -1,11 +1,11 @@
-const getRepo = async (owner, repo) => {
+const getRepo = async (github, owner, repo) => {
     return await github.rest.repos.get({
         owner,
         repo,
     });
 }
 
-const getBranch = async (owner, repo, branch) => {
+const getBranch = async (github, owner, repo, branch) => {
     return await github.rest.repos.getBranch({
         owner,
         repo,
@@ -13,7 +13,7 @@ const getBranch = async (owner, repo, branch) => {
     })
 }
 
-const createBranch = async (owner, repo, branch, sha) => {
+const createBranch = async (github, owner, repo, branch, sha) => {
     return await github.rest.git.createRef({
         owner,
         repo,
@@ -23,6 +23,7 @@ const createBranch = async (owner, repo, branch, sha) => {
 }
 
 const createFile = async (
+    github,
     owner,
     repo,
     branch,
@@ -42,6 +43,7 @@ const createFile = async (
     })
 }
 const createPR = async (
+    github,
     owner,
     repo,
     head,
@@ -80,11 +82,12 @@ const run = async ({ github, context, fs, glob }) => {
         for (let x = 0; x < repos.length; x++) {
             const repo = repos[x].split("/").pop()
 
-            const { data: { default_branch: base } } = await getRepo(owner, repo)
-            const { data: { commit: { sha } } } = await getBranch(owner, repo, base)
+            const { data: { default_branch: base } } = await getRepo(github, owner, repo)
+            const { data: { commit: { sha } } } = await getBranch(github, owner, repo, base)
 
-            await createBranch(owner, repo, branch, sha)
+            await createBranch(github, owner, repo, branch, sha)
             await createFile(
+                github,
                 owner,
                 repo,
                 branch,
@@ -94,6 +97,7 @@ const run = async ({ github, context, fs, glob }) => {
                 committer
             )
             await createPR(
+                github,
                 owner,
                 repo,
                 branch,
