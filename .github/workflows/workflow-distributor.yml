@@ -34,7 +34,7 @@ jobs:
             for(let i = 0;i < files.length;i++) {
               const fileName = files[i]
               const fileNameCleaned = fileName.split("/").pop()
-              const content = fs.readFileSync(fileName,{ encoding: 'utf8', flag: 'r' })
+              const content = fs.readFileSync(fileName).toString('base64')
               const branch = `feature/${fileNameCleaned}`
               for(let x = 0;x < repos.length;x++) {
                 const repo = repos[x].split("/").pop()
@@ -53,7 +53,7 @@ jobs:
                   branch,
                   path: `.github/workflows/${fileNameCleaned}`,
                   message,
-                  content: Base64.encode(content),
+                  content,
                   committer 
                 })
                 await github.rest.pulls.create({
