@@ -114,6 +114,7 @@ const run = async ({ github, context, fs, glob }) => {
             const { status } = await createBranch(github, owner, repo, branch, baseBranchSHA)
             // if status == 422 assume its cause branch exists
             const fileRef = status == 422 ? branch : baseBranchSHA
+            console.log(fileRef)
             const file = await getFile(github, owner, repo, repoFilePath, fileRef)
             console.log(file)
 
