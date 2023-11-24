@@ -55,7 +55,7 @@ const commitFile = async ({
     branch,
     repoFilePath,
     message,
-    content,
+    newContentBuffer,
     committer,
     fileSHA,
 }) => {
@@ -65,7 +65,7 @@ const commitFile = async ({
         branch,
         path: repoFilePath,
         message,
-        content: content.toString('base64'),
+        content: newContentBuffer.toString('base64'),
         committer,
         sha: fileSHA,
     })
