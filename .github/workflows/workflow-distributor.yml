@@ -51,9 +51,9 @@ jobs:
                   owner,
                   repo,
                   branch,
-                  path: `.github/workflows/${fileNameCleaned}.yml`,
+                  path: `.github/workflows/${fileNameCleaned}`,
                   message,
-                  content,
+                  Base64.encode(content),
                   committer 
                 })
                 await github.rest.pulls.create({
