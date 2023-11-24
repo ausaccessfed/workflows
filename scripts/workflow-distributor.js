@@ -25,6 +25,9 @@ const createBranch = async ({ github, owner, repo, branch, sha }) => {
     } catch (err) {
         if (err.response.data.message == "Reference already exists") {
             result = err.response
+        } else {
+            console.error(err.stack);
+            throw err;
         }
     }
     return result
@@ -75,14 +78,26 @@ const createPR = async ({
     base,
     message,
 }) => {
-    return await github.rest.pulls.create({
-        owner,
-        repo,
-        head,
-        base,
-        title: message,
-        body: message
-    })
+    let result = {}
+    try {
+        result = await github.rest.pulls.create({
+            owner,
+            repo,
+            head,
+            base,
+            title: message,
+            body: message
+        })
+    } catch (err) {
+        console.log(err.response.data)
+        if (err.response.data.message == "Reference already exists") {
+            result = err.response
+        } else {
+            console.error(err.stack);
+            throw err;
+        }
+    }
+    return result
 }
 
 
