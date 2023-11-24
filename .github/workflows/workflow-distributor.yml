@@ -29,7 +29,7 @@ jobs:
             const files = await globber.glob()
             console.log(files)
 
-            for(let i = 0;i++;i < files.length) {
+            for(let i = 0;i++;i <= files.length) {
               const fileContents = fs.readFileSync(files[i])
               console.log(fileContents)
 
