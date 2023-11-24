@@ -27,6 +27,7 @@ const createBranch = async (github, owner, repo, branch, sha) => {
             result = err.response
         }
     }
+    console.log(result)
     return result
 }
 
