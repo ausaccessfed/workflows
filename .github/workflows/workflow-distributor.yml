@@ -25,7 +25,7 @@ jobs:
             } = context
             console.log(context)
             const committer = {
-              name: "todo"
+              name: "todo",
               email:  "todo"
             }
             //const repos = ${{ vars.RENOVATE_REPOSITORIES }}
