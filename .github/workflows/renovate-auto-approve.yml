@@ -45,7 +45,6 @@ jobs:
             });
 
             // TODO: do we want a better matcher i.e PR title also?
-            if (actor_id == "118229371" && actor == "aaf-terraform") {
                 // Sadly the rest api does not support enableAutomerge
                 const mutation = `mutation($pullRequestId:ID!, $mergeMethod:PullRequestMergeMethod) {
                     enablePullRequestAutoMerge(input: {pullRequestId: $pullRequestId, mergeMethod: $mergeMethod}) {
@@ -67,4 +66,3 @@ jobs:
                         event: "APPROVE"
                     })
                 }
-            }
