@@ -27,7 +27,7 @@ jobs:
             console.log(repos)
             const globber = await glob.create('**/**/distributions/*.yml', {followSymbolicLinks: false})
             const files = await globber.glob()
-            for(let i;i++;i <= files.length) {
+            for(let i;i++;i < files.length) {
               const fileContents = fs.readFileSync(files[i])
               console.log(fileContents)
 
