@@ -53,6 +53,7 @@ jobs:
                     repo
                 }
             } = context
+            const labelNames = labels.map(x => x.name)
             const allowedLabels = "${{inputs.AUTO_MERGEABLE_LABELS}}".split(",")
 
             // TODO: auto assign?
@@ -68,12 +69,12 @@ jobs:
                 //    pullRequestId: node_id, mergeMethod: "SQUASH"
                 //})
 
-                console.log(labels.some(item => allowedLabels.includes(item)))
-                console.log(labels)
+                console.log(labelNames.some(item => allowedLabels.includes(item)))
+                console.log(labelNames)
                 console.log(allowedLabels)
 
                 //If anything is common between the two list of labels auto approve
-                if (labels.some(item => allowedLabels.includes(item)) ) {
+                if (labelNames.some(item => allowedLabels.includes(item)) ) {
                     await github.rest.pulls.createReview({
                         owner,
                         repo,
