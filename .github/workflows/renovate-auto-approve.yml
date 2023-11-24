@@ -45,13 +45,13 @@ jobs:
             // TODO: dont forget to change this
             if (actor != "aaf-terraform") {
                 // Sadly the rest api does not support enableAutomerge
-                const mutation = `mutation($pullRequestId:String!, $mergeMethod:String!) {
+                const mutation = `mutation($pullRequestId:ID!, $mergeMethod:PullRequestMergeMethod) {
                     enablePullRequestAutoMerge(input: {pullRequestId: $pullRequestId, mergeMethod: $mergeMethod}) {
                         clientMutationId
                     }
                 }`
                 await github.graphql(mutation, {
-                    pullRequestId: pull_request.node_id, mergeMethod: "squash"
+                    pullRequestId: pull_request.node_id, mergeMethod: "SQUASH"
                 })
 
                 //If anything is common between the two list of labels auto approve
