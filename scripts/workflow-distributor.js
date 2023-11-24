@@ -23,21 +23,33 @@ const createBranch = async (github, owner, repo, branch, sha) => {
             sha
         })
     } catch (err) {
-        console.log(err.response)
-
-        if (err.response.message == "Reference already exists") {
+        if (err.response.data.message == "Reference already exists") {
             result = err.response
         }
     }
     return result
 }
 
-const createFile = async (
+const getFile = async (
+    github,
+    owner,
+    repo,
+    path,
+) => {
+    return await github.rest.repos.getContent({
+        owner,
+        repo,
+        path,
+    })
+}
+
+const commitFile = async (
     github,
     owner,
     repo,
     branch,
     path,
+    sha,
     message,
     content,
     committer
@@ -47,6 +59,7 @@ const createFile = async (
         repo,
         branch,
         path,
+        sha,
         message,
         content,
         committer
@@ -88,23 +101,27 @@ const run = async ({ github, context, fs, glob }) => {
         const content = fs.readFileSync(fileName).toString('base64')
         const branch = `feature/${fileNameCleaned}`
         const message = `Updating ${fileNameCleaned}`
+        const repoFilePath = `.github/workflows/${fileNameCleaned}`
 
         for (let x = 0; x < repos.length; x++) {
             const repo = repos[x].split("/").pop()
 
+            const file = await getFile(github, owner, repo, repoFilePath)
+            console.log(file)
+
             const { data: { default_branch: base } } = await getRepo(github, owner, repo)
             const { data: { commit: { sha } } } = await getBranch(github, owner, repo, base)
-
             await createBranch(github, owner, repo, branch, sha)
-            await createFile(
+            await commitFile(
                 github,
                 owner,
                 repo,
                 branch,
-                `.github/workflows/${fileNameCleaned}`,
+                repoFilePath,
                 message,
                 content,
-                committer
+                committer,
+                //sha: fileSHA,
             )
             await createPR(
                 github,
