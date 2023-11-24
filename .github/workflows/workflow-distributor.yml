@@ -53,7 +53,7 @@ jobs:
                   branch,
                   path: `.github/workflows/${fileNameCleaned}`,
                   message,
-                  Base64.encode(content),
+                  content: Base64.encode(content),
                   committer 
                 })
                 await github.rest.pulls.create({
