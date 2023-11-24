@@ -52,12 +52,12 @@ jobs:
                     }
                 }`
                 // Automerge
-                await github.graphql(mutation, {
-                    pullRequestId: node_id, mergeMethod: "SQUASH"
-                })
+                //await github.graphql(mutation, {
+                  //  pullRequestId: node_id, mergeMethod: "SQUASH"
+                //})
 
                 //If anything is common between the two list of labels auto approve
-                if (labelNames.some(item => allowedLabels.includes(item))) {
+                //if (labelNames.some(item => allowedLabels.includes(item))) {
                     // Autoapprove
                     await github.rest.pulls.createReview({
                         owner,
@@ -65,4 +65,4 @@ jobs:
                         pull_number,
                         event: "APPROVE"
                     })
-                }
+                //}
