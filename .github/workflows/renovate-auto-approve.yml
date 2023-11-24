@@ -51,9 +51,9 @@ jobs:
                         clientMutationId
                     }
                 }`
-                await github.graphql(mutation, {
-                    pullRequestId: pull_request.node_id, mergeMethod: "SQUASH"
-                })
+                //await github.graphql(mutation, {
+                //    pullRequestId: pull_request.node_id, mergeMethod: "SQUASH"
+                //})
 
                 console.log(labels.some(item => allowedLabels.includes(item))
                 console.log(labels)
