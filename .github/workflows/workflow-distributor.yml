@@ -17,11 +17,10 @@ jobs:
           github-token: ${{secrets.ALL_REPO_SCOPED_TOKEN}}
           script: |
             const fs = require('fs')
-            const {
-                repo: {
-                    owner,
-                    repo
-                }
+            let {
+              repo: {
+                  owner
+              }
             } = context
             const committer = context.pusher ?? {
               name: "todo",
@@ -38,8 +37,14 @@ jobs:
               const content = fs.readFileSync(fileName,{ encoding: 'utf8', flag: 'r' })
               const branch = `feature/${fileNameCleaned}`
               for(const repo in repos) {
-                //TODO: this will need to change based on which repo
-                const defaultBranch = "master"
+                const {
+                  data: {
+                    default_branch: base
+                  }
+                } = await github.rest.repos.get({
+                  owner,
+                  repo,
+                });
                 const message = `Updating ${fileNameCleaned}`
                 await github.rest.repos.createOrUpdateFileContents({
                   owner,
@@ -54,7 +59,7 @@ jobs:
                   owner,
                   repo,
                   head: branch,
-                  base: defaultBranch,
+                  base,
                   title: message,
                   body: message
                 })
