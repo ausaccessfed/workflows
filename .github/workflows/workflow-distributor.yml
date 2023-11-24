@@ -16,5 +16,6 @@ jobs:
         with:
           github-token: ${{secrets.ALL_REPO_SCOPED_TOKEN}}
           script: |
+            const fs = require('fs')
             const script = require('./scripts/workflow-distributor.js')
-            console.log(script({github, context}))
+            await script({github, context, fs, glob})
