@@ -51,7 +51,7 @@ jobs:
                     }
                 }`
                 await github.graphql(mutation, {
-                    pullRequestId: pull_request.node_id, mergeMethod: "SQUASH"
+                    pullRequestId: pull_request.node_id, mergeMethod: "squash"
                 })
 
                 //If anything is common between the two list of labels auto approve
