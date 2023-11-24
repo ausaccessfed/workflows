@@ -23,11 +23,12 @@ const createBranch = async (github, owner, repo, branch, sha) => {
             sha
         })
     } catch (err) {
+        console.log(err.response)
+
         if (err.response.message == "Reference already exists") {
             result = err.response
         }
     }
-    console.log(result)
     return result
 }
 
