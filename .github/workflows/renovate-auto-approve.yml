@@ -1,10 +1,10 @@
-name: Auto Approve PR
+name: Common Pr Maintenance
 on:
   workflow_call:
     inputs:
       AUTO_MERGEABLE_LABELS:
         type: string
-        default: "development,test"
+        default: "development,test,devDependencies,testDependencies"
       PULL_REQUEST_NUMBER:
         type: string
         required: true
@@ -16,28 +16,29 @@ on:
       REPO_SCOPED_TOKEN:
         required: true
 jobs:
-  auto_approver:
+  pr_maintenance:
     runs-on: ubuntu-latest
     env:
       GITHUB_TOKEN: ${{secrets.REPO_SCOPED_TOKEN}}
-    name: "Auto Approver"
+    name: "Common Pr Maintenance"
     steps:
       - uses: actions/github-script@d7906e4ad0b1822421a7e6a35d5ca353c962f410 # v6.4.1
-        id: update-pull-request
         with:
           github-token: ${{secrets.REPO_SCOPED_TOKEN}}
           script: |
             const owner = context.repo.owner
             const repo = context.repo.repo 
-            console.log(context)
+            const pull_request = context.payload.pull_request
             //  TODO: do we have access to context.repo already? 1 less api call and input
-            const pull_number =  "${{ inputs.PULL_REQUEST_NUMBER }}"
-            const pull_request_response = await github.rest.pulls.get({
-                owner,
-                repo,
-                pull_number,
-            })
-            const pull_request = pull_request_response.data
+            //const pull_number =  "${{ inputs.PULL_REQUEST_NUMBER }}"
+            //const pull_request_response = await github.rest.pulls.get({
+            //    owner,
+            //    repo,
+            //    pull_number,
+            //})
+            //const pull_request = pull_request_response.data
+            console.log(pull_request.labels)
+
             const actor = pull_request.user.login
             const labels = pull_request.labels.map(x => x.name)
             const allowedLabels = "${{inputs.AUTO_MERGEABLE_LABELS}}".split(",")
