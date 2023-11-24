@@ -136,13 +136,15 @@ const run = async ({ github, context, fs, glob }) => {
             // TODO: use currentContent to perform partial replacement i.e shared deployment yml, differing tasks probaly replace up to inputs?
             if (currentContentBase64) {
                 const currentContent = (new Buffer(currentContentBase64, 'base64')).toString('utf8')
-                console.log(currentContent)
 
                 const isPartial = newContent.includes("#PARTIAL#")
 
                 if (isPartial) {
                     newContent = newContent.replace('#PARTIAL#\n', '')
                     const newContentLines = newContent.split('\n')
+                    console.log(newContentLines)
+
+
                     newContent = currentContent.replace(new RegExp(`/${newContentLines.shift()}.*${newContentLines.pop()}/`, "g"), newContent)
                     console.log(newContent)
                     newContentBuffer = new Buffer(newContent)
