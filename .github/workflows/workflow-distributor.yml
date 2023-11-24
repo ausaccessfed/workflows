@@ -23,7 +23,6 @@ jobs:
                     repo
                 }
             } = context
-            console.log(context)
             const committer = context.pusher ?? {
               name: "todo",
               email:  "todo"
@@ -35,7 +34,7 @@ jobs:
 
             for(let i = 0;i < files.length;i++) {
               const fileName = files[i]
-              const fileNameCleaned = files[i].split("/").pop()
+              const fileNameCleaned = fileName.split("/").pop()
               const content = fs.readFileSync(fileName,{ encoding: 'utf8', flag: 'r' })
               const branch = `feature/${fileNameCleaned}`
               for(const repo in repos) {
