@@ -5,14 +5,6 @@ on:
       AUTO_MERGEABLE_LABELS:
         type: string
         default: "development,test,devDependencies,testDependencies"
-      PULL_REQUEST_NUMBER:
-        type: string
-        required:
-          true
-          #  TODO: remove
-      ACTOR:
-        required: true
-        type: string
     secrets:
       REPO_SCOPED_TOKEN:
         required: true
@@ -44,8 +36,6 @@ jobs:
             const labelNames = labels.map(x => x.name)
             const allowedLabels = "${{inputs.AUTO_MERGEABLE_LABELS}}".split(",")
 
-            console.log(context.payload.pull_request.user)
-
             // Assign to author
             await github.rest.issues.addAssignees({
                 owner,
@@ -54,8 +44,8 @@ jobs:
                 assignees: [actor]
             });
 
-            // TODO: do we want a better matcher i.e PR title instead
-            if (actor == "aaf-terraform") {
+            // TODO: do we want a better matcher i.e PR title also?
+            if (actor_id == "118229371" && actor == "aaf-terraform") {
                 // Sadly the rest api does not support enableAutomerge
                 const mutation = `mutation($pullRequestId:ID!, $mergeMethod:PullRequestMergeMethod) {
                     enablePullRequestAutoMerge(input: {pullRequestId: $pullRequestId, mergeMethod: $mergeMethod}) {
