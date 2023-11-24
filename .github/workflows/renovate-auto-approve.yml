@@ -26,19 +26,6 @@ jobs:
         with:
           github-token: ${{secrets.REPO_SCOPED_TOKEN}}
           script: |
-            //const owner = context.repo.owner
-            //const repo = context.repo.repo 
-            //const pull_request = context.payload.pull_request
-            //  TODO: do we have access to context.repo already? 1 less api call and input
-            //const pull_number =  "${{ inputs.PULL_REQUEST_NUMBER }}"
-            //const pull_request_response = await github.rest.pulls.get({
-            //    owner,
-            //    repo,
-            //    pull_number,
-            //})
-            //const pull_request = pull_request_response.data
-            //console.log(pull_request.labels)
-
             const {
                 payload: {
                     pull_request: {
@@ -56,25 +43,30 @@ jobs:
             const labelNames = labels.map(x => x.name)
             const allowedLabels = "${{inputs.AUTO_MERGEABLE_LABELS}}".split(",")
 
-            // TODO: auto assign?
-            // TODO: dont forget to change this
-            if (actor != "aaf-terraform") {
+            // Assign to author
+            await github.rest.issues.addAssignees({
+                owner,
+                repo,
+                issue_number: pull_number,
+                assignees: [actor]
+            });
+
+            // TODO: do we want a better matcher i.e PR title instead
+            if (actor == "aaf-terraform") {
                 // Sadly the rest api does not support enableAutomerge
                 const mutation = `mutation($pullRequestId:ID!, $mergeMethod:PullRequestMergeMethod) {
                     enablePullRequestAutoMerge(input: {pullRequestId: $pullRequestId, mergeMethod: $mergeMethod}) {
                         clientMutationId
                     }
                 }`
-                //await github.graphql(mutation, {
-                //    pullRequestId: node_id, mergeMethod: "SQUASH"
-                //})
-
-                console.log(labelNames.some(item => allowedLabels.includes(item)))
-                console.log(labelNames)
-                console.log(allowedLabels)
+                // Automerge
+                await github.graphql(mutation, {
+                    pullRequestId: node_id, mergeMethod: "SQUASH"
+                })
 
                 //If anything is common between the two list of labels auto approve
-                if (labelNames.some(item => allowedLabels.includes(item)) ) {
+                if (labelNames.some(item => allowedLabels.includes(item))) {
+                    // Autoapprove
                     await github.rest.pulls.createReview({
                         owner,
                         repo,
