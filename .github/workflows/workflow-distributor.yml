@@ -47,6 +47,21 @@ jobs:
                   repo,
                 });
                 const message = `Updating ${fileNameCleaned}`
+                const {
+                  data: {
+                    commit: {sha}
+                  }
+                } = await github.rest.repos.getBranch({
+                  owner,
+                  repo,
+                  branch: base,
+                })
+                await github.rest.git.createRef({
+                  owner,
+                  repo,
+                  ref: branch,
+                  sha
+                })
                 await github.rest.repos.createOrUpdateFileContents({
                   owner,
                   repo,
