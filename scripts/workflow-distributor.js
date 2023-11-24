@@ -110,11 +110,11 @@ const run = async ({ github, context, fs, glob }) => {
 
 
             const { data: { default_branch: base } } = await getRepo(github, owner, repo)
-            const { data: { commit: { baseBranchSHA } } } = await getBranch(github, owner, repo, base)
+            const { data: { commit: { sha: baseBranchSHA } } } = await getBranch(github, owner, repo, base)
             const { status } = await createBranch(github, owner, repo, branch, baseBranchSHA)
             // if status == 422 assume its cause branch exists
+            console.log(status)
             const fileRef = status == 422 ? branch : baseBranchSHA
-            console.log(fileRef)
             const file = await getFile(github, owner, repo, repoFilePath, fileRef)
             console.log(file)
 
