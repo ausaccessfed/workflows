@@ -16,6 +16,7 @@ jobs:
         with:
           github-token: ${{secrets.ALL_REPO_SCOPED_TOKEN}}
           script: |
+            const fs = require('fs')
             const {
                 repo: {
                     owner,
@@ -24,15 +25,18 @@ jobs:
             } = context
             const repos = ${{ vars.RENOVATE_REPOSITORIES }}
             console.log(repos)
-            const globber = await glob.create('**/**/.github/workflows/distributions/*.yml', {followSymbolicLinks: false})
+            const globber = await glob.create('**/**/distributions/*.yml', {followSymbolicLinks: false})
             const files = await globber.glob()
-            console.log(files)
+            for(const file in files) {
+              const fileContents = fs.readFileSync(file)
+              console.log(fileContents)
 
-            for(const repo in repos) {
-              //await github.rest.pulls.create({
-              //  owner,
-              //  repo,
-              //  title: "Updating Common Workflows",
-               // body: 
-              //})
+              for(const repo in repos) {
+                //await github.rest.pulls.create({
+                //  owner,
+                //  repo,
+                //  title: "Updating Common Workflows",
+                // body: 
+                //})
+              }
             }
