@@ -23,7 +23,7 @@ const createBranch = async (github, owner, repo, branch, sha) => {
             sha
         })
     } catch (err) {
-        console.log(err)
+        // console.log(err)
     }
 }
 
