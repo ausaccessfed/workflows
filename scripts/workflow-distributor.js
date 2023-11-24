@@ -23,10 +23,11 @@ const createBranch = async (github, owner, repo, branch, sha) => {
             sha
         })
     } catch (err) {
-        if (err.includes("Reference already exists")) {
-            result = "Reference already exists"
+        if (err.response.message == "Reference already exists") {
+            result = err.response
         }
     }
+    return result
 }
 
 const createFile = async (
