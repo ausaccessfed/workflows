@@ -28,10 +28,11 @@ jobs:
             const files = await globber.glob()
             console.log(files)
 
-            repos.map((repo) => {
+            for(const repo in repos) {
               await github.rest.pulls.create({
-              owner,
-              repo,
-              title: "Updating Common Workflows",
-              body: 
-            })
+                owner,
+                repo,
+                title: "Updating Common Workflows",
+                body: 
+              })
+            }
