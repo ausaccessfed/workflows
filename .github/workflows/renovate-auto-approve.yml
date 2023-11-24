@@ -47,12 +47,11 @@ jobs:
                         labels,
                         node_id
                     },
-                }
+                },
                 repo: {
                     owner,
                     repo
                 }
-               
             } = context
             const allowedLabels = "${{inputs.AUTO_MERGEABLE_LABELS}}".split(",")
 
