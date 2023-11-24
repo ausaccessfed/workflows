@@ -152,7 +152,7 @@ const run = async ({ github, context, fs, glob }) => {
 
 
                     newContent = currentContent.replace(new RegExp(`/${startLineReplacement}.*${endLineReplacement}/`, "g"), newContent)
-                    console.log(newContent)
+                    console.log(currentContent.replace(new RegExp(`/${startLineReplacement}.*${endLineReplacement}/`, "g"), newContent))
                     newContentBuffer = new Buffer(newContent)
                 }
             }
