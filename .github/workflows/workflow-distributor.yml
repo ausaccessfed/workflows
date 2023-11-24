@@ -23,22 +23,41 @@ jobs:
                     repo
                 }
             } = context
-            const repos = ${{ vars.RENOVATE_REPOSITORIES }}
-            console.log(repos)
+            console.log(context)
+            const committer = {
+              name: "todo"
+              email:  "todo"
+            }
+            //const repos = ${{ vars.RENOVATE_REPOSITORIES }}
+            const repos = ['ausaccessfed/reporting-service']
             const globber = await glob.create('**/**/distributions/*.yml', {followSymbolicLinks: false})
             const files = await globber.glob()
-            console.log(files)
 
             for(let i = 0;i < files.length;i++) {
-              const fileContents = fs.readFileSync(files[i],{ encoding: 'utf8', flag: 'r' })
-              console.log(fileContents)
-
-              //for(const repo in repos) {
-                //await github.rest.pulls.create({
-                //  owner,
-                //  repo,
-                //  title: "Updating Common Workflows",
-                // body: 
-                //})
-              //}
+              const fileName = files[i]
+              const fileNameCleaned = files[i].split("/").pop()
+              const content = fs.readFileSync(fileName,{ encoding: 'utf8', flag: 'r' })
+              const branch = `feature/${fileNameCleaned}`
+              for(const repo in repos) {
+                //TODO: this will need to change based on which repo
+                const defaultBranch = "master"
+                const message = `Updating ${fileNameCleaned}`
+                await github.rest.repos.createOrUpdateFileContents({
+                  owner,
+                  repo,
+                  branch,
+                  path: `.github/workflows/${fileNameCleaned}`
+                  message,
+                  content,
+                  committer 
+                })
+                await github.rest.pulls.create({
+                  owner,
+                  repo,
+                  head: branch,
+                  base: defaultBranch,
+                  title: message,
+                  body: message
+                })
+              }
             }
