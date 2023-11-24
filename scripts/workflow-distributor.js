@@ -142,7 +142,7 @@ const run = async ({ github, context, fs, glob }) => {
                 if (isPartial) {
                     newContent = newContent.replace('#PARTIAL#\n', '')
                     const newContentLines = newContent.split('\n')
-                    console.log(newContentLines)
+                    console.log(`/${newContentLines.shift()}.*${newContentLines.pop()}/`)
 
 
                     newContent = currentContent.replace(new RegExp(`/${newContentLines.shift()}.*${newContentLines.pop()}/`, "g"), newContent)
