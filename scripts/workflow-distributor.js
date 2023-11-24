@@ -35,11 +35,13 @@ const getFile = async (
     owner,
     repo,
     path,
+    ref
 ) => {
     return await github.rest.repos.getContent({
         owner,
         repo,
         path,
+        ref
     })
 }
 
@@ -106,12 +108,15 @@ const run = async ({ github, context, fs, glob }) => {
         for (let x = 0; x < repos.length; x++) {
             const repo = repos[x].split("/").pop()
 
-            const file = await getFile(github, owner, repo, repoFilePath)
-            console.log(file)
 
             const { data: { default_branch: base } } = await getRepo(github, owner, repo)
-            const { data: { commit: { sha } } } = await getBranch(github, owner, repo, base)
-            await createBranch(github, owner, repo, branch, sha)
+            const { data: { commit: { baseBranchSHA } } } = await getBranch(github, owner, repo, base)
+            const { status } = await createBranch(github, owner, repo, branch, baseBranchSHA)
+            // if status == 422 assume its cause branch exists
+            const fileRef = status == 422 ? branch : baseBranchSHA
+            const file = await getFile(github, owner, repo, repoFilePath, fileRef)
+            console.log(file)
+
             await commitFile(
                 github,
                 owner,
