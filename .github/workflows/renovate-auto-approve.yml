@@ -26,9 +26,9 @@ jobs:
         with:
           github-token: ${{secrets.REPO_SCOPED_TOKEN}}
           script: |
-            const owner = context.repo.owner
-            const repo = context.repo.repo 
-            const pull_request = context.payload.pull_request
+            //const owner = context.repo.owner
+            //const repo = context.repo.repo 
+            //const pull_request = context.payload.pull_request
             //  TODO: do we have access to context.repo already? 1 less api call and input
             //const pull_number =  "${{ inputs.PULL_REQUEST_NUMBER }}"
             //const pull_request_response = await github.rest.pulls.get({
@@ -39,8 +39,21 @@ jobs:
             //const pull_request = pull_request_response.data
             console.log(pull_request.labels)
 
-            const actor = pull_request.user.login
-            const labels = pull_request.labels.map(x => x.name)
+            const {
+                payload: {
+                    pull_request: {
+                        number: pull_number, 
+                        user: { login: actor }, 
+                        labels,
+                        node_id
+                    },
+                }
+                repo: {
+                    owner,
+                    repo
+                }
+               
+            } = context
             const allowedLabels = "${{inputs.AUTO_MERGEABLE_LABELS}}".split(",")
 
             // TODO: auto assign?
@@ -53,7 +66,7 @@ jobs:
                     }
                 }`
                 //await github.graphql(mutation, {
-                //    pullRequestId: pull_request.node_id, mergeMethod: "SQUASH"
+                //    pullRequestId: node_id, mergeMethod: "SQUASH"
                 //})
 
                 console.log(labels.some(item => allowedLabels.includes(item)))
