@@ -14,7 +14,7 @@ const getBranch = async (github, owner, repo, branch) => {
 }
 
 const createBranch = async (github, owner, repo, branch, sha) => {
-    let result = null
+    let result = {}
     try {
         result = await github.rest.git.createRef({
             owner,
