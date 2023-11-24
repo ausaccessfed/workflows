@@ -35,11 +35,10 @@ jobs:
                 repo,
                 pull_number,
             })
-            console.log(pull_request.data)
             const labels = pull_request.data.labels.map(x => x.name)
             const allowedLabels = "${{inputs.AUTO_MERGEABLE_LABELS}}".split(",")
 
-            await octokit.rest.pulls.merge({
+            await github.rest.pulls.merge({
                 owner,
                 repo,
                 pull_number,
@@ -48,7 +47,7 @@ jobs:
 
             //If anything is common between the two list of labels auto approve
             if (labels.some(item => allowedLabels.includes(item)) ) {
-                await octokit.rest.pulls.createReview({
+                await github.rest.pulls.createReview({
                     owner,
                     repo,
                     pull_number,
