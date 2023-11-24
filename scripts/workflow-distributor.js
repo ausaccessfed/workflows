@@ -1,11 +1,11 @@
-const getRepo = async (github, owner, repo) => {
+const getRepo = async ({ github, owner, repo }) => {
     return await github.rest.repos.get({
         owner,
         repo,
     });
 }
 
-const getBranch = async (github, owner, repo, branch) => {
+const getBranch = async ({ github, owner, repo, branch }) => {
     return await github.rest.repos.getBranch({
         owner,
         repo,
@@ -13,7 +13,7 @@ const getBranch = async (github, owner, repo, branch) => {
     })
 }
 
-const createBranch = async (github, owner, repo, branch, sha) => {
+const createBranch = async ({ github, owner, repo, branch, sha }) => {
     let result = {}
     try {
         result = await github.rest.git.createRef({
@@ -30,13 +30,13 @@ const createBranch = async (github, owner, repo, branch, sha) => {
     return result
 }
 
-const getFile = async (
+const getFile = async ({
     github,
     owner,
     repo,
     path,
     ref
-) => {
+}) => {
     return await github.rest.repos.getContent({
         owner,
         repo,
@@ -45,36 +45,36 @@ const getFile = async (
     })
 }
 
-const commitFile = async (
+const commitFile = async ({
     github,
     owner,
     repo,
     branch,
     path,
-    sha,
     message,
     content,
-    committer
-) => {
+    committer,
+    sha,
+}) => {
     return await github.rest.repos.createOrUpdateFileContents({
         owner,
         repo,
         branch,
         path,
-        sha,
         message,
         content,
-        committer
+        committer,
+        sha,
     })
 }
-const createPR = async (
+const createPR = async ({
     github,
     owner,
     repo,
     head,
     base,
     message,
-) => {
+}) => {
     return await github.rest.pulls.create({
         owner,
         repo,
@@ -109,34 +109,34 @@ const run = async ({ github, context, fs, glob }) => {
             const repo = repos[x].split("/").pop()
 
 
-            const { data: { default_branch: base } } = await getRepo(github, owner, repo)
-            const { data: { commit: { sha: baseBranchSHA } } } = await getBranch(github, owner, repo, base)
-            const { status } = await createBranch(github, owner, repo, branch, baseBranchSHA)
+            const { data: { default_branch: base } } = await getRepo({ github, owner, repo })
+            const { data: { commit: { sha: baseBranchSHA } } } = await getBranch({ github, owner, repo, base })
+            const { status } = await createBranch({ github, owner, repo, branch, sha: baseBranchSHA })
             // if status == 422 assume its cause branch exists
-            console.log(status)
             const fileRef = status == 422 ? branch : baseBranchSHA
-            const file = await getFile(github, owner, repo, repoFilePath, fileRef)
-            console.log(file)
+            const {
+                data: { sha: fileSHA, content: currentContent }
+            } = await getFile({ github, owner, repo, path: repoFilePath, ref: fileRef })
 
-            await commitFile(
+            await commitFile({
                 github,
                 owner,
                 repo,
                 branch,
-                repoFilePath,
+                path: repoFilePath,
                 message,
                 content,
                 committer,
-                //sha: fileSHA,
-            )
-            await createPR(
+                sha: fileSHA,
+            })
+            await createPR({
                 github,
                 owner,
                 repo,
                 branch,
                 base,
                 message,
-            )
+            })
         }
     }
 }
