@@ -143,7 +143,7 @@ const run = async ({ github, context, fs, glob }) => {
                     newContent = newContent.replace('#PARTIAL#\n', '')
 
                     const newContentLines = newContent.split('\n')
-                    const startLineReplacement = newContentLines.shift().split(":")[0]
+                    const startLineReplacement = newContentLines.shift()
                     let endLineReplacement = null
                     while (!endLineReplacement) {
                         endLineReplacement = newContentLines.pop()
