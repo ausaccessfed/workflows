@@ -103,6 +103,9 @@ const handlePartial = ({ currentContentBase64, newContent }) => {
     const isPartial = newContent.includes("#PARTIAL#")
 
     if (isPartial) {
+        //  remove partial flag and blank newline at end of template
+        newContent = newContent.replace('#PARTIAL#\n', '').replace(/\n$/, "")
+
         if (currentContentBase64) {
             const currentContent = (new Buffer(currentContentBase64, 'base64')).toString('utf8')
             const newContentLines = newContent.split('\n')
@@ -116,8 +119,6 @@ const handlePartial = ({ currentContentBase64, newContent }) => {
             }
             newContent += currentContent.split(endLineReplacement)[1]
         }
-
-        newContent = newContent.replace('#PARTIAL#\n', '')
     }
     return newContent
 }
@@ -142,7 +143,7 @@ const run = async ({ github, context, repositories, fs, glob }) => {
         const prBranch = `feature/${fileNameCleaned}`
         const message = `Updating ${fileNameCleaned}`
         const prFilePath = `.github/workflows/${fileNameCleaned}`
-        const fileRefUrl = `# https://github.com/ausaccessfed/workflows/blob/main/.github/${distributionsFilePath}\n`
+        const fileRefUrl = `# https://github.com/ausaccessfed/workflows/blob/main/.github${distributionsFilePath}\n`
 
         for (let x = 0; x < repositories.length; x++) {
             const repo = repositories[x].split("/").pop()
