@@ -52,8 +52,8 @@ const commitFile = async ({
     github,
     owner,
     repo,
-    branch,
-    repoFilePath,
+    prBranch,
+    prFilePath,
     message,
     newContentBuffer,
     committer,
@@ -62,8 +62,8 @@ const commitFile = async ({
     return await github.rest.repos.createOrUpdateFileContents({
         owner,
         repo,
-        branch,
-        path: repoFilePath,
+        branch: prBranch,
+        path: prFilePath,
         message,
         content: newContentBuffer.toString('base64'),
         committer,
@@ -99,6 +99,30 @@ const createPR = async ({
     return result
 }
 
+const handlePartial = ({ currentContentBase64, newContent }) => {
+    const isPartial = newContent.includes("#PARTIAL#")
+
+    if (isPartial) {
+        if (currentContentBase64) {
+            const currentContent = (new Buffer(currentContentBase64, 'base64')).toString('utf8')
+            newContent = injectPartial({ currentContent, newContent })
+            const newContentLines = newContent.split('\n')
+
+            let endLineReplacement = null
+            // This just avoids the last line being a blank line
+            let tempI = 0
+            while (!endLineReplacement && tempI < 10) {
+                tempI++
+                endLineReplacement = newContentLines.pop()
+            }
+            newContent += currentContent.split(endLineReplacement)[1]
+        }
+
+        newContent = newContent.replace('#PARTIAL#\n', '')
+    }
+    return newContent
+}
+
 
 const run = async ({ github, context, repositories, fs, glob }) => {
     let { repo: { owner } } = context
@@ -111,49 +135,42 @@ const run = async ({ github, context, repositories, fs, glob }) => {
 
     for (let i = 0; i < files.length; i++) {
         const fileName = files[i]
+        // get last split assume its a file with no /
         const fileNameCleaned = fileName.split("/").pop()
-        let newContentBuffer = fs.readFileSync(fileName)
-        let newContent = newContentBuffer.toString('utf8')
-        const branch = `feature/${fileNameCleaned}`
+        // split on .github assume the left as it contains random github runner paths
+        const distributionsFilePath = fileName.split(".github").pop()
+
+        const prBranch = `feature/${fileNameCleaned}`
         const message = `Updating ${fileNameCleaned}`
-        const repoFilePath = `.github/workflows/${fileNameCleaned}`
+        const prFilePath = `.github/workflows/${fileNameCleaned}`
+        const fileRefUrl = `# https://github.com/ausaccessfed/workflows/blob/main/.github/${distributionsFilePath}\n`
 
         for (let x = 0; x < repositories.length; x++) {
             const repo = repositories[x].split("/").pop()
 
+            let newContentBuffer = fs.readFileSync(fileName)
+            let newContent = newContentBuffer.toString('utf8')
+            newContent = fileRefUrl + newContent
 
             const { data: { default_branch: baseBranch } } = await getRepo({ github, owner, repo })
             const { data: { commit: { sha: baseBranchSHA } } } = await getBranch({ github, owner, repo, branch: baseBranch })
-            const { status } = await createBranch({ github, owner, repo, branch, sha: baseBranchSHA })
+            const { status } = await createBranch({ github, owner, repo, branch: prBranch, sha: baseBranchSHA })
             // if status == 422 assume its cause branch exists
-            const fileRef = status == 422 ? branch : baseBranchSHA
+            const fileRef = status == 422 ? prBranch : baseBranchSHA;
             const {
                 data: { sha: fileSHA, content: currentContentBase64 }
-            } = await getFile({ github, owner, repo, path: repoFilePath, ref: fileRef })
+            } = (await getFile({ github, owner, repo, path: prFilePath, ref: fileRef }));
 
-            if (currentContentBase64) {
-                const currentContent = (new Buffer(currentContentBase64, 'base64')).toString('utf8')
-                const isPartial = newContent.includes("#PARTIAL#")
+            newContent = handlePartial({ currentContentBase64, newContent })
 
-                if (isPartial) {
-                    newContent = newContent.replace('#PARTIAL#\n', '')
+            newContentBuffer = new Buffer(newContent)
 
-                    const newContentLines = newContent.split('\n')
-
-                    let endLineReplacement = null
-                    while (!endLineReplacement) {
-                        endLineReplacement = newContentLines.pop()
-                    }
-                    newContent += currentContent.split(endLineReplacement)[1]
-                    newContentBuffer = new Buffer(newContent)
-                }
-            }
             await commitFile({
                 github,
                 owner,
                 repo,
-                branch,
-                repoFilePath,
+                prBranch,
+                prFilePath,
                 message,
                 newContentBuffer,
                 committer,
@@ -163,7 +180,7 @@ const run = async ({ github, context, repositories, fs, glob }) => {
                 github,
                 owner,
                 repo,
-                head: branch,
+                head: prBranch,
                 base: baseBranch,
                 message,
             })
