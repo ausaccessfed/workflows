@@ -104,6 +104,25 @@ const createPR = async ({
 const handlePartial = ({ currentContentBase64, newContent }) => {
     const isPartial = newContent.includes(FLAGS.partial)
 
+    if (isPartial) {
+        //  remove partial flag and blank newline at end of template
+        newContent = newContent.replace(FLAGS.partial, '').replace(/\n$/, "")
+
+        if (currentContentBase64) {
+            const currentContent = (new Buffer(currentContentBase64, 'base64')).toString('utf8')
+            const newContentLines = newContent.split('\n')
+
+            let endLineReplacement = null
+            // This just avoids the last line being a blank line
+            let tempI = 0
+            while (!endLineReplacement && tempI < 10) {
+                tempI++
+                endLineReplacement = newContentLines.pop()
+            }
+            newContent += currentContent.split(endLineReplacement)[1]
+        }
+    }
+    return newContent
 }
 
 const parseFiles = ({ fs, files }) => {
