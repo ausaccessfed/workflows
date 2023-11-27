@@ -123,67 +123,93 @@ const handlePartial = ({ currentContentBase64, newContent }) => {
     return newContent
 }
 
-
-const run = async ({ github, context, repositories, fs, glob }) => {
-    let { repo: { owner } } = context
-    const committer = context.pusher ?? {
-        name: "todo",
-        email: "todo"
-    }
-    const globber = await glob.create('**/**/distributions/*.yml', { followSymbolicLinks: false })
-    const files = await globber.glob()
-    repositories = ['ausaccessfed/reporting-service']
+const processFiles = ({ fs, files }) => {
+    const processedFiles = []
     for (let i = 0; i < files.length; i++) {
         const fileName = files[i]
         // get last split assume its a file with no /
         const fileNameCleaned = fileName.split("/").pop()
         // split on .github assume the left as it contains random github runner paths
         const distributionsFilePath = fileName.split(".github").pop()
+        const newContent = fs.readFileSync(fileName).toString('utf8')
+        processedFiles.push({
+            distributionsFilePath,
+            fileName,
+            fileNameCleaned,
+            prBranch: `feature/${fileNameCleaned}`,
+            message: `Updating ${fileNameCleaned}`,
+            prFilePath: `.github/workflows/${fileNameCleaned}`,
+            newContent: `# https://github.com/ausaccessfed/workflows/blob/main/.github${distributionsFilePath}\n` + newContent
+        })
+    }
+    return processedFiles
+}
 
-        const prBranch = `feature/${fileNameCleaned}`
-        const message = `Updating ${fileNameCleaned}`
-        const prFilePath = `.github/workflows/${fileNameCleaned}`
-        const fileRefUrl = `# https://github.com/ausaccessfed/workflows/blob/main/.github${distributionsFilePath}\n`
 
-        for (let x = 0; x < repositories.length; x++) {
-            const repo = repositories[x].split("/").pop()
+const run = async ({ github, context, repositories, fs, glob }) => {
+    let { repo: { owner } } = context
+    const committer = context.pusher ?? {
+        name: "N/A",
+        email: "N/A"
+    }
+    const globber = await glob.create('**/**/distributions/**/**.*', { followSymbolicLinks: false })
+    const files = await globber.glob()
+    repositories = ['ausaccessfed/reporting-service']
 
-            let newContentBuffer = fs.readFileSync(fileName)
-            let newContent = newContentBuffer.toString('utf8')
-            newContent = fileRefUrl + newContent
+    console.log(files)
 
-            const { data: { default_branch: baseBranch } } = await getRepo({ github, owner, repo })
-            const { data: { commit: { sha: baseBranchSHA } } } = await getBranch({ github, owner, repo, branch: baseBranch })
-            const { status } = await createBranch({ github, owner, repo, branch: prBranch, sha: baseBranchSHA })
-            // if status == 422 assume its cause branch exists
-            const fileRef = status == 422 ? prBranch : baseBranchSHA;
-            const {
-                data: { sha: fileSHA, content: currentContentBase64 }
-            } = (await getFile({ github, owner, repo, path: prFilePath, ref: fileRef }));
+    const processedFiles = processFiles({ files, fs })
+    console.dir(files)
 
-            newContent = handlePartial({ currentContentBase64, newContent })
 
-            newContentBuffer = new Buffer(newContent)
+    for (let x = 0; x < repositories.length; x++) {
+        const repo = repositories[x].split("/").pop()
 
-            await commitFile({
-                github,
-                owner,
-                repo,
+        const { data: { default_branch: baseBranch } } = await getRepo({ github, owner, repo })
+        const { data: { commit: { sha: baseBranchSHA } } } = await getBranch({ github, owner, repo, branch: baseBranch })
+
+        for (let i = 0; i < processedFiles.length; i++) {
+            let {
+                fileName,
                 prBranch,
+                message,
                 prFilePath,
-                message,
-                newContentBuffer,
-                committer,
-                fileSHA,
-            })
-            await createPR({
-                github,
-                owner,
-                repo,
-                head: prBranch,
-                base: baseBranch,
-                message,
-            })
+                newContent
+            } = processedFiles[i]
+
+            console.log(fileName)
+            console.log(prFilePath)
+            console.log("NEXT")
+
+            //  TODO: add support for ONCE
+            // const { status } = await createBranch({ github, owner, repo, branch: prBranch, sha: baseBranchSHA })
+            // // if status == 422 assume its cause branch exists
+            // const fileRef = status == 422 ? prBranch : baseBranchSHA;
+            // const {
+            //     data: { sha: fileSHA, content: currentContentBase64 }
+            // } = (await getFile({ github, owner, repo, path: prFilePath, ref: fileRef }));
+
+            // newContent = handlePartial({ currentContentBase64, newContent })
+
+            // await commitFile({
+            //     github,
+            //     owner,
+            //     repo,
+            //     prBranch,
+            //     prFilePath,
+            //     message,
+            //     newContentBuffer: new Buffer(newContent),
+            //     committer,
+            //     fileSHA,
+            // })
+            // await createPR({
+            //     github,
+            //     owner,
+            //     repo,
+            //     head: prBranch,
+            //     base: baseBranch,
+            //     message,
+            // })
         }
     }
 }
