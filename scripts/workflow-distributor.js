@@ -128,7 +128,9 @@ const parseFiles = ({ fs, files }) => {
     for (let i = 0; i < files.length; i++) {
         const fileName = files[i]
         // get last split assume its a file with no /
-        const fileNameCleaned = fileName.split("/").pop()
+        const fileNameRaw = fileName.split("/").pop()
+        // remove any chars that will make prs complain
+        const fileNameCleaned = fileNameRaw.replace(/\*_\.\/\\/g, "")
         // split on .github assume the left as it contains random github runner paths, pop twice
         //  i.e /home/runner/work/workflows/workflows/.github/workflows/distributions/.github/.dockerignore -> workflows/distributions/.github/.dockerignore
         const distributionsFilePath = fileName.split(/\.github\/(.*)/s).slice(-2).shift()
@@ -137,11 +139,9 @@ const parseFiles = ({ fs, files }) => {
         if (fs.lstatSync(fileName).isFile()) {
             const newContent = fs.readFileSync(fileName).toString('utf8')
             parsedFiles.push({
-                distributionsFilePath,
                 fileName,
-                fileNameCleaned,
                 prBranch: `feature/${fileNameCleaned}`,
-                message: `Updating ${fileNameCleaned}`,
+                message: `Updating ${fileNameRaw}`,
                 prFilePath,
                 newContent: `# https://github.com/ausaccessfed/workflows/blob/main/.github/${distributionsFilePath}\n` + newContent
             })
