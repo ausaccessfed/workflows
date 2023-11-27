@@ -131,7 +131,7 @@ const parseFiles = ({ fs, files }) => {
         const fileNameCleaned = fileName.split("/").pop()
         // split on .github assume the left as it contains random github runner paths
         const distributionsFilePath = fileName.split(/\.github(.*)/s).pop()
-        console.log(distributionsFilePath)
+        console.log(fileName)
         const newContent = fs.readFileSync(fileName).toString('utf8')
         parsedFiles.push({
             distributionsFilePath,
