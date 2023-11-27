@@ -100,11 +100,11 @@ const createPR = async ({
 }
 
 const handlePartial = ({ currentContentBase64, newContent }) => {
-    const isPartial = newContent.includes("#PARTIAL#")
+    const isPartial = newContent.includes(FLAGS.partial)
 
     if (isPartial) {
         //  remove partial flag and blank newline at end of template
-        newContent = newContent.replace('#PARTIAL#\n', '').replace(/\n$/, "")
+        newContent = newContent.replace(FLAGS.partial, '').replace(/\n$/, "")
 
         if (currentContentBase64) {
             const currentContent = (new Buffer(currentContentBase64, 'base64')).toString('utf8')
@@ -150,6 +150,10 @@ const parseFiles = ({ fs, files }) => {
     return parsedFiles
 }
 
+const FLAGS = {
+    once: "#ONCE#\n",
+    partial: "#PARTIAL#\n",
+}
 
 const run = async ({ github, context, repositories, fs, glob }) => {
     let { repo: { owner } } = context
@@ -162,8 +166,6 @@ const run = async ({ github, context, repositories, fs, glob }) => {
     repositories = ['ausaccessfed/reporting-service']
 
     const parsedFiles = parseFiles({ files, fs })
-    console.dir(files)
-
 
     for (let x = 0; x < repositories.length; x++) {
         const repo = repositories[x].split("/").pop()
@@ -180,39 +182,48 @@ const run = async ({ github, context, repositories, fs, glob }) => {
                 newContent
             } = parsedFiles[i]
 
-            console.log(fileName)
-            console.log(prFilePath)
-            console.log("NEXT")
+            const isOnceFile = newContent.includes(FLAGS.once)
+            if (isOnceFile) {
+                // TODO: test when the file is missing
+                const {
+                    data: { sha: fileSHA }
+                } = (await getFile({ github, owner, repo, path: prFilePath, ref: baseBranch }));
+                if (fileSHA) {
+                    //  If file exists then skip
+                    continue;
+                } else {
+                    newContent = newContent.replace(FLAGS.once, "")
+                }
+            }
 
-            //  TODO: add support for ONCE
-            // const { status } = await createBranch({ github, owner, repo, branch: prBranch, sha: baseBranchSHA })
-            // // if status == 422 assume its cause branch exists
-            // const fileRef = status == 422 ? prBranch : baseBranchSHA;
-            // const {
-            //     data: { sha: fileSHA, content: currentContentBase64 }
-            // } = (await getFile({ github, owner, repo, path: prFilePath, ref: fileRef }));
+            const { status } = await createBranch({ github, owner, repo, branch: prBranch, sha: baseBranchSHA })
+            // if status == 422 assume its cause branch exists
+            const fileRef = status == 422 ? prBranch : baseBranchSHA;
+            const {
+                data: { sha: fileSHA, content: currentContentBase64 }
+            } = (await getFile({ github, owner, repo, path: prFilePath, ref: fileRef }));
 
-            // newContent = handlePartial({ currentContentBase64, newContent })
+            newContent = handlePartial({ currentContentBase64, newContent })
 
-            // await commitFile({
-            //     github,
-            //     owner,
-            //     repo,
-            //     prBranch,
-            //     prFilePath,
-            //     message,
-            //     newContentBuffer: new Buffer(newContent),
-            //     committer,
-            //     fileSHA,
-            // })
-            // await createPR({
-            //     github,
-            //     owner,
-            //     repo,
-            //     head: prBranch,
-            //     base: baseBranch,
-            //     message,
-            // })
+            await commitFile({
+                github,
+                owner,
+                repo,
+                prBranch,
+                prFilePath,
+                message,
+                newContentBuffer: new Buffer(newContent),
+                committer,
+                fileSHA,
+            })
+            await createPR({
+                github,
+                owner,
+                repo,
+                head: prBranch,
+                base: baseBranch,
+                message,
+            })
         }
     }
 }
