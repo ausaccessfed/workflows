@@ -134,16 +134,18 @@ const parseFiles = ({ fs, files }) => {
         const distributionsFilePath = fileName.split(/\.github\/(.*)/s).slice(-2).shift()
         //  i.e /workflows/distributions/.github/.dockerignore -> .github/.dockerignore
         const prFilePath = distributionsFilePath.split("distributions/").pop()
-        const newContent = fs.readFileSync(fileName).toString('utf8')
-        parsedFiles.push({
-            distributionsFilePath,
-            fileName,
-            fileNameCleaned,
-            prBranch: `feature/${fileNameCleaned}`,
-            message: `Updating ${fileNameCleaned}`,
-            prFilePath,
-            newContent: `# https://github.com/ausaccessfed/workflows/blob/main/.github/${distributionsFilePath}\n` + newContent
-        })
+        if (fs.lstatSync(fileName).isFile()) {
+            const newContent = fs.readFileSync(fileName).toString('utf8')
+            parsedFiles.push({
+                distributionsFilePath,
+                fileName,
+                fileNameCleaned,
+                prBranch: `feature/${fileNameCleaned}`,
+                message: `Updating ${fileNameCleaned}`,
+                prFilePath,
+                newContent: `# https://github.com/ausaccessfed/workflows/blob/main/.github/${distributionsFilePath}\n` + newContent
+            })
+        }
     }
     return parsedFiles
 }
