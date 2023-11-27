@@ -130,7 +130,7 @@ const processFiles = ({ fs, files }) => {
         // get last split assume its a file with no /
         const fileNameCleaned = fileName.split("/").pop()
         // split on .github assume the left as it contains random github runner paths
-        const distributionsFilePath = fileName.split(".github").pop()
+        const distributionsFilePath = fileName.split(/\.github(.*)/s).pop()
         const newContent = fs.readFileSync(fileName).toString('utf8')
         processedFiles.push({
             distributionsFilePath,
