@@ -119,7 +119,10 @@ const handlePartial = ({ currentContentBase64, newContent }) => {
                 tempI++
                 endLineReplacement = newContentLines.pop()
             }
-            newContent += currentContent.split(endLineReplacement)[1]
+            remainingContent = currentContent.split(endLineReplacement)[1]
+            if (remainingContent) {
+                newContent += remainingContent
+            }
         }
     }
     return newContent
