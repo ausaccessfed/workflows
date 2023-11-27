@@ -123,16 +123,17 @@ const handlePartial = ({ currentContentBase64, newContent }) => {
     return newContent
 }
 
-const processFiles = ({ fs, files }) => {
-    const processedFiles = []
+const parseFiles = ({ fs, files }) => {
+    const parsedFiles = []
     for (let i = 0; i < files.length; i++) {
         const fileName = files[i]
         // get last split assume its a file with no /
         const fileNameCleaned = fileName.split("/").pop()
         // split on .github assume the left as it contains random github runner paths
         const distributionsFilePath = fileName.split(/\.github(.*)/s).pop()
+        console.log(distributionsFilePath)
         const newContent = fs.readFileSync(fileName).toString('utf8')
-        processedFiles.push({
+        parsedFiles.push({
             distributionsFilePath,
             fileName,
             fileNameCleaned,
@@ -142,7 +143,7 @@ const processFiles = ({ fs, files }) => {
             newContent: `# https://github.com/ausaccessfed/workflows/blob/main/.github${distributionsFilePath}\n` + newContent
         })
     }
-    return processedFiles
+    return parsedFiles
 }
 
 
@@ -158,7 +159,7 @@ const run = async ({ github, context, repositories, fs, glob }) => {
 
     console.log(files)
 
-    const processedFiles = processFiles({ files, fs })
+    const parsedFiles = parseFiles({ files, fs })
     console.dir(files)
 
 
@@ -168,7 +169,7 @@ const run = async ({ github, context, repositories, fs, glob }) => {
         const { data: { default_branch: baseBranch } } = await getRepo({ github, owner, repo })
         const { data: { commit: { sha: baseBranchSHA } } } = await getBranch({ github, owner, repo, branch: baseBranch })
 
-        for (let i = 0; i < processedFiles.length; i++) {
+        for (let i = 0; i < parsedFiles.length; i++) {
             let {
                 fileName,
                 prBranch,
