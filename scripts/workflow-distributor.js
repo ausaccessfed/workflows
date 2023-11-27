@@ -23,12 +23,9 @@ const createBranch = async ({ github, owner, repo, branch, sha }) => {
             sha
         })
     } catch (err) {
-        if (err.response.data.message == "Reference already exists") {
-            result = err.response
-        } else {
-            console.error(err.stack);
-            throw err;
-        }
+        console.log("(might not be an error)")
+        console.error(err.stack);
+        result = err.response
     }
     return result
 }
@@ -40,12 +37,20 @@ const getFile = async ({
     path,
     ref
 }) => {
-    return await github.rest.repos.getContent({
-        owner,
-        repo,
-        path,
-        ref
-    })
+    let result = {}
+    try {
+        result = await github.rest.repos.getContent({
+            owner,
+            repo,
+            path,
+            ref
+        })
+    } catch (err) {
+        console.log("(might not be an error)")
+        console.error(err.stack);
+        result = err.response
+    }
+    return result
 }
 
 const commitFile = async ({
@@ -89,12 +94,9 @@ const createPR = async ({
             body: message
         })
     } catch (err) {
-        if ((err.response.data.errors[0].message ?? "").includes("A pull request already exists")) {
-            result = err.response
-        } else {
-            console.error(err.stack);
-            throw err;
-        }
+        console.log("(might not be an error)")
+        console.error(err.stack);
+        result = err.response
     }
     return result
 }
@@ -102,25 +104,6 @@ const createPR = async ({
 const handlePartial = ({ currentContentBase64, newContent }) => {
     const isPartial = newContent.includes(FLAGS.partial)
 
-    if (isPartial) {
-        //  remove partial flag and blank newline at end of template
-        newContent = newContent.replace(FLAGS.partial, '').replace(/\n$/, "")
-
-        if (currentContentBase64) {
-            const currentContent = (new Buffer(currentContentBase64, 'base64')).toString('utf8')
-            const newContentLines = newContent.split('\n')
-
-            let endLineReplacement = null
-            // This just avoids the last line being a blank line
-            let tempI = 0
-            while (!endLineReplacement && tempI < 10) {
-                tempI++
-                endLineReplacement = newContentLines.pop()
-            }
-            newContent += currentContent.split(endLineReplacement)[1]
-        }
-    }
-    return newContent
 }
 
 const parseFiles = ({ fs, files }) => {
@@ -182,12 +165,12 @@ const run = async ({ github, context, repositories, fs, glob }) => {
                 newContent
             } = parsedFiles[i]
 
+            let {
+                data: { sha: fileSHA, content: currentContentBase64 }
+            } = (await getFile({ github, owner, repo, path: prFilePath, ref: baseBranch }));
+
             const isOnceFile = newContent.includes(FLAGS.once)
             if (isOnceFile) {
-                // TODO: test when the file is missing
-                const {
-                    data: { sha: fileSHA }
-                } = (await getFile({ github, owner, repo, path: prFilePath, ref: baseBranch }));
                 if (fileSHA) {
                     //  If file exists then skip
                     continue;
@@ -196,12 +179,18 @@ const run = async ({ github, context, repositories, fs, glob }) => {
                 }
             }
 
-            const { status } = await createBranch({ github, owner, repo, branch: prBranch, sha: baseBranchSHA })
-            // if status == 422 assume its cause branch exists
-            const fileRef = status == 422 ? prBranch : baseBranchSHA;
-            const {
-                data: { sha: fileSHA, content: currentContentBase64 }
-            } = (await getFile({ github, owner, repo, path: prFilePath, ref: fileRef }));
+            const { data: { message: createBranchResponseMessage } } = await createBranch({ github, owner, repo, branch: prBranch, sha: baseBranchSHA })
+            const branchExists = createBranchResponseMessage == "Reference already exists"
+
+            // if branch exists pull the prs current contents instead
+            if (branchExists) {
+                const {
+                    data: { sha: prFileSHA, content: prContentBase64 }
+                } = (await getFile({ github, owner, repo, path: prFilePath, ref: prBranch }));
+                fileSHA = prFileSHA
+                currentContentBase64 = prContentBase64
+            }
+
 
             newContent = handlePartial({ currentContentBase64, newContent })
 
