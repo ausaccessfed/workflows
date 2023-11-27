@@ -161,8 +161,6 @@ const run = async ({ github, context, repositories, fs, glob }) => {
     const files = await globber.glob()
     repositories = ['ausaccessfed/reporting-service']
 
-    console.log(files)
-
     const parsedFiles = parseFiles({ files, fs })
     console.dir(files)
 
@@ -180,7 +178,7 @@ const run = async ({ github, context, repositories, fs, glob }) => {
                 message,
                 prFilePath,
                 newContent
-            } = processedFiles[i]
+            } = parsedFiles[i]
 
             console.log(fileName)
             console.log(prFilePath)
