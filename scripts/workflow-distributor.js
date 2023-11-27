@@ -132,7 +132,7 @@ const run = async ({ github, context, repositories, fs, glob }) => {
     }
     const globber = await glob.create('**/**/distributions/*.yml', { followSymbolicLinks: false })
     const files = await globber.glob()
-
+    repositories = ['ausaccessfed/reporting-service']
     for (let i = 0; i < files.length; i++) {
         const fileName = files[i]
         // get last split assume its a file with no /
