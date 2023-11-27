@@ -129,9 +129,11 @@ const parseFiles = ({ fs, files }) => {
         const fileName = files[i]
         // get last split assume its a file with no /
         const fileNameCleaned = fileName.split("/").pop()
-        // split on .github assume the left as it contains random github runner paths
-        const distributionsFilePath = fileName.split(/\.github(.*)/s).pop()
-        console.log(fileName)
+        // split on .github assume the left as it contains random github runner paths, pop twice
+        //  i.e /home/runner/work/workflows/workflows/.github/workflows/distributions/.github/.dockerignore -> workflows/distributions/.github/.dockerignore
+        const distributionsFilePath = fileName.split(/\.github\/(.*)/s).slice(-2).shift()
+        //  i.e /workflows/distributions/.github/.dockerignore -> .github/.dockerignore
+        const prFilePath = distributionsFilePath.split("distributions/").pop()
         const newContent = fs.readFileSync(fileName).toString('utf8')
         parsedFiles.push({
             distributionsFilePath,
@@ -139,8 +141,8 @@ const parseFiles = ({ fs, files }) => {
             fileNameCleaned,
             prBranch: `feature/${fileNameCleaned}`,
             message: `Updating ${fileNameCleaned}`,
-            prFilePath: `.github/workflows/${fileNameCleaned}`,
-            newContent: `# https://github.com/ausaccessfed/workflows/blob/main/.github${distributionsFilePath}\n` + newContent
+            prFilePath,
+            newContent: `# https://github.com/ausaccessfed/workflows/blob/main/.github/${distributionsFilePath}\n` + newContent
         })
     }
     return parsedFiles
