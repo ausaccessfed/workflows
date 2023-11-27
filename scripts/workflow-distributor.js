@@ -105,7 +105,6 @@ const handlePartial = ({ currentContentBase64, newContent }) => {
     if (isPartial) {
         if (currentContentBase64) {
             const currentContent = (new Buffer(currentContentBase64, 'base64')).toString('utf8')
-            newContent = injectPartial({ currentContent, newContent })
             const newContentLines = newContent.split('\n')
 
             let endLineReplacement = null
