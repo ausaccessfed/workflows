@@ -132,7 +132,7 @@ const parseFiles = ({ fs, files }) => {
         // get last split assume its a file with no /
         const fileNameRaw = fileName.split("/").pop()
         // remove any chars that will make prs complain
-        const fileNameCleaned = fileNameRaw.replace(/\*|_|\.|\/|\\/g, "")
+        const fileNameCleaned = fileNameRaw.replace(/\*|\.|\/|\\/g, "_")
         // split on .github assume the left as it contains random github runner paths, pop twice
         //  i.e /home/runner/work/workflows/workflows/.github/workflows/distributions/.github/.dockerignore -> workflows/distributions/.github/.dockerignore
         const distributionsFilePath = fileName.split(/\.github\/(.*)/s).slice(-2).shift()
