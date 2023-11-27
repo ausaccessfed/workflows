@@ -102,11 +102,11 @@ const createPR = async ({
 }
 
 const handlePartial = ({ currentContentBase64, newContent }) => {
-    const isPartial = newContent.includes(FLAGS.partial)
+    const isPartial = REGEXES.partial.test(newContent)
 
     if (isPartial) {
         //  remove partial flag and blank newline at end of template
-        newContent = newContent.replace(FLAGS.partial, '').replace(/\n$/, "")
+        newContent = newContent.replace(REGEXES.partial, '').replace(/\n$/, "")
 
         if (currentContentBase64) {
             const currentContent = (new Buffer(currentContentBase64, 'base64')).toString('utf8')
@@ -152,9 +152,9 @@ const parseFiles = ({ fs, files }) => {
     return parsedFiles
 }
 
-const FLAGS = {
-    once: "#ONCE#\n",
-    partial: "#PARTIAL#\n",
+const REGEXES = {
+    once: new RegExp(/#ONCE#(\n)*/),
+    partial: new RegExp(/#PARTIAL#(\n)*/),
 }
 
 const run = async ({ github, context, repositories, fs, glob }) => {
@@ -188,13 +188,13 @@ const run = async ({ github, context, repositories, fs, glob }) => {
                 data: { sha: fileSHA, content: currentContentBase64 }
             } = (await getFile({ github, owner, repo, path: prFilePath, ref: baseBranch }));
 
-            const isOnceFile = newContent.includes(FLAGS.once)
+            const isOnceFile = REGEXES.once.test(newContent)
             if (isOnceFile) {
                 if (fileSHA) {
                     //  If file exists then skip
                     continue;
                 } else {
-                    newContent = newContent.replace(FLAGS.once, "")
+                    newContent = newContent.replace(REGEXES.once, "")
                 }
             }
 
