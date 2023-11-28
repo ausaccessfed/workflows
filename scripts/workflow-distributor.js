@@ -281,7 +281,7 @@ const run = async ({ github: githubRef, context, repositories, fs: fsRef, glob }
     let cacheParsedFile
     // parses files and then extracts the bootstrap file as its a special one
     const parsedFiles = parseFiles(files).reduce((acc, parsedFile) => {
-        if (x.distributionsFilePath.includes(".cachedFiles")) {
+        if (parsedFile.distributionsFilePath.includes(".cachedFiles")) {
             cacheParsedFile = parsedFile
         } else {
             acc.push(parsedFile)
