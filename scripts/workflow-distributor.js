@@ -166,7 +166,7 @@ const parseFiles = (files) => {
             const newContent = GLOBALS.fs.readFileSync(fileName).toString('utf8')
             parsedFiles.push({
                 distributionsFilePath,
-                message: `Updating ${fileNameRaw}`,
+                message: `Update ${fileNameRaw}`,
                 prFilePath,
                 newContent: `# https://github.com/ausaccessfed/workflows/blob/main/.github/${distributionsFilePath}\n` + newContent
             })
