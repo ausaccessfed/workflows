@@ -262,12 +262,14 @@ const getFiles = async () => {
     return await globber.glob()
 }
 const run = async ({ github, context, repositories, fs, glob }) => {
+    const contextPayload = context.payload
+    const committerData = (contextPayload.pusher ?? null) || (contextPayload.sender ?? null)
     GLOBALS = {
         github,
         fs,
         glob,
-        owner: context.payload.organization.login,
-        committer: context.payload.pusher ?? {
+        owner: contextPayload.organization.login,
+        committer: committerData ?? {
             name: "N/A",
             email: "N/A"
         }
