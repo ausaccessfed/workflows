@@ -10,4 +10,4 @@ dump.rdb
 .env
 .vscode
 node_modules
-MAKE_SURE_I_AM_ALWAYS_LAST_ONLY_IN_TEMPLATE
+#EOF_DISTRIBUTION
