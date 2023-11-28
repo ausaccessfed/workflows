@@ -149,12 +149,9 @@ const handlePartial = ({ currentContentBase64, newContent }) => {
 
 const parseFiles = (files) => {
     const parsedFiles = []
-    for (let i = 0; i < files.length; i++) {
-        const fileName = files[i]
+    for (fileName of files) {
         // get last split assume its a file with no /
         const fileNameRaw = fileName.split("/").pop()
-        // remove any chars that will make prs complain
-        const fileNameCleaned = fileNameRaw.replace(/\*|\.|\/|\\/g, "_")
         // split on .github assume the left as it contains random github runner paths, pop twice
         //  i.e /home/runner/work/workflows/workflows/.github/workflows/distributions/.github/.dockerignore -> workflows/distributions/.github/.dockerignore
         const distributionsFilePath = fileName.split(/\.github\/(.*)/s).slice(-2).shift()
@@ -248,10 +245,9 @@ const handleFileRemovals = async ({ repo, parsedFiles, committer }) => {
     if (distributionsRefFileSHA) {
         distributionsRefContent = base64TextToUtf8(distributionsRefBase64Content)
         const bootstrappedFiles = distributionsRefContent.split('\n')
-        const bootstrappableFiles = parsedFiles.map(x => x.distributionsFilePath)
-        filesToBeRemoved = bootstrappedFiles.filter(x => !bootstrappableFiles.includes(x));
-        for (let i = 0; i < filesToBeRemoved.length; i++) {
-            const { prFilePath, message } = filesToBeRemoved[i]
+        const bootstrappableFiles = parsedFiles.map(parsedFile => parsedFile.distributionsFilePath)
+        filesToBeRemoved = bootstrappedFiles.filter(bootstrappedFile => !bootstrappableFiles.includes(bootstrappedFile));
+        for ({ prFilePath, message } of filesToBeRemoved) {
             await removeFile({
                 repo,
                 branch: CONSTANTS.prBranchName,
@@ -293,15 +289,15 @@ const run = async ({ github: githubRef, context, repositories, fs: fsRef, glob }
         return acc
     }, [])
 
-    for (let x = 0; x < repositories.length; x++) {
-        const repo = repositories[x].split("/").pop()
+    for (repository of repositories) {
+        const repo = repository.split("/").pop()
         const { data: { default_branch: baseBranch } } = await getRepo({ repo })
         const { data: { commit: { sha: baseBranchSHA } } } = await getBranch({ repo, branch: baseBranch })
         await createBranch({ repo, branch: CONSTANTS.prBranchName, sha: baseBranchSHA })
 
         // handle files
-        for (let i = 0; i < parsedFiles.length; i++) {
-            await updateFile({ repo, parsedFile: parsedFiles[i], committer })
+        for (parsedFile of parsedFiles) {
+            await updateFile({ repo, parsedFile, committer })
         }
 
         await handleFileRemovals({ repo, parsedFiles, committer })
