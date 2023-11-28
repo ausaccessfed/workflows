@@ -305,7 +305,7 @@ const run = async ({ github, context, repositories, fs, glob }) => {
             repo,
             head: CONSTANTS.prBranchName,
             base: baseBranch,
-            message: "Updating Distributable Files",
+            message: "Update distributable files",
         })
     }
 }
