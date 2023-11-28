@@ -1,7 +1,12 @@
+/* eslint-disable no-restricted-syntax */
+/* eslint-disable no-await-in-loop */
+/* eslint-disable no-console */
+/* eslint-disable no-return-await */
+
 const CONSTANTS = {
   regex: {
-    once: new RegExp(/#ONCE#(\n)*/),
-    partial: new RegExp(/#PARTIAL#(\n)*/)
+    once: /#ONCE#(\n)*/,
+    partial: /#PARTIAL#(\n)*/
   },
   cacheFilePath: '.github/.cachedFiles',
   prBranchName: 'feature/distribution_updates'
@@ -103,7 +108,8 @@ const createPR = async ({ repo, head, base, message }) => {
   return result
 }
 
-const handlePartial = ({ currentContentBase64, newContent }) => {
+const handlePartial = ({ currentContentBase64, newContent: newContentF }) => {
+  let newContent = newContentF
   const isPartial = CONSTANTS.regex.partial.test(newContent)
 
   if (isPartial) {
@@ -121,7 +127,7 @@ const handlePartial = ({ currentContentBase64, newContent }) => {
         tempI++
         endLineReplacement = newContentLines.pop()
       }
-      remainingContent = currentContent.split(endLineReplacement)[1]
+      const remainingContent = currentContent.split(endLineReplacement)[1]
       if (remainingContent) {
         newContent += remainingContent
       }
@@ -132,7 +138,7 @@ const handlePartial = ({ currentContentBase64, newContent }) => {
 
 const parseFiles = (files) => {
   const parsedFiles = []
-  for (fileName of files) {
+  for (const fileName of files) {
     // get last split assume its a file with no /
     const fileNameRaw = fileName.split('/').pop()
     // split on .github assume the left as it contains random github runner paths, pop twice
@@ -157,8 +163,8 @@ const parseFiles = (files) => {
 }
 
 const updateFile = async ({ repo, parsedFile }) => {
-  let { message, prFilePath, newContent } = parsedFile
-
+  const { message, prFilePath } = parsedFile
+  let { newContent } = parsedFile
   const {
     data: { sha: fileSHA, content: currentContentBase64 }
   } = await getFile({ repo, path: prFilePath, ref: CONSTANTS.prBranchName })
@@ -209,8 +215,10 @@ const handleFileRemovals = async ({ repo, parsedFiles }) => {
     distributionsRefContent = base64TextToUtf8(distributionsRefBase64Content)
     const bootstrappedFiles = distributionsRefContent.split('\n')
     const bootstrappableFiles = parsedFiles.map((parsedFile) => parsedFile.distributionsFilePath)
-    filesToBeRemoved = bootstrappedFiles.filter((bootstrappedFile) => !bootstrappableFiles.includes(bootstrappedFile))
-    for ({ prFilePath, message } of filesToBeRemoved) {
+    const filesToBeRemoved = bootstrappedFiles.filter(
+      (bootstrappedFile) => !bootstrappableFiles.includes(bootstrappedFile)
+    )
+    for (const { prFilePath, message } of filesToBeRemoved) {
       await removeFile({
         repo,
         branch: CONSTANTS.prBranchName,
@@ -236,7 +244,7 @@ const createPRBranch = async ({ repo, baseBranch }) => {
 }
 const getFiles = async () => {
   const globber = await GLOBALS.glob.create('**/**/distributions/**/**.*', { followSymbolicLinks: false })
-  return globber.glob()
+  return await globber.glob()
 }
 const run = async ({ github, context, repositories, fs, glob }) => {
   const contextPayload = context.payload
@@ -265,7 +273,7 @@ const run = async ({ github, context, repositories, fs, glob }) => {
     return acc
   }, [])
 
-  for (repository of repositories) {
+  for (const repository of repositories) {
     const repo = repository.split('/').pop()
     const {
       data: { default_branch: baseBranch }
@@ -273,7 +281,7 @@ const run = async ({ github, context, repositories, fs, glob }) => {
     await createPRBranch({ repo, baseBranch })
 
     // handle files
-    for (parsedFile of parsedFiles) {
+    for (const parsedFile of parsedFiles) {
       await updateFile({ repo, parsedFile })
     }
 
