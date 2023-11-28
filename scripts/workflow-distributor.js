@@ -12,8 +12,8 @@ const CONSTANTS = {
   prBranchName: 'feature/distribution_updates'
 }
 let GLOBALS = {}
-const base64TextToUtf8 = (text) => new Buffer(text, 'base64').toString('utf8')
-const utf8TextToBase64 = (text) => new Buffer(text).toString('base64')
+const base64TextToUtf8 = (text) => Buffer.from(text, 'base64').toString('utf8')
+const utf8TextToBase64 = (text) => Buffer.from(text).toString('base64')
 
 const getRepo = async ({ repo }) => {
   return await GLOBALS.github.rest.repos.get({
