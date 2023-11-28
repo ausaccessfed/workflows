@@ -1,9 +1,5 @@
 {
-  "extends": [
-    "airbnb-base",
-    "plugin:prettier/recommended",
-    "plugin:yml/standard"
-  ],
+  "extends": ["airbnb-base", "plugin:prettier/recommended", "plugin:yml/standard"],
   "plugins": ["prettier"],
   "env": {
     "es2020": true,
@@ -11,10 +7,6 @@
     "amd": true,
     "commonjs": true,
     "jquery": true
-  },
-  "globals": {
-    "d3": true,
-    "reporting": true
   },
   "parserOptions": {
     "sourceType": "module"
@@ -52,7 +44,7 @@
     ]
   },
   "settings": {},
-  "ignorePatterns": ["**/builds/*.js", "public/assets/*.js"],
+  "ignorePatterns": "**/**/distributions/*.json",
   "overrides": [
     {
       "files": ["*.yaml", "*.yml"],
