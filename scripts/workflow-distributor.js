@@ -206,10 +206,10 @@ const removeFile = async ({ repo, parsedFile }) => {
   })
 }
 
-const handleFileRemovals = async ({ repo, parsedFiles }) => {
+const handleFileRemovals = async ({ repo, parsedFiles, baseBranch }) => {
   const {
     data: { sha: distributionsRefFileSHA, content: distributionsRefBase64Content }
-  } = await getFile({ repo, path: CONSTANTS.cacheFilePath, ref: CONSTANTS.prBranchName })
+  } = await getFile({ repo, path: CONSTANTS.cacheFilePath, ref: baseBranch })
   let distributionsRefContent = ''
   console.log(distributionsRefFileSHA)
   if (distributionsRefFileSHA) {
@@ -290,7 +290,7 @@ const run = async ({ github, context, repositories, fs, glob }) => {
       await updateFile({ repo, parsedFile })
     }
 
-    await handleFileRemovals({ repo, parsedFiles })
+    await handleFileRemovals({ repo, parsedFiles, baseBranch })
     await updateCacheFile({ repo, parsedFile: cacheParsedFile, parsedFiles })
 
     await createPR({
