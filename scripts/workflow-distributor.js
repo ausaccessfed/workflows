@@ -11,7 +11,23 @@ const CONSTANTS = {
   cacheFilePath: '.cachedFiles',
   prBranchName: 'feature/distribution_updates'
 }
+
 let GLOBALS = {}
+const setGlobals = ({ context, github, fs, glob }) => {
+  const contextPayload = context.payload
+  const committerData = contextPayload.pusher || contextPayload.sender
+  GLOBALS = {
+    github,
+    fs,
+    glob,
+    owner: contextPayload.organization.login,
+    committer: committerData || {
+      name: 'N/A',
+      email: 'N/A'
+    }
+  }
+}
+
 const base64TextToUtf8 = (text) => Buffer.from(text, 'base64').toString('utf8')
 const utf8TextToBase64 = (text) => Buffer.from(text).toString('base64')
 
@@ -245,18 +261,7 @@ const getFiles = async () => {
   return await globber.glob()
 }
 const run = async ({ github, context, repositories, fs, glob }) => {
-  const contextPayload = context.payload
-  const committerData = contextPayload.pusher || contextPayload.sender
-  GLOBALS = {
-    github,
-    fs,
-    glob,
-    owner: contextPayload.organization.login,
-    committer: committerData || {
-      name: 'N/A',
-      email: 'N/A'
-    }
-  }
+  setGlobals({ context, github, fs, glob })
 
   const files = await getFiles()
   let cacheParsedFile
