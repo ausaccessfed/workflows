@@ -257,7 +257,6 @@ const run = async ({ github, context, repositories, fs, glob }) => {
       email: 'N/A'
     }
   }
-  repositories = ['ausaccessfed/reporting-service']
 
   const files = await getFiles()
   let cacheParsedFile
