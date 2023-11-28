@@ -259,7 +259,7 @@ const handleFileRemovals = async ({ repo, parsedFiles, committer }) => {
     }
 }
 
-const updateCacheFile = async ({ parsedFile, parsedFiles }) => {
+const updateCacheFile = async ({ repo, parsedFile, parsedFiles }) => {
     parsedFile.newContent = parsedFiles.map(file => file.distributionsFilePath).join("\n")
     await updateFile({ repo, parsedFile: parsedFile, committer })
 }
@@ -301,7 +301,7 @@ const run = async ({ github: githubRef, context, repositories, fs: fsRef, glob }
         }
 
         await handleFileRemovals({ repo, parsedFiles, committer })
-        await updateCacheFile({ parsedFile: cacheParsedFile, parsedFiles })
+        await updateCacheFile({ repo, parsedFile: cacheParsedFile, parsedFiles })
 
         await createPR({
             repo,
