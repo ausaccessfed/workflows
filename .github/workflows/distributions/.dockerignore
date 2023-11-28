@@ -13,3 +13,4 @@
 ./coverage
 .env*
 node_modules
+SOMERANDOMLYUNIQUEVALUETOAVOIDBLATTING
