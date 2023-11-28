@@ -155,7 +155,7 @@ const handlePartial = ({ currentContentBase64, newContent: newContentF }) => {
       if (remainingContent) {
         newContent += remainingContent
       } else {
-        newContent += currentContent
+        newContent += `\n${currentContent}`
       }
     }
   }
