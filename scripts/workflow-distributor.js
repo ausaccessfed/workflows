@@ -190,16 +190,14 @@ const updateFile = async ({ repo, parsedFile }) => {
   })
 }
 
-const removeFile = async ({ repo, parsedFile }) => {
-  const { message, prFilePath } = parsedFile
-
+const removeFile = async ({ repo, branch, prFilePath, message }) => {
   const {
     data: { sha: fileSHA }
-  } = await getFile({ repo, path: prFilePath, ref: CONSTANTS.prBranchName })
+  } = await getFile({ repo, path: prFilePath, ref: branch })
 
   await deleteFile({
     repo,
-    branch: CONSTANTS.prBranchName,
+    branch,
     prFilePath,
     message,
     fileSHA
