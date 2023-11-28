@@ -266,6 +266,8 @@ const run = async ({ github: githubRef, context, repositories, fs: fsRef, glob }
     github = githubRef
     owner = context.repo.owner
     fs = fsRef
+
+    console.log(context)
     committer = context.pusher ?? {
         name: "N/A",
         email: "N/A"
