@@ -1,7 +1,18 @@
+const CONSTANTS = {
+    regex: {
+        once: new RegExp(/#ONCE#(\n)*/),
+        partial: new RegExp(/#PARTIAL#(\n)*/),
+    },
+    cacheFilePath: ".github/.cachedFiles",
+    prBranchName: "feature/distribution_updates"
+}
 
 let github
 let owner
 let fs
+let committer
+const base64TextToUtf8 = (text) => (new Buffer(text, 'base64')).toString('utf8')
+const utf8TextToBase64 = (text) => (new Buffer(text)).toString('base64')
 
 const getRepo = async ({ repo }) => {
     return await github.rest.repos.get({
@@ -62,7 +73,6 @@ const commitFile = async ({
     prFilePath,
     message,
     newContentBase64,
-    committer,
     fileSHA,
 }) => {
     return await github.rest.repos.createOrUpdateFileContents({
@@ -82,7 +92,6 @@ const deleteFile = async ({
     branch,
     prFilePath,
     message,
-    committer,
     fileSHA,
 }) => {
     return await github.rest.repos.deleteFile({
@@ -170,10 +179,7 @@ const parseFiles = (files) => {
     return parsedFiles
 }
 
-const base64TextToUtf8 = (text) => (new Buffer(text, 'base64')).toString('utf8')
-const utf8TextToBase64 = (text) => (new Buffer(text)).toString('base64')
-
-const updateFile = async ({ repo, parsedFile, committer }) => {
+const updateFile = async ({ repo, parsedFile }) => {
     let {
         message,
         prFilePath,
@@ -202,12 +208,11 @@ const updateFile = async ({ repo, parsedFile, committer }) => {
         prFilePath,
         message,
         newContentBase64: utf8TextToBase64(newContent),
-        committer,
         fileSHA,
     })
 }
 
-const removeFile = async ({ repo, parsedFile, committer }) => {
+const removeFile = async ({ repo, parsedFile }) => {
     let {
         message,
         prFilePath,
@@ -222,22 +227,11 @@ const removeFile = async ({ repo, parsedFile, committer }) => {
         branch: CONSTANTS.prBranchName,
         prFilePath,
         message,
-        committer,
         fileSHA,
     })
 }
 
-
-const CONSTANTS = {
-    regex: {
-        once: new RegExp(/#ONCE#(\n)*/),
-        partial: new RegExp(/#PARTIAL#(\n)*/),
-    },
-    cacheFilePath: ".github/.cachedFiles",
-    prBranchName: "feature/distribution_updates"
-}
-
-const handleFileRemovals = async ({ repo, parsedFiles, committer }) => {
+const handleFileRemovals = async ({ repo, parsedFiles }) => {
     let {
         data: { sha: distributionsRefFileSHA, content: distributionsRefBase64Content }
     } = (await getFile({ repo, path: CONSTANTS.cacheFilePath, ref: CONSTANTS.prBranchName }));
@@ -253,7 +247,6 @@ const handleFileRemovals = async ({ repo, parsedFiles, committer }) => {
                 branch: CONSTANTS.prBranchName,
                 prFilePath,
                 message: message.replace("Update", "Remove"),
-                committer,
             })
         }
     }
@@ -261,19 +254,23 @@ const handleFileRemovals = async ({ repo, parsedFiles, committer }) => {
 
 const updateCacheFile = async ({ repo, parsedFile, parsedFiles }) => {
     parsedFile.newContent = parsedFiles.map(file => file.distributionsFilePath).join("\n")
-    await updateFile({ repo, parsedFile: parsedFile, committer })
+    await updateFile({ repo, parsedFile: parsedFile })
 }
 
+const createPRBranch = async ({ repo, baseBranch }) => {
+    const { data: { commit: { sha: baseBranchSHA } } } = await getBranch({ repo, branch: baseBranch })
+    await createBranch({ repo, branch: CONSTANTS.prBranchName, sha: baseBranchSHA })
+}
 
 const run = async ({ github: githubRef, context, repositories, fs: fsRef, glob }) => {
     github = githubRef
     owner = context.repo.owner
     fs = fsRef
-
-    const committer = context.pusher ?? {
+    committer = context.pusher ?? {
         name: "N/A",
         email: "N/A"
     }
+
     const globber = await glob.create('**/**/distributions/**/**.*', { followSymbolicLinks: false })
     const files = await globber.glob()
     repositories = ['ausaccessfed/reporting-service']
@@ -292,15 +289,14 @@ const run = async ({ github: githubRef, context, repositories, fs: fsRef, glob }
     for (repository of repositories) {
         const repo = repository.split("/").pop()
         const { data: { default_branch: baseBranch } } = await getRepo({ repo })
-        const { data: { commit: { sha: baseBranchSHA } } } = await getBranch({ repo, branch: baseBranch })
-        await createBranch({ repo, branch: CONSTANTS.prBranchName, sha: baseBranchSHA })
+        await createPRBranch({ repo, baseBranch })
 
         // handle files
         for (parsedFile of parsedFiles) {
-            await updateFile({ repo, parsedFile, committer })
+            await updateFile({ repo, parsedFile })
         }
 
-        await handleFileRemovals({ repo, parsedFiles, committer })
+        await handleFileRemovals({ repo, parsedFiles })
         await updateCacheFile({ repo, parsedFile: cacheParsedFile, parsedFiles })
 
         await createPR({
