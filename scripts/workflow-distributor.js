@@ -211,6 +211,7 @@ const handleFileRemovals = async ({ repo, parsedFiles }) => {
     data: { sha: distributionsRefFileSHA, content: distributionsRefBase64Content }
   } = await getFile({ repo, path: CONSTANTS.cacheFilePath, ref: CONSTANTS.prBranchName })
   let distributionsRefContent = ''
+  console.log(distributionsRefFileSHA)
   if (distributionsRefFileSHA) {
     distributionsRefContent = base64TextToUtf8(distributionsRefBase64Content)
     const bootstrappedFiles = distributionsRefContent.split('\n')
@@ -218,6 +219,10 @@ const handleFileRemovals = async ({ repo, parsedFiles }) => {
     const filesToBeRemoved = bootstrappedFiles.filter(
       (bootstrappedFile) => !bootstrappableFiles.includes(bootstrappedFile)
     )
+    console.log(bootstrappedFiles)
+    console.log(bootstrappableFiles)
+
+    console.log(filesToBeRemoved)
     for (const { prFilePath, message } of filesToBeRemoved) {
       await removeFile({
         repo,
