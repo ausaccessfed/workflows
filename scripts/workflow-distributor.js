@@ -275,7 +275,7 @@ const run = async ({ github, context, repositories, fs, glob }) => {
     return acc
   }, [])
 
-  console.log(repositories)
+  console.log(typeof repositories)
 
   for (const repository of repositories) {
     const repo = repository.split('/').pop()
