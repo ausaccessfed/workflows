@@ -154,6 +154,8 @@ const handlePartial = ({ currentContentBase64, newContent: newContentF }) => {
       const remainingContent = currentContent.split(endLineReplacement)[1]
       if (remainingContent) {
         newContent += remainingContent
+      } else {
+        newContent += currentContent
       }
     }
   }
