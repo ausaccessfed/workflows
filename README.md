@@ -1,6 +1,6 @@
 # Workflows
 
-This repo contains the source for the reusable workflows used by many of the apps throughout aaf
+This repo contains the reusable workflows used by many of the app repos throughout AAF.
 
 ## Distribution
 
