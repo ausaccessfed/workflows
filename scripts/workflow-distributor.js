@@ -11,7 +11,23 @@ const CONSTANTS = {
   cacheFilePath: '.cachedFiles',
   prBranchName: 'feature/distribution_updates'
 }
+
 let GLOBALS = {}
+const setGlobals = ({ context, github, fs, glob }) => {
+  const contextPayload = context.payload
+  const committerData = contextPayload.pusher || contextPayload.sender
+  GLOBALS = {
+    github,
+    fs,
+    glob,
+    owner: contextPayload.organization.login,
+    committer: committerData || {
+      name: 'N/A',
+      email: 'N/A'
+    }
+  }
+}
+
 const base64TextToUtf8 = (text) => Buffer.from(text, 'base64').toString('utf8')
 const utf8TextToBase64 = (text) => Buffer.from(text).toString('base64')
 
@@ -78,15 +94,23 @@ const commitFile = async ({ repo, branch, prFilePath, message, newContentBase64,
 }
 
 const deleteFile = async ({ repo, branch, prFilePath, message, fileSHA }) => {
-  return await GLOBALS.github.rest.repos.deleteFile({
-    owner: GLOBALS.owner,
-    branch,
-    repo,
-    path: prFilePath,
-    message,
-    sha: fileSHA,
-    committer: GLOBALS.committer
-  })
+  let result = {}
+  try {
+    return await GLOBALS.github.rest.repos.deleteFile({
+      owner: GLOBALS.owner,
+      branch,
+      repo,
+      path: prFilePath,
+      message,
+      sha: fileSHA,
+      committer: GLOBALS.committer
+    })
+  } catch (err) {
+    console.log('(might not be an error)')
+    console.error(err.stack)
+    result = err.response
+  }
+  return result
 }
 
 const createPR = async ({ repo, head, base, message }) => {
@@ -147,15 +171,19 @@ const parseFiles = (files) => {
       .split(/\.github\/(.*)/s)
       .slice(-2)
       .shift()
-    //  i.e /workflows/distributions/.github/.dockerignore -> .github/.dockerignore
+    // i.e /workflows/distributions/.github/.dockerignore -> .github/.dockerignore
     const prFilePath = distributionsFilePath.split('distributions/').pop()
     if (GLOBALS.fs.lstatSync(fileName).isFile()) {
       const newContent = GLOBALS.fs.readFileSync(fileName).toString('utf8')
+      // NOTE: due to issues with comments causing issues i.e json does not support
+      // we have decided to suspend the commentRefString
+      // const commentRefString = `# https://github.com/ausaccessfed/workflows/blob/main/.github/${distributionsFilePath}\n`
+      const commentRefString = ''
       parsedFiles.push({
         distributionsFilePath,
         message: `Update ${fileNameRaw}`,
         prFilePath,
-        newContent: `# https://github.com/ausaccessfed/workflows/blob/main/.github/${distributionsFilePath}\n${newContent}`
+        newContent: `${commentRefString}${newContent}`
       })
     }
   }
@@ -245,18 +273,7 @@ const getFiles = async () => {
   return await globber.glob()
 }
 const run = async ({ github, context, repositories, fs, glob }) => {
-  const contextPayload = context.payload
-  const committerData = contextPayload.pusher || contextPayload.sender
-  GLOBALS = {
-    github,
-    fs,
-    glob,
-    owner: contextPayload.organization.login,
-    committer: committerData || {
-      name: 'N/A',
-      email: 'N/A'
-    }
-  }
+  setGlobals({ context, github, fs, glob })
 
   const files = await getFiles()
   let cacheParsedFile
