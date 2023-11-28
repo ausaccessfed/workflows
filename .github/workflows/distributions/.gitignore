@@ -1,0 +1,12 @@
+#PARTIAL#
+public/*
+coverage
+tmp
+log
+vendor
+.DS_Store
+dump.rdb
+.idea
+.env
+.vscode
+node_modules

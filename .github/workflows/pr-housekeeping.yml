@@ -25,6 +25,7 @@ jobs:
                         number: pull_number, 
                         user: { login: actor, id: actor_id }, 
                         labels,
+                        title,
                         node_id
                     },
                 },
@@ -44,8 +45,8 @@ jobs:
                 assignees: [actor]
             });
 
-            // TODO: do we want a better matcher i.e PR title also?
-            if (actor_id == "118229371" && actor == "aaf-terraform") {
+            const titleRegex = new RegExp(/.*upgrade.*/)
+            if (actor_id == "118229371" && actor == "aaf-terraform" && titleRegex.test(title)) {
                 // Sadly the rest api does not support enableAutomerge
                 const mutation = `mutation($pullRequestId:ID!, $mergeMethod:PullRequestMergeMethod) {
                     enablePullRequestAutoMerge(input: {pullRequestId: $pullRequestId, mergeMethod: $mergeMethod}) {
