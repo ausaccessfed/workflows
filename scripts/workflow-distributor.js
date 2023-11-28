@@ -6,24 +6,20 @@ const CONSTANTS = {
     cacheFilePath: ".github/.cachedFiles",
     prBranchName: "feature/distribution_updates"
 }
-
-let github
-let owner
-let fs
-let committer
+let GLOBALS = {}
 const base64TextToUtf8 = (text) => (new Buffer(text, 'base64')).toString('utf8')
 const utf8TextToBase64 = (text) => (new Buffer(text)).toString('base64')
 
 const getRepo = async ({ repo }) => {
-    return await github.rest.repos.get({
-        owner,
+    return await GLOBALS.github.rest.repos.get({
+        owner: GLOBALS.owner,
         repo,
     });
 }
 
 const getBranch = async ({ repo, branch }) => {
-    return await github.rest.repos.getBranch({
-        owner,
+    return await GLOBALS.github.rest.repos.getBranch({
+        owner: GLOBALS.owner,
         repo,
         branch,
     })
@@ -32,8 +28,8 @@ const getBranch = async ({ repo, branch }) => {
 const createBranch = async ({ repo, branch, sha }) => {
     let result = {}
     try {
-        result = await github.rest.git.createRef({
-            owner,
+        result = await GLOBALS.github.rest.git.createRef({
+            owner: GLOBALS.owner,
             repo,
             ref: `refs/heads/${branch}`,
             sha
@@ -53,8 +49,8 @@ const getFile = async ({
 }) => {
     let result = {}
     try {
-        result = await github.rest.repos.getContent({
-            owner,
+        result = await GLOBALS.github.rest.repos.getContent({
+            owner: GLOBALS.owner,
             repo,
             path,
             ref
@@ -75,14 +71,14 @@ const commitFile = async ({
     newContentBase64,
     fileSHA,
 }) => {
-    return await github.rest.repos.createOrUpdateFileContents({
-        owner,
+    return await GLOBALS.github.rest.repos.createOrUpdateFileContents({
+        owner: GLOBALS.owner,
         repo,
         branch,
         path: prFilePath,
         message,
         content: newContentBase64,
-        committer,
+        committer: GLOBALS.committer,
         sha: fileSHA,
     })
 }
@@ -94,14 +90,14 @@ const deleteFile = async ({
     message,
     fileSHA,
 }) => {
-    return await github.rest.repos.deleteFile({
-        owner,
+    return await GLOBALS.github.rest.repos.deleteFile({
+        owner: GLOBALS.owner,
         branch,
         repo,
         path: prFilePath,
         message,
         sha: fileSHA,
-        committer
+        committer: GLOBALS.committer,
     })
 }
 
@@ -113,8 +109,8 @@ const createPR = async ({
 }) => {
     let result = {}
     try {
-        result = await github.rest.pulls.create({
-            owner,
+        result = await GLOBALS.github.rest.pulls.create({
+            owner: GLOBALS.owner,
             repo,
             head,
             base,
@@ -166,8 +162,8 @@ const parseFiles = (files) => {
         const distributionsFilePath = fileName.split(/\.github\/(.*)/s).slice(-2).shift()
         //  i.e /workflows/distributions/.github/.dockerignore -> .github/.dockerignore
         const prFilePath = distributionsFilePath.split("distributions/").pop()
-        if (fs.lstatSync(fileName).isFile()) {
-            const newContent = fs.readFileSync(fileName).toString('utf8')
+        if (GLOBALS.fs.lstatSync(fileName).isFile()) {
+            const newContent = GLOBALS.fs.readFileSync(fileName).toString('utf8')
             parsedFiles.push({
                 distributionsFilePath,
                 message: `Updating ${fileNameRaw}`,
@@ -261,21 +257,24 @@ const createPRBranch = async ({ repo, baseBranch }) => {
     const { data: { commit: { sha: baseBranchSHA } } } = await getBranch({ repo, branch: baseBranch })
     await createBranch({ repo, branch: CONSTANTS.prBranchName, sha: baseBranchSHA })
 }
-
-const run = async ({ github: githubRef, context, repositories, fs: fsRef, glob }) => {
-    github = githubRef
-    owner = context.payload.organization.login
-    fs = fsRef
-
-    committer = context.payload.pusher ?? {
-        name: "N/A",
-        email: "N/A"
+const getFiles = async () => {
+    const globber = await GLOBALS.glob.create('**/**/distributions/**/**.*', { followSymbolicLinks: false })
+    return await globber.glob()
+}
+const run = async ({ github, context, repositories, fs, glob }) => {
+    GLOBALS = {
+        github,
+        fs,
+        glob,
+        owner: context.payload.organization.login,
+        committer: context.payload.pusher ?? {
+            name: "N/A",
+            email: "N/A"
+        }
     }
-
-    const globber = await glob.create('**/**/distributions/**/**.*', { followSymbolicLinks: false })
-    const files = await globber.glob()
     repositories = ['ausaccessfed/reporting-service']
 
+    const files = await getFiles()
     let cacheParsedFile
     // parses files and then extracts the bootstrap file as its a special one
     const parsedFiles = parseFiles(files).reduce((acc, parsedFile) => {
