@@ -8,7 +8,7 @@ const CONSTANTS = {
     once: /#ONCE#(\n)*/,
     partial: /#PARTIAL#(\n)*/
   },
-  cacheFilePath: '.github/.cachedFiles',
+  cacheFilePath: '.cachedFiles',
   prBranchName: 'feature/distribution_updates'
 }
 let GLOBALS = {}
@@ -270,7 +270,7 @@ const run = async ({ github, context, repositories, fs, glob }) => {
   let cacheParsedFile
   // parses files and then extracts the bootstrap file as its a special one
   const parsedFiles = parseFiles(files).reduce((acc, parsedFile) => {
-    if (parsedFile.distributionsFilePath.includes('.cachedFiles')) {
+    if (parsedFile.distributionsFilePath.includes(CONSTANTS.cacheFilePath)) {
       cacheParsedFile = parsedFile
     } else {
       acc.push(parsedFile)
