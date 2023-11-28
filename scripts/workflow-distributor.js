@@ -94,15 +94,23 @@ const commitFile = async ({ repo, branch, prFilePath, message, newContentBase64,
 }
 
 const deleteFile = async ({ repo, branch, prFilePath, message, fileSHA }) => {
-  return await GLOBALS.github.rest.repos.deleteFile({
-    owner: GLOBALS.owner,
-    branch,
-    repo,
-    path: prFilePath,
-    message,
-    sha: fileSHA,
-    committer: GLOBALS.committer
-  })
+  let result = {}
+  try {
+    return await GLOBALS.github.rest.repos.deleteFile({
+      owner: GLOBALS.owner,
+      branch,
+      repo,
+      path: prFilePath,
+      message,
+      sha: fileSHA,
+      committer: GLOBALS.committer
+    })
+  } catch (err) {
+    console.log('(might not be an error)')
+    console.error(err.stack)
+    result = err.response
+  }
+  return result
 }
 
 const createPR = async ({ repo, head, base, message }) => {
@@ -275,10 +283,10 @@ const run = async ({ github, context, repositories, fs, glob }) => {
     return acc
   }, [])
 
-  console.dir(repositories)
-
   for (const repository of repositories) {
     const repo = repository.split('/').pop()
+    console.log(repo)
+
     const {
       data: { default_branch: baseBranch }
     } = await getRepo({ repo })
