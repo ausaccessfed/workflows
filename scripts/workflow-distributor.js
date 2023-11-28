@@ -171,15 +171,19 @@ const parseFiles = (files) => {
       .split(/\.github\/(.*)/s)
       .slice(-2)
       .shift()
-    //  i.e /workflows/distributions/.github/.dockerignore -> .github/.dockerignore
+    // i.e /workflows/distributions/.github/.dockerignore -> .github/.dockerignore
     const prFilePath = distributionsFilePath.split('distributions/').pop()
     if (GLOBALS.fs.lstatSync(fileName).isFile()) {
       const newContent = GLOBALS.fs.readFileSync(fileName).toString('utf8')
+      // NOTE: due to issues with comments causing issues i.e json does not support
+      // we have decided to suspend the commentRefString
+      // const commentRefString = `# https://github.com/ausaccessfed/workflows/blob/main/.github/${distributionsFilePath}\n`
+      const commentRefString = ''
       parsedFiles.push({
         distributionsFilePath,
         message: `Update ${fileNameRaw}`,
         prFilePath,
-        newContent: `# https://github.com/ausaccessfed/workflows/blob/main/.github/${distributionsFilePath}\n${newContent}`
+        newContent: `${commentRefString}${newContent}`
       })
     }
   }
