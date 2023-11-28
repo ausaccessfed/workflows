@@ -264,11 +264,10 @@ const createPRBranch = async ({ repo, baseBranch }) => {
 
 const run = async ({ github: githubRef, context, repositories, fs: fsRef, glob }) => {
     github = githubRef
-    owner = context.repo.owner
+    owner = context.payload.organization.login
     fs = fsRef
 
-    console.log(context)
-    committer = context.pusher ?? {
+    committer = context.payload.pusher ?? {
         name: "N/A",
         email: "N/A"
     }
