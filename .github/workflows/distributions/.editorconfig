@@ -7,3 +7,4 @@ root = true
 end_of_line = lf
 insert_final_newline = true
 trim_trailing_whitespace = true
+#MAKE_SURE_I_AM_ALWAYS_LAST_ONLY_IN_TEMPLATE
