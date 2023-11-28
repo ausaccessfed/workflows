@@ -19,5 +19,4 @@ jobs:
           script: |
             const fs = require('fs')
             const script = require('./scripts/workflow-distributor.js')
-            //  ${{ vars.RENOVATE_REPOSITORIES }}
-            await script({github, context, repositories: ["ausaccessfed/reporting-service"], fs, glob})
+            await script({github, context, repositories: ${{ vars.RENOVATE_REPOSITORIES }}, fs, glob})

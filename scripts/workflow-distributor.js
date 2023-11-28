@@ -285,8 +285,6 @@ const run = async ({ github, context, repositories, fs, glob }) => {
 
   for (const repository of repositories) {
     const repo = repository.split('/').pop()
-    console.log(repo)
-
     const {
       data: { default_branch: baseBranch }
     } = await getRepo({ repo })
