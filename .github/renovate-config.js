@@ -3,7 +3,8 @@ module.exports = {
     gitAuthor: 'aaf-terraform <fishwhack9000+terraform@gmail.com>',
     onboarding: false,
     requireConfig: "optional",
-    automerge: true,
+    // the housekeeping workflow handles this
+    automerge: false,
     ignoreTests: false,
     platform: 'github',
     forkProcessing: "disabled",
