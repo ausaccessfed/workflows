@@ -93,7 +93,7 @@ const commitFile = async ({ repo, branch, prFilePath, message, newContentBase64,
       path: prFilePath,
       mode: '100644',
       type: 'blob',
-      content: newContentBase64
+      content: "test conetn"
     }
   })
 
