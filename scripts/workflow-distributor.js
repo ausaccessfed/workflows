@@ -76,12 +76,12 @@ const getFile = async ({ repo, path, ref }) => {
   return result
 }
 
-const commitFile = async ({ repo, baseBranch, branch, prFilePath, message, newContentBase64, fileSHA }) => {
+const commitFile = async ({ repo, branch, prFilePath, message, newContentBase64, fileSHA }) => {
   const {
     data: {
       commit: { sha: branchSHA }
     }
-  } = await getBranch({ repo, branch: baseBranch })
+  } = await getBranch({ repo, branch })
 
   const {
     data: { sha: treeSha }
@@ -109,13 +109,13 @@ const commitFile = async ({ repo, baseBranch, branch, prFilePath, message, newCo
     signature: GLOBALS.gpgPrivateKey
   })
 
-  return await GLOBALS.github.rest.git.updateRef({
-    owner: GLOBALS.owner,
-    repo,
-    ref: `heads/${branch}`,
-    message,
-    sha: commitSha
-  })
+  //   return await GLOBALS.github.rest.git.updateRef({
+  //     owner: GLOBALS.owner,
+  //     repo,
+  //     ref: `heads/${branch}`,
+  //     message,
+  //     sha: commitSha
+  //   })
 
   //   return await GLOBALS.github.rest.repos.createOrUpdateFileContents({
   //     owner: GLOBALS.owner,
@@ -234,7 +234,7 @@ const parseFiles = (files) => {
   return parsedFiles
 }
 
-const updateFile = async ({ repo, parsedFile, baseBranch }) => {
+const updateFile = async ({ repo, parsedFile }) => {
   const { message, prFilePath } = parsedFile
   let { newContent } = parsedFile
   const {
@@ -257,7 +257,6 @@ const updateFile = async ({ repo, parsedFile, baseBranch }) => {
     branch: CONSTANTS.prBranchName,
     prFilePath,
     message,
-    baseBranch,
     newContentBase64: utf8TextToBase64(newContent),
     fileSHA
   })
@@ -348,7 +347,7 @@ const run = async ({ github, context, repositories, gpgPrivateKey, fs, glob }) =
 
     // handle files
     for (const parsedFile of parsedFiles) {
-      await updateFile({ repo, parsedFile, baseBranch })
+      await updateFile({ repo, parsedFile })
     }
 
     await handleFileRemovals({ repo, parsedFiles, baseBranch })
