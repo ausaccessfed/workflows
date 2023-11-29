@@ -26,7 +26,8 @@ const setGlobals = ({ context, github, fs, glob, signature, gpgPrivateKey, gpgPa
     owner: contextPayload.organization.login,
     committer: {
       email: 'fishwhack9000+terraform@gmail.com',
-      name: 'aaf-terraform'
+      name: 'aaf-terraform',
+      date: '2018-01-01T00:00:00.000Z'
     }
   }
 }
@@ -89,30 +90,6 @@ const sleep = (ms) => {
   })
 }
 
-const createSignature = async (commit) => {
-  const decodedKey = await GLOBALS.openpgp.readPrivateKey({
-    armoredKey: GLOBALS.gpgPrivateKey
-  })
-  const decryptedKey = await GLOBALS.openpgp.decryptKey({
-    privateKey: decodedKey,
-    passphrase: GLOBALS.gpgPassword
-  })
-  // TODO: fix time stuff
-  return await GLOBALS.openpgp.sign({
-    message: await GLOBALS.openpgp.createMessage({
-      text: `
-        tree ${commit.tree}
-        ${commit.parents.map((parent) => `parent ${parent}`).join('\n')}
-        author ${commit.author.name} <${commit.author.email}>  Wed Nov 29 09:58:36 2023 +0800
-        committer ${commit.committer.name} <${commit.committer.email}>  Wed Nov 29 09:58:36 2023 +0800
-
-        ${commit.message}`.trim()
-    }),
-    signingKeys: decryptedKey,
-    detached: true
-  })
-}
-
 const commitFile = async ({ repo, branch, prFilePath, message, content, fileSHA }) => {
   // sometimes the branch is missing wait 5 seconds
   let branchResult
@@ -159,9 +136,9 @@ const commitFile = async ({ repo, branch, prFilePath, message, content, fileSHA 
     ...commit,
     signature: await GLOBALS.signature.createSignature(commit, GLOBALS.gpgPrivateKey, GLOBALS.gpgPassword)
   })
-  //   await createSignature(commit)
 
   console.log(commitRes)
+
   const {
     data: { sha: newCommitSha }
   } = commitRes
