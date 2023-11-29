@@ -83,7 +83,7 @@ const sleep = (ms) => {
   })
 }
 
-const createSignature = async ({ commit }) => {
+const createSignature = async (commit) => {
   const decryptedKey = await GLOBALS.openpgp.readPrivateKey({
     armoredKey: GLOBALS.gpgPrivateKey
   })
