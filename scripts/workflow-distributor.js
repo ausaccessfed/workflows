@@ -225,11 +225,13 @@ const handlePartial = ({ currentContent, newContent: newContentF }) => {
         newContent += remainingContent
       } else {
         const currentContentLines = currentContent.split('\n')
-        const linesToBeAdded = currentContentLines
+        const linesToBeRemoved = currentContentLines
           .filter((currentContentLine) => !newContentLines.includes(currentContentLine))
           .join('\n')
 
-        newContent += `\n${linesToBeAdded}`
+        console.log(linesToBeRemoved)
+
+        newContent += `\n${currentContent}`
       }
     }
   }
