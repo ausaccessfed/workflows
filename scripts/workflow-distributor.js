@@ -160,7 +160,7 @@ const createPR = async ({ repo, head, base, message }) => {
 // }
 
 const deleteBranch = async ({ repo, branch }) => {
-  return await GLOBALS.github.rest.repos.deleteRef({
+  return await GLOBALS.github.rest.git.deleteRef({
     owner: GLOBALS.owner,
     repo,
     ref: `heads/${branch}`
