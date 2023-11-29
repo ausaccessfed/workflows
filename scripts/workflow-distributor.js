@@ -106,6 +106,12 @@ const commitFile = async ({ repo, branch, prFilePath, message, content }) => {
     }
   } = branchResult
 
+  let filePayload = { content }
+
+  if (!content) {
+    filePayload = { sha: null }
+  }
+
   const {
     data: { sha: treeSha }
   } = await GLOBALS.github.rest.git.createTree({
@@ -117,7 +123,7 @@ const commitFile = async ({ repo, branch, prFilePath, message, content }) => {
         path: prFilePath,
         mode: '100644',
         type: 'blob',
-        content
+        ...filePayload
       }
     ]
   })
