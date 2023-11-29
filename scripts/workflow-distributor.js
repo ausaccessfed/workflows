@@ -20,10 +20,6 @@ const setGlobals = ({ context, github, fs, glob }) => {
     fs,
     glob,
     owner: contextPayload.organization.login
-    // committer: {
-    //   name: 'aaf-terraform',
-    //   email: 'fishwhack9000+terraform@gmail.com'
-    // }
   }
 }
 
@@ -87,7 +83,6 @@ const commitFile = async ({ repo, branch, prFilePath, message, newContentBase64,
     path: prFilePath,
     message,
     content: newContentBase64,
-    committer: GLOBALS.committer,
     sha: fileSHA
   })
 }
@@ -101,8 +96,7 @@ const deleteFile = async ({ repo, branch, prFilePath, message, fileSHA }) => {
       repo,
       path: prFilePath,
       message,
-      sha: fileSHA,
-      committer: GLOBALS.committer
+      sha: fileSHA
     })
   } catch (err) {
     console.log('(might not be an error)')
