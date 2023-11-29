@@ -13,11 +13,11 @@ const CONSTANTS = {
 }
 
 let GLOBALS = {}
-const setGlobals = ({ context, github, fs, glob, gpgPrivateKey, signature }) => {
+const setGlobals = ({ context, github, fs, glob, gpgPrivateKey, openpgp }) => {
   const contextPayload = context.payload
   GLOBALS = {
     gpgPrivateKey,
-    signature,
+    openpgp,
     github,
     fs,
     glob,
@@ -83,6 +83,26 @@ const sleep = (ms) => {
   })
 }
 
+const createSignature = async ({ commit }) => {
+  const decryptedKey = await GLOBALS.openpgp.readPrivateKey({
+    armoredKey: GLOBALS.gpgPrivateKey
+  })
+  // TODO: fix time stuff
+  return await GLOBALS.openpgp.sign({
+    message: await GLOBALS.openpgp.createMessage({
+      text: `
+        tree ${commit.tree}
+        ${commit.parents.map((parent) => `parent ${parent}`).join('\n')}
+        author ${commit.author.name} <${commit.author.email}>  Wed Nov 29 09:58:36 2023 +0800
+        committer ${commit.committer.name} <${commit.committer.email}>  Wed Nov 29 09:58:36 2023 +0800
+
+        ${commit.message}`.trim()
+    }),
+    signingKeys: decryptedKey,
+    detached: true
+  })
+}
+
 const commitFile = async ({ repo, branch, prFilePath, message, content, fileSHA }) => {
   // sometimes the branch is missing wait 5 seconds
   let branchResult
@@ -115,7 +135,7 @@ const commitFile = async ({ repo, branch, prFilePath, message, content, fileSHA 
     ]
   })
 
-  const common = {
+  const commit = {
     message,
     tree: treeSha,
     parents: [commitSHA],
@@ -128,8 +148,8 @@ const commitFile = async ({ repo, branch, prFilePath, message, content, fileSHA 
   } = await GLOBALS.github.rest.git.createCommit({
     owner: GLOBALS.owner,
     repo,
-    ...common,
-    signature: await GLOBALS.signature.createSignature(common, GLOBALS.gpgPrivateKey, '')
+    ...commit,
+    signature: await createSignature(commit)
   })
 
   return await GLOBALS.github.rest.git.updateRef({
@@ -343,8 +363,8 @@ const getFiles = async () => {
   return await globber.glob()
 }
 
-const run = async ({ github, context, repositories, fs, glob, gpgPrivateKey, signature }) => {
-  setGlobals({ context, github, fs, glob, gpgPrivateKey, signature })
+const run = async ({ github, context, repositories, fs, glob, gpgPrivateKey, openpgp }) => {
+  setGlobals({ context, github, fs, glob, gpgPrivateKey, openpgp })
 
   repositories = ['ausaccessfed/reporting-service']
 
