@@ -77,15 +77,53 @@ const getFile = async ({ repo, path, ref }) => {
 }
 
 const commitFile = async ({ repo, branch, prFilePath, message, newContentBase64, fileSHA }) => {
-  return await GLOBALS.github.rest.repos.createOrUpdateFileContents({
+  const {
+    data: {
+      commit: { sha: branchSHA }
+    }
+  } = await getBranch({ repo, branch })
+
+  const {
+    data: { sha: treeSha }
+  } = await GLOBALS.github.rest.git.createTree({
     owner: GLOBALS.owner,
     repo,
-    branch,
-    path: prFilePath,
-    message,
-    content: newContentBase64,
-    sha: fileSHA
+    base_tree: branchSHA,
+    tree: {
+      path: prFilePath,
+      mode: '100644',
+      type: 'blob',
+      content: newContentBase64
+    }
   })
+
+  const {
+    data: { sha: commitSha }
+  } = await GLOBALS.github.rest.git.createCommit({
+    owner: GLOBALS.owner,
+    repo,
+    message,
+    tree: treeSha,
+    signature: GLOBALS.gpgPrivateKey
+  })
+
+  return await GLOBALS.github.rest.git.updateRef({
+    owner: GLOBALS.owner,
+    repo,
+    ref: `heads/${branch}`,
+    message,
+    sha: commitSha
+  })
+
+  //   return await GLOBALS.github.rest.repos.createOrUpdateFileContents({
+  //     owner: GLOBALS.owner,
+  //     repo,
+  //     branch,
+  //     path: prFilePath,
+  //     message,
+  //     content: newContentBase64,
+  //     sha: fileSHA
+  //   })
 }
 
 const deleteFile = async ({ repo, branch, prFilePath, message, fileSHA }) => {
