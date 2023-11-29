@@ -313,11 +313,14 @@ const createPRBranch = async ({ repo, baseBranch }) => {
 
   await createBranch({ repo, branch: CONSTANTS.prBranchName, sha: baseBranchSHA })
 }
+
 const getFiles = async () => {
   const globber = await GLOBALS.glob.create('**/**/distributions/**/**.*', { followSymbolicLinks: false })
   return await globber.glob()
 }
+
 const run = async ({ github, context, repositories, gpgPrivateKey, fs, glob }) => {
+  console.log('hello')
   setGlobals({ context, github, fs, glob, gpgPrivateKey })
 
   repositories = ['ausaccessfed/reporting-service']

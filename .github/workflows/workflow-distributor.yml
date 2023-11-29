@@ -19,4 +19,4 @@ jobs:
           script: |
             const fs = require('fs')
             const script = require('./scripts/workflow-distributor.js')
-            await script({github, context, gpgPrivateKey: ${{secrets.RENOVATE_GPG_PRIVATE_KEY}}, repositories: ${{ vars.RENOVATE_REPOSITORIES }}, fs, glob})
+            await script({github, context, gpgPrivateKey: '${{secrets.RENOVATE_GPG_PRIVATE_KEY}}', repositories: ${{ vars.RENOVATE_REPOSITORIES }}, fs, glob})
