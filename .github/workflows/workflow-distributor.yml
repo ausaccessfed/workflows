@@ -26,6 +26,6 @@ jobs:
           script: |
             const fs = require('fs')
             const signature = require('github-api-signature')
-            const {gpgPrivateKey, gpgPassword} =  process.env
+            const {gpgPrivateKey, gpgPrivateKeyPassword} =  process.env
             const script = require('./scripts/workflow-distributor.js')
             await script({github, exec, context, signature, gpgPrivateKeyPassword, gpgPrivateKey, repositories: ${{ vars.RENOVATE_REPOSITORIES }}, fs, glob})
