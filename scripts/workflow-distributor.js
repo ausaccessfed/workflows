@@ -13,11 +13,10 @@ const CONSTANTS = {
 }
 
 let GLOBALS = {}
-const setGlobals = ({ context, github, fs, glob, signature, gpgPrivateKey, gpgPassword, openpgp }) => {
+const setGlobals = ({ context, github, fs, glob, signature, gpgPrivateKey, gpgPassword }) => {
   const contextPayload = context.payload
   GLOBALS = {
     gpgPrivateKey,
-    openpgp,
     gpgPassword,
     signature,
     github,
@@ -349,8 +348,8 @@ const getFiles = async () => {
   return await globber.glob()
 }
 
-const run = async ({ github, signature, context, repositories, fs, glob, gpgPrivateKey, gpgPassword, openpgp }) => {
-  setGlobals({ context, github, signature, fs, glob, gpgPrivateKey, openpgp, gpgPassword })
+const run = async ({ github, signature, context, repositories, fs, glob, gpgPrivateKey, gpgPassword }) => {
+  setGlobals({ context, github, signature, fs, glob, gpgPrivateKey, gpgPassword })
 
   repositories = ['ausaccessfed/reporting-service']
 

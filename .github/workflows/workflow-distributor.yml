@@ -15,7 +15,7 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: 16
-      - run: npm install openpgp github-api-signature
+      - run: npm install github-api-signature
 
       - uses: actions/github-script@d7906e4ad0b1822421a7e6a35d5ca353c962f410 # v6.4.1
         env:
@@ -25,8 +25,7 @@ jobs:
           github-token: ${{secrets.ALL_REPO_SCOPED_TOKEN}}
           script: |
             const fs = require('fs')
-            const openpgp = require('openpgp')
             const signature = require('github-api-signature')
             const {gpgPrivateKey, gpgPassword} =  process.env
             const script = require('./scripts/workflow-distributor.js')
-            await script({github, exec, context, signature, gpgPassword,gpgPrivateKey, openpgp, repositories: ${{ vars.RENOVATE_REPOSITORIES }}, fs, glob})
+            await script({github, exec, context, signature, gpgPassword,gpgPrivateKey, repositories: ${{ vars.RENOVATE_REPOSITORIES }}, fs, glob})
