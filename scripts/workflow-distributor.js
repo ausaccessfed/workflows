@@ -142,29 +142,25 @@ const commitFile = async ({ repo, branch, prFilePath, message, content, fileSHA 
   })
 }
 
-// const commitFile = async ({ repo, branch, prFilePath, message, newContentBase64, fileSHA }) => {
-//   return await GLOBALS.github.rest.repos.createOrUpdateFileContents({
-//     owner: GLOBALS.owner,
-//     repo,
-//     branch,
-//     path: prFilePath,
-//     message,
-//     content: newContentBase64,
-//     sha: fileSHA
-//   })
-// }
-
 const deleteFile = async ({ repo, branch, prFilePath, message, fileSHA }) => {
   let result = {}
   try {
-    return await GLOBALS.github.rest.repos.deleteFile({
-      owner: GLOBALS.owner,
-      branch,
+    return await commitFile({
       repo,
-      path: prFilePath,
+      branch,
+      prFilePath,
       message,
-      sha: fileSHA
+      content: null,
+      fileSHA
     })
+    // return await GLOBALS.github.rest.repos.deleteFile({
+    //   owner: GLOBALS.owner,
+    //   branch,
+    //   repo,
+    //   path: prFilePath,
+    //   message,
+    //   sha: fileSHA
+    // })
   } catch (err) {
     console.log('(might not be an error)')
     console.error(err.stack)
@@ -283,7 +279,7 @@ const updateFile = async ({ repo, parsedFile }) => {
     branch: CONSTANTS.prBranchName,
     prFilePath,
     message,
-    newContentBase64: utf8TextToBase64(newContent),
+    content: newContent,
     fileSHA
   })
 }
