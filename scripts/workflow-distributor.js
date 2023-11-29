@@ -230,6 +230,8 @@ const handlePartial = ({ currentContent, newContent: newContentF }) => {
           .join('\n')
 
         newContent += `\n${linesToBeAdded}`
+
+        console.log(newContent)
       }
     }
   }
