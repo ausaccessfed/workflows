@@ -153,15 +153,18 @@ const commitFile = async ({ repo, branch, prFilePath, message, content, fileSHA 
     committer: GLOBALS.committer
   }
 
-  const {
-    data: { sha: newCommitSha }
-  } = await GLOBALS.github.rest.git.createCommit({
+  const commitRes = await GLOBALS.github.rest.git.createCommit({
     owner: GLOBALS.owner,
     repo,
     ...commit,
     signature: await GLOBALS.signature.createSignature(commit, GLOBALS.gpgPrivateKey, GLOBALS.gpgPassword)
   })
   //   await createSignature(commit)
+
+  console.log(commitRes)
+  const {
+    data: { sha: newCommitSha }
+  } = commitRes
 
   return await GLOBALS.github.rest.git.updateRef({
     owner: GLOBALS.owner,
