@@ -59,6 +59,7 @@ const createBranch = async ({ repo, branch, sha }) => {
     })
   } catch (err) {
     console.log('(might not be an error)')
+    console.dir(err.response)
     console.error(err.stack)
     result = err.response
   }
@@ -76,6 +77,7 @@ const getFile = async ({ repo, path, ref }) => {
     })
   } catch (err) {
     console.log('(might not be an error)')
+    console.dir(err.response)
     console.error(err.stack)
     result = err.response
   }
@@ -88,7 +90,7 @@ const sleep = (ms) => {
   })
 }
 
-const commitFile = async ({ repo, branch, prFilePath, message, content, fileSHA }) => {
+const commitFile = async ({ repo, branch, prFilePath, message, content }) => {
   // sometimes the branch is missing wait 5 seconds
   let branchResult
   try {
@@ -147,7 +149,7 @@ const commitFile = async ({ repo, branch, prFilePath, message, content, fileSHA 
   })
 }
 
-const deleteFile = async ({ repo, branch, prFilePath, message, fileSHA }) => {
+const deleteFile = async ({ repo, branch, prFilePath, message }) => {
   let result = {}
   try {
     return await commitFile({
@@ -155,19 +157,11 @@ const deleteFile = async ({ repo, branch, prFilePath, message, fileSHA }) => {
       branch,
       prFilePath,
       message,
-      content: null,
-      fileSHA
+      content: null
     })
-    // return await GLOBALS.github.rest.repos.deleteFile({
-    //   owner: GLOBALS.owner,
-    //   branch,
-    //   repo,
-    //   path: prFilePath,
-    //   message,
-    //   sha: fileSHA
-    // })
   } catch (err) {
     console.log('(might not be an error)')
+    console.dir(err.response)
     console.error(err.stack)
     result = err.response
   }
@@ -187,6 +181,7 @@ const createPR = async ({ repo, head, base, message }) => {
     })
   } catch (err) {
     console.log('(might not be an error)')
+    console.dir(err.response)
     console.error(err.stack)
     result = err.response
   }
@@ -265,12 +260,12 @@ const updateFile = async ({ repo, parsedFile }) => {
   const { message, prFilePath } = parsedFile
   let { newContent } = parsedFile
   const {
-    data: { sha: fileSHA, content: currentContentBase64 }
+    data: { content: currentContentBase64 }
   } = await getFile({ repo, path: prFilePath, ref: CONSTANTS.prBranchName })
 
   const isOnceFile = CONSTANTS.regex.once.test(newContent)
   if (isOnceFile) {
-    if (fileSHA) {
+    if (currentContentBase64) {
       //  If file exists then skip
       return
     }
@@ -284,22 +279,7 @@ const updateFile = async ({ repo, parsedFile }) => {
     branch: CONSTANTS.prBranchName,
     prFilePath,
     message,
-    content: newContent,
-    fileSHA
-  })
-}
-
-const removeFile = async ({ repo, branch, prFilePath, message }) => {
-  const {
-    data: { sha: fileSHA }
-  } = await getFile({ repo, path: prFilePath, ref: branch })
-
-  await deleteFile({
-    repo,
-    branch,
-    prFilePath,
-    message,
-    fileSHA
+    content: newContent
   })
 }
 
@@ -316,7 +296,7 @@ const handleFileRemovals = async ({ repo, parsedFiles, baseBranch }) => {
       (bootstrappedFile) => !bootstrappableFiles.includes(bootstrappedFile)
     )
     for (const prFilePath of filesToBeRemoved) {
-      await removeFile({
+      await deleteFile({
         repo,
         branch: CONSTANTS.prBranchName,
         prFilePath,
