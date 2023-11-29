@@ -77,18 +77,18 @@ const getFile = async ({ repo, path, ref }) => {
 }
 
 const commitFile = async ({ repo, branch, prFilePath, message, newContentBase64, fileSHA }) => {
-  //   const {
-  //     data: {
-  //       commit: { sha: branchSHA }
-  //     }
-  //   } = await getBranch({ repo, branch })
+  const {
+    data: {
+      commit: { sha: branchSHA }
+    }
+  } = await getBranch({ repo, branch })
 
   const {
     data: { sha: treeSha }
   } = await GLOBALS.github.rest.git.createTree({
     owner: GLOBALS.owner,
     repo,
-    base_tree: fileSHA,
+    base_tree: branchSHA,
     tree: [
       {
         path: prFilePath,
