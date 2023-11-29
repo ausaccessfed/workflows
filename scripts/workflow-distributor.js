@@ -13,13 +13,13 @@ const CONSTANTS = {
 }
 
 let GLOBALS = {}
-const setGlobals = ({ context, github, fs, glob, gpgPrivateKey }) => {
+const setGlobals = ({ context, github, fs, glob, gpgKey }) => {
   const contextPayload = context.payload
   GLOBALS = {
     github,
     fs,
     glob,
-    gpgPrivateKey,
+    gpgKey,
     owner: contextPayload.organization.login
   }
 }
@@ -97,20 +97,6 @@ const commitFile = async ({ repo, branch, prFilePath, message, content, fileSHA 
     }
   } = branchResult
 
-  //   const {
-  //     data: {
-  //       commit: { sha: commitSHA }
-  //     }
-  //   } = await GLOBALS.github.rest.repos.createOrUpdateFileContents({
-  //     owner: GLOBALS.owner,
-  //     repo,
-  //     branch,
-  //     path: prFilePath,
-  //     message,
-  //     content,
-  //     sha: fileSHA
-  //   })
-
   const {
     data: { sha: treeSha }
   } = await GLOBALS.github.rest.git.createTree({
@@ -135,7 +121,7 @@ const commitFile = async ({ repo, branch, prFilePath, message, content, fileSHA 
     message,
     parents: [commitSHA],
     tree: treeSha,
-    signature: GLOBALS.gpgPrivateKey
+    signature: GLOBALS.gpgKey
   })
 
   return await GLOBALS.github.rest.git.updateRef({
@@ -349,8 +335,8 @@ const getFiles = async () => {
   return await globber.glob()
 }
 
-const run = async ({ github, context, repositories, gpgPrivateKey, fs, glob }) => {
-  setGlobals({ context, github, fs, glob, gpgPrivateKey })
+const run = async ({ github, context, repositories, gpgKey, fs, glob }) => {
+  setGlobals({ context, github, fs, glob, gpgKey })
 
   repositories = ['ausaccessfed/reporting-service']
 
