@@ -19,11 +19,11 @@ const setGlobals = ({ context, github, fs, glob }) => {
     github,
     fs,
     glob,
-    owner: contextPayload.organization.login,
-    committer: {
-      name: 'aaf-terraform',
-      email: 'fishwhack9000+terraform@gmail.com'
-    }
+    owner: contextPayload.organization.login
+    // committer: {
+    //   name: 'aaf-terraform',
+    //   email: 'fishwhack9000+terraform@gmail.com'
+    // }
   }
 }
 
