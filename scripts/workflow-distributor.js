@@ -89,12 +89,14 @@ const commitFile = async ({ repo, branch, prFilePath, message, newContentBase64,
     owner: GLOBALS.owner,
     repo,
     base_tree: fileSHA,
-    tree: {
-      path: prFilePath,
-      mode: '100644',
-      type: 'blob',
-      content: "test conetn"
-    }
+    tree: [
+      {
+        path: prFilePath,
+        mode: '100644',
+        type: 'blob',
+        content: newContentBase64
+      }
+    ]
   })
 
   const {
