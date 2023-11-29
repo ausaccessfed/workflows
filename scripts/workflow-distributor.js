@@ -131,14 +131,22 @@ const commitFile = async ({ repo, branch, prFilePath, message, newContentBase64,
 const deleteFile = async ({ repo, branch, prFilePath, message, fileSHA }) => {
   let result = {}
   try {
-    return await GLOBALS.github.rest.repos.deleteFile({
-      owner: GLOBALS.owner,
-      branch,
+    return await commitFile({
       repo,
-      path: prFilePath,
+      branch,
+      prFilePath,
       message,
-      sha: fileSHA
+      newContentBase64: null,
+      fileSHA
     })
+    // return await GLOBALS.github.rest.repos.deleteFile({
+    //   owner: GLOBALS.owner,
+    //   branch,
+    //   repo,
+    //   path: prFilePath,
+    //   message,
+    //   sha: fileSHA
+    // })
   } catch (err) {
     console.log('(might not be an error)')
     console.error(err.stack)
