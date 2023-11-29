@@ -13,11 +13,12 @@ const CONSTANTS = {
 }
 
 let GLOBALS = {}
-const setGlobals = ({ context, github, fs, glob, gpgPrivateKey, openpgp }) => {
+const setGlobals = ({ context, github, fs, glob, gpgPrivateKey, gpgPassword, openpgp }) => {
   const contextPayload = context.payload
   GLOBALS = {
     gpgPrivateKey,
     openpgp,
+    gpgPassword,
     github,
     fs,
     glob,
@@ -88,8 +89,12 @@ const sleep = (ms) => {
 }
 
 const createSignature = async (commit) => {
-  const decryptedKey = await GLOBALS.openpgp.readPrivateKey({
+  const decodedKey = await GLOBALS.openpgp.readPrivateKey({
     armoredKey: GLOBALS.gpgPrivateKey
+  })
+  const decryptedKey = await GLOBALS.openpgp.decryptKey({
+    privateKey: decodedKey,
+    passphrase: GLOBALS.gpgPassword
   })
   // TODO: fix time stuff
   return await GLOBALS.openpgp.sign({
@@ -367,8 +372,8 @@ const getFiles = async () => {
   return await globber.glob()
 }
 
-const run = async ({ github, context, repositories, fs, glob, gpgPrivateKey, openpgp }) => {
-  setGlobals({ context, github, fs, glob, gpgPrivateKey, openpgp })
+const run = async ({ github, context, repositories, fs, glob, gpgPrivateKey, gpgPassword, openpgp }) => {
+  setGlobals({ context, github, fs, glob, gpgPrivateKey, openpgp, gpgPassword })
 
   repositories = ['ausaccessfed/reporting-service']
 
