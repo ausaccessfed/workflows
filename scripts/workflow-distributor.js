@@ -120,8 +120,8 @@ const commitFile = async ({ repo, branch, prFilePath, message, content, fileSHA 
     repo,
     message,
     parents: [commitSHA],
-    tree: treeSha,
-    signature: GLOBALS.gpgKey
+    tree: treeSha
+    // signature: GLOBALS.gpgKey
   })
 
   return await GLOBALS.github.rest.git.updateRef({
