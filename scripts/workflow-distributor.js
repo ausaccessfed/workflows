@@ -15,15 +15,14 @@ const CONSTANTS = {
 let GLOBALS = {}
 const setGlobals = ({ context, github, fs, glob }) => {
   const contextPayload = context.payload
-  const committerData = contextPayload.pusher || contextPayload.sender
   GLOBALS = {
     github,
     fs,
     glob,
     owner: contextPayload.organization.login,
-    committer: committerData || {
-      name: 'N/A',
-      email: 'N/A'
+    committer: {
+      name: 'aaf-terraform',
+      email: '118229371+aaf-terraform@users.noreply.github.com'
     }
   }
 }
