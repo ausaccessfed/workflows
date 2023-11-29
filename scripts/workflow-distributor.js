@@ -202,7 +202,7 @@ const deleteBranch = async ({ repo, branch }) => {
   })
 }
 
-const handlePartial = ({ currentContentBase64, newContent: newContentF }) => {
+const handlePartial = ({ currentContent, newContent: newContentF }) => {
   let newContent = newContentF
   const isPartial = CONSTANTS.regex.partial.test(newContent)
 
@@ -210,8 +210,7 @@ const handlePartial = ({ currentContentBase64, newContent: newContentF }) => {
     //  remove partial flag and blank newline at end of template
     newContent = newContent.replace(CONSTANTS.regex.partial, '').replace(/\n$/, '')
 
-    if (currentContentBase64) {
-      const currentContent = base64TextToUtf8(currentContentBase64)
+    if (currentContent) {
       const newContentLines = newContent.split('\n')
 
       let endLineReplacement = null
@@ -222,8 +221,13 @@ const handlePartial = ({ currentContentBase64, newContent: newContentF }) => {
         endLineReplacement = newContentLines.pop()
       }
       const remainingContent = currentContent.split(endLineReplacement)[1]
+      console.log('currr')
+      console.log(currentContent)
+      console.log('new')
+      console.log(newContent)
       if (remainingContent) {
         newContent += remainingContent
+        //    TODO: something is funky with the else
       } else {
         newContent += `\n${currentContent}`
       }
@@ -278,7 +282,9 @@ const updateFile = async ({ repo, parsedFile }) => {
     newContent = newContent.replace(CONSTANTS.regex.once, '')
   }
 
-  newContent = handlePartial({ currentContentBase64, newContent })
+  if (currentContentBase64) {
+    newContent = handlePartial({ currentContent: base64TextToUtf8(currentContentBase64), newContent })
+  }
 
   await commitFile({
     repo,
