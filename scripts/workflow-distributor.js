@@ -282,6 +282,8 @@ const updateFile = async ({ repo, parsedFile }) => {
     newContent = newContent.replace(CONSTANTS.regex.once, '')
   }
 
+  console.log(prFilePath)
+
   if (currentContentBase64) {
     newContent = handlePartial({ currentContent: base64TextToUtf8(currentContentBase64), newContent })
   }
