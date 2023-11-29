@@ -75,20 +75,41 @@ const getFile = async ({ repo, path, ref }) => {
   }
   return result
 }
+const sleep = (ms) => {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms)
+  })
+}
 
 const commitFile = async ({ repo, branch, prFilePath, message, newContentBase64, fileSHA }) => {
+  // sometimes the branch is missing wait 5 seconds
+  //   await sleep(5000)
+  //   const {
+  //     data: {
+  //       commit: { sha: branchSHA }
+  //     }
+  //   } = await getBranch({ repo, branch })
+
   const {
     data: {
-      commit: { sha: branchSHA }
+      commit: { sha: commitSHA }
     }
-  } = await getBranch({ repo, branch })
+  } = await GLOBALS.github.rest.repos.createOrUpdateFileContents({
+    owner: GLOBALS.owner,
+    repo,
+    branch,
+    path: prFilePath,
+    message,
+    content: newContentBase64,
+    sha: fileSHA
+  })
 
   const {
     data: { sha: treeSha }
   } = await GLOBALS.github.rest.git.createTree({
     owner: GLOBALS.owner,
     repo,
-    base_tree: branchSHA,
+    base_tree: commitSHA,
     tree: [
       {
         path: prFilePath,
@@ -100,12 +121,12 @@ const commitFile = async ({ repo, branch, prFilePath, message, newContentBase64,
   })
 
   const {
-    data: { sha: commitSha }
+    data: { sha: newCommitSha }
   } = await GLOBALS.github.rest.git.createCommit({
     owner: GLOBALS.owner,
     repo,
     message,
-    parents: [branchSHA],
+    parents: [commitSHA],
     tree: treeSha,
     signature: GLOBALS.gpgPrivateKey
   })
@@ -115,18 +136,9 @@ const commitFile = async ({ repo, branch, prFilePath, message, newContentBase64,
     repo,
     ref: `heads/${branch}`,
     message,
-    sha: commitSha
+    sha: newCommitSha,
+    force: true
   })
-
-  //   return await GLOBALS.github.rest.repos.createOrUpdateFileContents({
-  //     owner: GLOBALS.owner,
-  //     repo,
-  //     branch,
-  //     path: prFilePath,
-  //     message,
-  //     content: newContentBase64,
-  //     sha: fileSHA
-  //   })
 }
 
 const deleteFile = async ({ repo, branch, prFilePath, message, fileSHA }) => {
