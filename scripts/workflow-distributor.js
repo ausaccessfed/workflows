@@ -105,6 +105,7 @@ const commitFile = async ({ repo, branch, prFilePath, message, newContentBase64,
     owner: GLOBALS.owner,
     repo,
     message,
+    parents: [branchSHA],
     tree: treeSha,
     signature: GLOBALS.gpgPrivateKey
   })
