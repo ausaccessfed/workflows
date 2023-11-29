@@ -20,7 +20,7 @@ jobs:
       - uses: actions/github-script@d7906e4ad0b1822421a7e6a35d5ca353c962f410 # v6.4.1
         env:
           gpgPrivateKey: ${{secrets.GPG_PRIVATE_KEY}}
-          gpgPassword: ${{secrets.GPG_PASSWORD}}
+          gpgPrivateKeyPassword: ${{secrets.GPG_PRIVATE_KEY_PASSWORD}}
         with:
           github-token: ${{secrets.ALL_REPO_SCOPED_TOKEN}}
           script: |
@@ -28,4 +28,4 @@ jobs:
             const signature = require('github-api-signature')
             const {gpgPrivateKey, gpgPassword} =  process.env
             const script = require('./scripts/workflow-distributor.js')
-            await script({github, exec, context, signature, gpgPassword,gpgPrivateKey, repositories: ${{ vars.RENOVATE_REPOSITORIES }}, fs, glob})
+            await script({github, exec, context, signature, gpgPrivateKeyPassword, gpgPrivateKey, repositories: ${{ vars.RENOVATE_REPOSITORIES }}, fs, glob})

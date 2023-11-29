@@ -13,11 +13,11 @@ const CONSTANTS = {
 }
 
 let GLOBALS = {}
-const setGlobals = ({ context, github, fs, glob, signature, gpgPrivateKey, gpgPassword }) => {
+const setGlobals = ({ context, github, fs, glob, signature, gpgPrivateKey, gpgPrivateKeyPassword }) => {
   const contextPayload = context.payload
   GLOBALS = {
     gpgPrivateKey,
-    gpgPassword,
+    gpgPrivateKeyPassword,
     signature,
     github,
     fs,
@@ -134,7 +134,7 @@ const commitFile = async ({ repo, branch, prFilePath, message, content, fileSHA 
     owner: GLOBALS.owner,
     repo,
     ...commit,
-    signature: await GLOBALS.signature.createSignature(commit, GLOBALS.gpgPrivateKey, GLOBALS.gpgPassword)
+    signature: await GLOBALS.signature.createSignature(commit, GLOBALS.gpgPrivateKey, GLOBALS.gpgPrivateKeyPassword)
   })
 
   return await GLOBALS.github.rest.git.updateRef({
@@ -348,8 +348,8 @@ const getFiles = async () => {
   return await globber.glob()
 }
 
-const run = async ({ github, signature, context, repositories, fs, glob, gpgPrivateKey, gpgPassword }) => {
-  setGlobals({ context, github, signature, fs, glob, gpgPrivateKey, gpgPassword })
+const run = async ({ github, signature, context, repositories, fs, glob, gpgPrivateKey, gpgPrivateKeyPassword }) => {
+  setGlobals({ context, github, signature, fs, glob, gpgPrivateKey, gpgPrivateKeyPassword })
 
   repositories = ['ausaccessfed/reporting-service']
 
