@@ -20,6 +20,10 @@ const setGlobals = ({ context, github, fs, glob, gpgKey }) => {
     fs,
     glob,
     gpgKey,
+    committer: {
+      email: 'fishwhack9000+terraform@gmail.com',
+      name: 'aaf-terraform'
+    },
     owner: contextPayload.organization.login
   }
 }
@@ -120,8 +124,9 @@ const commitFile = async ({ repo, branch, prFilePath, message, content, fileSHA 
     repo,
     message,
     parents: [commitSHA],
-    tree: treeSha
-    // signature: GLOBALS.gpgKey
+    tree: treeSha,
+    signature: GLOBALS.gpgKey,
+    committer: GLOBALS.committer
   })
 
   return await GLOBALS.github.rest.git.updateRef({
