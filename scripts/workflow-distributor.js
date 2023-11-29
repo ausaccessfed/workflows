@@ -342,9 +342,6 @@ const getFiles = async () => {
 
 const run = async ({ github, signature, context, repositories, fs, glob, gpgPrivateKey, gpgPrivateKeyPassword }) => {
   setGlobals({ context, github, signature, fs, glob, gpgPrivateKey, gpgPrivateKeyPassword })
-
-  repositories = ['ausaccessfed/reporting-service']
-
   const files = await getFiles()
   let cacheParsedFile
   // parses files and then extracts the bootstrap file as its a special one
