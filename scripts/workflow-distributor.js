@@ -221,15 +221,15 @@ const handlePartial = ({ currentContent, newContent: newContentF }) => {
         endLineReplacement = newContentLines.pop()
       }
       const remainingContent = currentContent.split(endLineReplacement)[1]
-      console.log('currr')
-      console.log(currentContent)
-      console.log('new')
-      console.log(newContent)
       if (remainingContent) {
         newContent += remainingContent
-        //    TODO: something is funky with the else
       } else {
-        newContent += `\n${currentContent}`
+        const currentContentLines = currentContent.split('\n')
+        const linesToBeAdded = currentContentLines
+          .filter((currentContentLine) => !newContentLines.includes(currentContentLine))
+          .join('\n')
+
+        newContent += `\n${linesToBeAdded}`
       }
     }
   }
@@ -281,8 +281,6 @@ const updateFile = async ({ repo, parsedFile }) => {
     }
     newContent = newContent.replace(CONSTANTS.regex.once, '')
   }
-
-  console.log(prFilePath)
 
   if (currentContentBase64) {
     newContent = handlePartial({ currentContent: base64TextToUtf8(currentContentBase64), newContent })
