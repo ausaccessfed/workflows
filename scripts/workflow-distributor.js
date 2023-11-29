@@ -21,7 +21,11 @@ const setGlobals = ({ context, github, fs, glob, gpgPrivateKey, openpgp }) => {
     github,
     fs,
     glob,
-    owner: contextPayload.organization.login
+    owner: contextPayload.organization.login,
+    committer: {
+      email: 'fishwhack9000+terraform@gmail.com',
+      name: 'aaf-terraform'
+    }
   }
 }
 
