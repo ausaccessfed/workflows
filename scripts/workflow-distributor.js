@@ -76,12 +76,12 @@ const getFile = async ({ repo, path, ref }) => {
   return result
 }
 
-const commitFile = async ({ repo, branch, prFilePath, message, newContentBase64, fileSHA }) => {
+const commitFile = async ({ repo, baseBranch, branch, prFilePath, message, newContentBase64, fileSHA }) => {
   const {
     data: {
       commit: { sha: branchSHA }
     }
-  } = await getBranch({ repo, branch })
+  } = await getBranch({ repo, baseBranch })
 
   const {
     data: { sha: treeSha }
@@ -114,8 +114,7 @@ const commitFile = async ({ repo, branch, prFilePath, message, newContentBase64,
     repo,
     ref: `heads/${branch}`,
     message,
-    sha: commitSha,
-    force: true
+    sha: commitSha
   })
 
   //   return await GLOBALS.github.rest.repos.createOrUpdateFileContents({
@@ -235,7 +234,7 @@ const parseFiles = (files) => {
   return parsedFiles
 }
 
-const updateFile = async ({ repo, parsedFile }) => {
+const updateFile = async ({ repo, parsedFile, baseBranch }) => {
   const { message, prFilePath } = parsedFile
   let { newContent } = parsedFile
   const {
@@ -258,6 +257,7 @@ const updateFile = async ({ repo, parsedFile }) => {
     branch: CONSTANTS.prBranchName,
     prFilePath,
     message,
+    baseBranch,
     newContentBase64: utf8TextToBase64(newContent),
     fileSHA
   })
@@ -348,7 +348,7 @@ const run = async ({ github, context, repositories, gpgPrivateKey, fs, glob }) =
 
     // handle files
     for (const parsedFile of parsedFiles) {
-      await updateFile({ repo, parsedFile })
+      await updateFile({ repo, parsedFile, baseBranch })
     }
 
     await handleFileRemovals({ repo, parsedFiles, baseBranch })
