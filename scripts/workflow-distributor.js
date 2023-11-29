@@ -81,7 +81,7 @@ const commitFile = async ({ repo, baseBranch, branch, prFilePath, message, newCo
     data: {
       commit: { sha: branchSHA }
     }
-  } = await getBranch({ repo, baseBranch })
+  } = await getBranch({ repo, branch: baseBranch })
 
   const {
     data: { sha: treeSha }
