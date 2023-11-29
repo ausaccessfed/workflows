@@ -27,13 +27,12 @@ const setGlobals = ({ context, github, fs, glob, signature, gpgPrivateKey, gpgPa
     committer: {
       email: 'fishwhack9000+terraform@gmail.com',
       name: 'aaf-terraform',
-      date: '2018-01-01T00:00:00.000Z'
+      date: new Date(Date.now()).toISOString()
     }
   }
 }
 
 const base64TextToUtf8 = (text) => Buffer.from(text, 'base64').toString('utf8')
-const utf8TextToBase64 = (text) => Buffer.from(text).toString('base64')
 
 const getRepo = async ({ repo }) => {
   return await GLOBALS.github.rest.repos.get({
@@ -130,18 +129,14 @@ const commitFile = async ({ repo, branch, prFilePath, message, content, fileSHA 
     committer: GLOBALS.committer
   }
 
-  const commitRes = await GLOBALS.github.rest.git.createCommit({
+  const {
+    data: { sha: newCommitSha }
+  } = await GLOBALS.github.rest.git.createCommit({
     owner: GLOBALS.owner,
     repo,
     ...commit,
     signature: await GLOBALS.signature.createSignature(commit, GLOBALS.gpgPrivateKey, GLOBALS.gpgPassword)
   })
-
-  console.log(commitRes)
-
-  const {
-    data: { sha: newCommitSha }
-  } = commitRes
 
   return await GLOBALS.github.rest.git.updateRef({
     owner: GLOBALS.owner,
