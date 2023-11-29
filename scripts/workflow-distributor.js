@@ -13,17 +13,12 @@ const CONSTANTS = {
 }
 
 let GLOBALS = {}
-const setGlobals = ({ context, github, fs, glob, gpgKey }) => {
+const setGlobals = ({ context, github, fs, glob }) => {
   const contextPayload = context.payload
   GLOBALS = {
     github,
     fs,
     glob,
-    gpgKey,
-    committer: {
-      email: 'fishwhack9000+terraform@gmail.com',
-      name: 'aaf-terraform'
-    },
     owner: contextPayload.organization.login
   }
 }
@@ -79,85 +74,30 @@ const getFile = async ({ repo, path, ref }) => {
   }
   return result
 }
-const sleep = (ms) => {
-  return new Promise((resolve) => {
-    setTimeout(resolve, ms)
-  })
-}
 
-const commitFile = async ({ repo, branch, prFilePath, message, content, fileSHA }) => {
-  // sometimes the branch is missing wait 5 seconds
-  let branchResult
-  try {
-    branchResult = await getBranch({ repo, branch })
-  } catch (e) {
-    await sleep(5000)
-    branchResult = await getBranch({ repo, branch })
-  }
-
-  const {
-    data: {
-      commit: { sha: commitSHA }
-    }
-  } = branchResult
-
-  const {
-    data: { sha: treeSha }
-  } = await GLOBALS.github.rest.git.createTree({
+const commitFile = async ({ repo, branch, prFilePath, message, newContentBase64, fileSHA }) => {
+  return await GLOBALS.github.rest.repos.createOrUpdateFileContents({
     owner: GLOBALS.owner,
     repo,
-    base_tree: commitSHA,
-    tree: [
-      {
-        path: prFilePath,
-        mode: '100644',
-        type: 'blob',
-        content
-      }
-    ]
-  })
-
-  const {
-    data: { sha: newCommitSha }
-  } = await GLOBALS.github.rest.git.createCommit({
-    owner: GLOBALS.owner,
-    repo,
+    branch,
+    path: prFilePath,
     message,
-    parents: [commitSHA],
-    tree: treeSha,
-    signature: GLOBALS.gpgKey,
-    committer: GLOBALS.committer
-  })
-
-  return await GLOBALS.github.rest.git.updateRef({
-    owner: GLOBALS.owner,
-    repo,
-    ref: `heads/${branch}`,
-    message,
-    sha: newCommitSha,
-    force: true
+    content: newContentBase64,
+    sha: fileSHA
   })
 }
 
 const deleteFile = async ({ repo, branch, prFilePath, message, fileSHA }) => {
   let result = {}
   try {
-    return await commitFile({
-      repo,
+    return await GLOBALS.github.rest.repos.deleteFile({
+      owner: GLOBALS.owner,
       branch,
-      prFilePath,
+      repo,
+      path: prFilePath,
       message,
-      content: null,
-      fileSHA
+      sha: fileSHA
     })
-    // return await GLOBALS.github.rest.repos.deleteFile({
-    //   owner: GLOBALS.owner,
-    //   branch,
-    //   repo,
-    //   path: prFilePath,
-    //   message,
-    //   sha: fileSHA
-    // })
   } catch (err) {
     console.log('(might not be an error)')
     console.error(err.stack)
@@ -276,7 +216,7 @@ const updateFile = async ({ repo, parsedFile }) => {
     branch: CONSTANTS.prBranchName,
     prFilePath,
     message,
-    content: newContent,
+    newContentBase64: utf8TextToBase64(newContent),
     fileSHA
   })
 }
@@ -340,8 +280,8 @@ const getFiles = async () => {
   return await globber.glob()
 }
 
-const run = async ({ github, context, repositories, gpgKey, fs, glob }) => {
-  setGlobals({ context, github, fs, glob, gpgKey })
+const run = async ({ github, context, repositories, fs, glob }) => {
+  setGlobals({ context, github, fs, glob })
 
   repositories = ['ausaccessfed/reporting-service']
 

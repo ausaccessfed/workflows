@@ -14,12 +14,9 @@ jobs:
         uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3.6.0
 
       - uses: actions/github-script@d7906e4ad0b1822421a7e6a35d5ca353c962f410 # v6.4.1
-        env:
-          gpgKey: ${{secrets.RENOVATE_GPG_PUBLIC_KEY}}
         with:
           github-token: ${{secrets.ALL_REPO_SCOPED_TOKEN}}
           script: |
             const fs = require('fs')
             const script = require('./scripts/workflow-distributor.js')
-            const { gpgKey } = process.env
-            await script({github, context, gpgKey, repositories: ${{ vars.RENOVATE_REPOSITORIES }}, fs, glob})
+            await script({github, exec, context, repositories: ${{ vars.RENOVATE_REPOSITORIES }}, fs, glob})
