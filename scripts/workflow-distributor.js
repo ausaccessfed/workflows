@@ -83,26 +83,26 @@ const sleep = (ms) => {
 
 const commitFile = async ({ repo, branch, prFilePath, message, newContentBase64, fileSHA }) => {
   // sometimes the branch is missing wait 5 seconds
-  //   await sleep(5000)
-  //   const {
-  //     data: {
-  //       commit: { sha: branchSHA }
-  //     }
-  //   } = await getBranch({ repo, branch })
-
+  await sleep(5000)
   const {
     data: {
       commit: { sha: commitSHA }
     }
-  } = await GLOBALS.github.rest.repos.createOrUpdateFileContents({
-    owner: GLOBALS.owner,
-    repo,
-    branch,
-    path: prFilePath,
-    message,
-    content: newContentBase64,
-    sha: fileSHA
-  })
+  } = await getBranch({ repo, branch })
+
+  //   const {
+  //     data: {
+  //       commit: { sha: commitSHA }
+  //     }
+  //   } = await GLOBALS.github.rest.repos.createOrUpdateFileContents({
+  //     owner: GLOBALS.owner,
+  //     repo,
+  //     branch,
+  //     path: prFilePath,
+  //     message,
+  //     content: newContentBase64,
+  //     sha: fileSHA
+  //   })
 
   const {
     data: { sha: treeSha }
