@@ -81,14 +81,21 @@ const sleep = (ms) => {
   })
 }
 
-const commitFile = async ({ repo, branch, prFilePath, message, newContentBase64, fileSHA }) => {
+const commitFile = async ({ repo, branch, prFilePath, message, content, fileSHA }) => {
   // sometimes the branch is missing wait 5 seconds
-  await sleep(5000)
+  let branchResult
+  try {
+    branchResult = await getBranch({ repo, branch })
+  } catch (e) {
+    await sleep(5000)
+    branchResult = await getBranch({ repo, branch })
+  }
+
   const {
     data: {
       commit: { sha: commitSHA }
     }
-  } = await getBranch({ repo, branch })
+  } = branchResult
 
   //   const {
   //     data: {
@@ -100,7 +107,7 @@ const commitFile = async ({ repo, branch, prFilePath, message, newContentBase64,
   //     branch,
   //     path: prFilePath,
   //     message,
-  //     content: newContentBase64,
+  //     content,
   //     sha: fileSHA
   //   })
 
@@ -115,7 +122,7 @@ const commitFile = async ({ repo, branch, prFilePath, message, newContentBase64,
         path: prFilePath,
         mode: '100644',
         type: 'blob',
-        content: newContentBase64
+        content
       }
     ]
   })
@@ -149,7 +156,7 @@ const deleteFile = async ({ repo, branch, prFilePath, message, fileSHA }) => {
       branch,
       prFilePath,
       message,
-      newContentBase64: null,
+      content: null,
       fileSHA
     })
     // return await GLOBALS.github.rest.repos.deleteFile({
@@ -278,7 +285,7 @@ const updateFile = async ({ repo, parsedFile }) => {
     branch: CONSTANTS.prBranchName,
     prFilePath,
     message,
-    newContentBase64: utf8TextToBase64(newContent),
+    content: newContent,
     fileSHA
   })
 }
