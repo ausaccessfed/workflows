@@ -113,6 +113,25 @@ const deleteFile = async ({ repo, branch, prFilePath, message, fileSHA }) => {
   return result
 }
 
+// const getPullRequestByBranchName = async ({ repo, branch }) => {
+//   const query = `query pullRequest($owner:String!,$repo:String!, $branch:String!) {
+//           repository(owner: $owner, name: $repo) {
+//             pullRequests(headRefName: $branch, first: 100) {
+//               nodes {
+//                 number
+//                 url
+//               }
+//             }
+//           }
+//         }`
+
+//   await GLOBALS.github.graphql(query, {
+//     owner: GLOBALS.owner,
+//     repo,
+//     branch
+//   })
+// }
+
 const createPR = async ({ repo, head, base, message }) => {
   let result = {}
   try {
@@ -130,6 +149,22 @@ const createPR = async ({ repo, head, base, message }) => {
     result = err.response
   }
   return result
+}
+
+// const deletePR = async ({ repo }) => {
+//   return await GLOBALS.github.rest.pulls.delete({
+//     owner: GLOBALS.owner,
+//     repo,
+//     state: 'closed'
+//   })
+// }
+
+const deleteBranch = async ({ repo, branch }) => {
+  return await GLOBALS.github.rest.branch.deleteRef({
+    owner: GLOBALS.owner,
+    repo,
+    ref: `heads/${branch}`
+  })
 }
 
 const handlePartial = ({ currentContentBase64, newContent: newContentF }) => {
@@ -263,11 +298,20 @@ const updateCacheFile = async ({ repo, parsedFile, parsedFiles }) => {
 }
 
 const createPRBranch = async ({ repo, baseBranch }) => {
+  //   const pr = await getPullRequestByBranchName({ repo, branch: CONSTANTS.prBranchName })
+  //   console.log(pr)
+
+  //   if (number) {
+  // await deletePR({ repo, pull_number: number })
+  await deleteBranch({ repo, branch: CONSTANTS.prBranchName })
+  //   }
+
   const {
     data: {
       commit: { sha: baseBranchSHA }
     }
   } = await getBranch({ repo, branch: baseBranch })
+
   await createBranch({ repo, branch: CONSTANTS.prBranchName, sha: baseBranchSHA })
 }
 const getFiles = async () => {
@@ -276,6 +320,8 @@ const getFiles = async () => {
 }
 const run = async ({ github, context, repositories, fs, glob }) => {
   setGlobals({ context, github, fs, glob })
+
+  repositories = ['ausaccessfed/reporting-service']
 
   const files = await getFiles()
   let cacheParsedFile
