@@ -109,13 +109,13 @@ const commitFile = async ({ repo, branch, prFilePath, message, newContentBase64,
     signature: GLOBALS.gpgPrivateKey
   })
 
-  //   return await GLOBALS.github.rest.git.updateRef({
-  //     owner: GLOBALS.owner,
-  //     repo,
-  //     ref: `heads/${branch}`,
-  //     message,
-  //     sha: commitSha
-  //   })
+  return await GLOBALS.github.rest.git.updateRef({
+    owner: GLOBALS.owner,
+    repo,
+    ref: `heads/${branch}`,
+    message,
+    sha: commitSha
+  })
 
   //   return await GLOBALS.github.rest.repos.createOrUpdateFileContents({
   //     owner: GLOBALS.owner,
