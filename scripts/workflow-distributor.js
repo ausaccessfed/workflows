@@ -77,18 +77,18 @@ const getFile = async ({ repo, path, ref }) => {
 }
 
 const commitFile = async ({ repo, branch, prFilePath, message, newContentBase64, fileSHA }) => {
-  const {
-    data: {
-      commit: { sha: branchSHA }
-    }
-  } = await getBranch({ repo, branch })
+  //   const {
+  //     data: {
+  //       commit: { sha: branchSHA }
+  //     }
+  //   } = await getBranch({ repo, branch })
 
   const {
     data: { sha: treeSha }
   } = await GLOBALS.github.rest.git.createTree({
     owner: GLOBALS.owner,
     repo,
-    base_tree: branchSHA,
+    base_tree: fileSHA,
     tree: {
       path: prFilePath,
       mode: '100644',
@@ -320,7 +320,6 @@ const getFiles = async () => {
 }
 
 const run = async ({ github, context, repositories, gpgPrivateKey, fs, glob }) => {
-  console.log('hello')
   setGlobals({ context, github, fs, glob, gpgPrivateKey })
 
   repositories = ['ausaccessfed/reporting-service']
