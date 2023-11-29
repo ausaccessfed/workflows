@@ -114,7 +114,8 @@ const commitFile = async ({ repo, branch, prFilePath, message, newContentBase64,
     repo,
     ref: `heads/${branch}`,
     message,
-    sha: commitSha
+    sha: commitSha,
+    force: true
   })
 
   //   return await GLOBALS.github.rest.repos.createOrUpdateFileContents({
