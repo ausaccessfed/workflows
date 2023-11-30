@@ -6,11 +6,15 @@ on:
 jobs:
   renovate:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        repository: ${{ fromJSON(vars.RENOVATE_REPOSITORIES) }}
     permissions:
       contents: read
     steps:
       - name: Checkout
         uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3.6.0
+
       - name: Renovate
         uses: renovatebot/github-action@3cef36a9aba515d8726b491905b3bc766832e221 # v39.0.5
         with:
@@ -19,4 +23,4 @@ jobs:
         env:
           LOG_LEVEL: 'info'
           RENOVATE_GIT_PRIVATE_KEY: ${{ secrets.RENOVATE_GPG_PRIVATE_KEY }}
-          RENOVATE_REPOSITORIES: '${{ vars.RENOVATE_REPOSITORIES }}'
+          RENOVATE_REPOSITORIES: '["${{ matrix.repository }}"]'
