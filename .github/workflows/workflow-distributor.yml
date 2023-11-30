@@ -2,8 +2,7 @@ name: 'Distribute Workflows'
 on:
   workflow_dispatch:
   push:
-    branches:
-      - main
+ 
 jobs:
   distribution:
     runs-on: ubuntu-latest
