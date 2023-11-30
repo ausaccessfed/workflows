@@ -32,7 +32,11 @@ const setGlobals = ({ context, github, fs, glob, signature, gpgPrivateKey, gpgPr
 }
 
 const base64TextToUtf8 = (text) => Buffer.from(text, 'base64').toString('utf8')
-
+const sleep = (ms) => {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms)
+  })
+}
 const getRepo = async ({ repo }) => {
   return await GLOBALS.github.rest.repos.get({
     owner: GLOBALS.owner,
@@ -41,11 +45,23 @@ const getRepo = async ({ repo }) => {
 }
 
 const getBranch = async ({ repo, branch }) => {
-  return await GLOBALS.github.rest.repos.getBranch({
-    owner: GLOBALS.owner,
-    repo,
-    branch
-  })
+  let result
+  try {
+    result = await GLOBALS.github.rest.repos.getBranch({
+      owner: GLOBALS.owner,
+      repo,
+      branch
+    })
+  } catch (err) {
+    // sleep to avoid the first add delay
+    await sleep(5000)
+    result = await GLOBALS.github.rest.repos.getBranch({
+      owner: GLOBALS.owner,
+      repo,
+      branch
+    })
+  }
+  return result
 }
 
 const getFile = async ({ repo, path, ref }) => {
