@@ -97,85 +97,6 @@ const createCommit = async ({ repo, baseSha, tree, message }) => {
   return { newCommitSha, isDiff: baseSha !== treeSha }
 }
 
-const commitFile = async ({ createBranch, repo, baseBranch, branch, prFilePath, message, content }) => {
-  const {
-    data: {
-      commit: { sha: baseSha }
-    }
-  } = await getBranch({ repo, branch: createBranch ? baseBranch : branch })
-
-  const tree = [
-    {
-      path: prFilePath,
-      mode: '100644',
-      type: 'blob',
-      //   if content null its file deletion
-      ...(content === null ? { sha: null } : { content })
-    }
-  ]
-
-  const { newCommitSha, isDiff } = await createCommit({ repo, tree, baseSha, message })
-
-  if (isDiff) {
-    return createBranch
-      ? await GLOBALS.github.rest.git.createRef({
-          owner: GLOBALS.owner,
-          repo,
-          ref: `refs/heads/${branch}`,
-          sha: newCommitSha
-        })
-      : await GLOBALS.github.rest.git.updateRef({
-          owner: GLOBALS.owner,
-          repo,
-          ref: `heads/${branch}`,
-          message,
-          sha: newCommitSha,
-          force: true
-        })
-  }
-
-  return false
-}
-
-const deleteFile = async ({ repo, branch, prFilePath, message }) => {
-  let result = {}
-  try {
-    return await commitFile({
-      repo,
-      branch,
-      prFilePath,
-      message,
-      content: null
-    })
-  } catch (err) {
-    console.log('(might not be an error)')
-    console.dir(err.response)
-    console.error(err.stack)
-    result = err.response
-  }
-  return result
-}
-
-const createPR = async ({ repo, head, base, message }) => {
-  let result = {}
-  try {
-    result = await GLOBALS.github.rest.pulls.create({
-      owner: GLOBALS.owner,
-      repo,
-      head,
-      base,
-      title: message,
-      body: message
-    })
-  } catch (err) {
-    console.log('(might not be an error)')
-    console.dir(err.response)
-    console.error(err.stack)
-    result = err.response
-  }
-  return result
-}
-
 const deleteBranch = async ({ repo, branch }) => {
   let result
   try {
@@ -257,18 +178,18 @@ const parseFiles = (files) => {
   return parsedFiles
 }
 
-const updateFile = async ({ createBranch, baseBranch, repo, parsedFile }) => {
-  const { message, prFilePath } = parsedFile
+const updateFileTreeObject = async ({ baseBranch, repo, parsedFile }) => {
+  const { prFilePath } = parsedFile
   let { newContent } = parsedFile
   const {
     data: { content: currentContentBase64 }
-  } = await getFile({ repo, path: prFilePath, ref: CONSTANTS.prBranchName })
+  } = await getFile({ repo, path: prFilePath, ref: baseBranch })
 
   const isOnceFile = CONSTANTS.regex.once.test(newContent)
   if (isOnceFile) {
     if (currentContentBase64) {
       //  If file exists then skip
-      return
+      return null
     }
     newContent = newContent.replace(CONSTANTS.regex.once, '')
   }
@@ -277,48 +198,67 @@ const updateFile = async ({ createBranch, baseBranch, repo, parsedFile }) => {
     newContent = handlePartial({ currentContent: base64TextToUtf8(currentContentBase64), newContent })
   }
 
-  await commitFile({
-    repo,
-    branch: CONSTANTS.prBranchName,
-    baseBranch,
-    createBranch,
-    prFilePath,
-    message,
-    content: newContent
-  })
+  return {
+    path: prFilePath,
+    mode: '100644',
+    type: 'blob',
+    //   if content null its file deletion
+    ...(newContent === null ? { sha: null } : { newContent })
+  }
 }
 
-const handleFileRemovals = async ({ repo, parsedFiles, baseBranch }) => {
+const getFileRemovals = async ({ repo, parsedFiles, baseBranch }) => {
   const {
     data: { sha: distributionsRefFileSHA, content: distributionsRefBase64Content }
   } = await getFile({ repo, path: CONSTANTS.cacheFilePath, ref: baseBranch })
   let distributionsRefContent = ''
+  let filesToBeRemoved = []
   if (distributionsRefFileSHA) {
     distributionsRefContent = base64TextToUtf8(distributionsRefBase64Content)
     const bootstrappedFiles = distributionsRefContent.split('\n')
     const bootstrappableFiles = parsedFiles.map((parsedFile) => parsedFile.distributionsFilePath)
-    const filesToBeRemoved = bootstrappedFiles.filter(
-      (bootstrappedFile) => !bootstrappableFiles.includes(bootstrappedFile)
-    )
-    for (const prFilePath of filesToBeRemoved) {
-      await deleteFile({
-        repo,
-        branch: CONSTANTS.prBranchName,
-        prFilePath,
-        message: `Remove ${prFilePath}`
-      })
-    }
+    filesToBeRemoved = bootstrappedFiles.filter((bootstrappedFile) => !bootstrappableFiles.includes(bootstrappedFile))
   }
+  return filesToBeRemoved
 }
 
-const updateCacheFile = async ({ repo, parsedFile, parsedFiles }) => {
+const updateCacheFileTreeObject = async ({ repo, parsedFile, parsedFiles }) => {
   parsedFile.newContent = parsedFiles.map((file) => file.distributionsFilePath).join('\n')
-  await updateFile({ repo, parsedFile })
+  return await updateFileTreeObject({ repo, parsedFile })
 }
 
 const getFiles = async () => {
   const globber = await GLOBALS.glob.create('**/**/distributions/**/**.*', { followSymbolicLinks: false })
   return await globber.glob()
+}
+
+const createPR = async ({ repo, tree, baseBranch }) => {
+  const {
+    data: {
+      commit: { sha: baseSha }
+    }
+  } = await getBranch({ repo, branch: baseBranch })
+
+  const message = ''
+  const { newCommitSha, isDiff } = await createCommit({ repo, tree, baseSha, message })
+
+  if (isDiff) {
+    await GLOBALS.github.rest.git.createRef({
+      owner: GLOBALS.owner,
+      repo,
+      ref: `refs/heads/${CONSTANTS.prBranchName}`,
+      sha: newCommitSha
+    })
+
+    await GLOBALS.github.rest.pulls.create({
+      owner: GLOBALS.owner,
+      repo,
+      head: CONSTANTS.prBranchName,
+      base: baseBranch,
+      title: message,
+      body: message
+    })
+  }
 }
 
 const run = async ({ github, signature, context, repositories, fs, glob, gpgPrivateKey, gpgPrivateKeyPassword }) => {
@@ -342,22 +282,20 @@ const run = async ({ github, signature, context, repositories, fs, glob, gpgPriv
     } = await getRepo({ repo })
     await deleteBranch({ repo, branch: CONSTANTS.prBranchName })
 
-    let createBranch = true
+    const tree = []
     // handle files
     for (const parsedFile of parsedFiles) {
-      await updateFile({ createBranch, baseBranch, repo, parsedFile })
-      createBranch = false
+      tree.push(await updateFileTreeObject({ repo, parsedFile }))
     }
 
-    await handleFileRemovals({ repo, parsedFiles, baseBranch })
-    await updateCacheFile({ repo, parsedFile: cacheParsedFile, parsedFiles })
+    const filesToBeRemoved = await getFileRemovals({ repo, parsedFiles, baseBranch })
+    for (const prFilePath of filesToBeRemoved) {
+      tree.push(await updateFileTreeObject({ repo, parsedFile: { prFilePath, newContent: null } }))
+    }
 
-    await createPR({
-      repo,
-      head: CONSTANTS.prBranchName,
-      base: baseBranch,
-      message: 'Update distributable files'
-    })
+    tree.push(await updateCacheFileTreeObject({ repo, parsedFile: cacheParsedFile, parsedFiles }))
+
+    await createPR({ repo, tree, baseBranch })
   }
 }
 
