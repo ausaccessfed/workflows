@@ -90,43 +90,14 @@ const sleep = (ms) => {
   })
 }
 
-const commitFile = async ({ repo, branch, prFilePath, message, content }) => {
-  // sometimes the branch is missing wait 5 seconds
-  let branchResult
-  try {
-    branchResult = await getBranch({ repo, branch })
-  } catch (e) {
-    await sleep(5000)
-    branchResult = await getBranch({ repo, branch })
-  }
-
-  const {
-    data: {
-      commit: { sha: baseSha }
-    }
-  } = branchResult
-
-  let filePayload = { content }
-
-  // We want to allow content == ""
-  if (content === null) {
-    filePayload = { sha: null }
-  }
-
+const createCommit = async ({ repo, baseSha, tree, message }) => {
   const {
     data: { sha: treeSha }
   } = await GLOBALS.github.rest.git.createTree({
     owner: GLOBALS.owner,
     repo,
     base_tree: baseSha,
-    tree: [
-      {
-        path: prFilePath,
-        mode: '100644',
-        type: 'blob',
-        ...filePayload
-      }
-    ]
+    tree
   })
 
   const commit = {
@@ -138,16 +109,47 @@ const commitFile = async ({ repo, branch, prFilePath, message, content }) => {
   }
 
   // if these are the same for whatever reason then no point committing as zero diff change
-  if (baseSha !== treeSha) {
-    const {
-      data: { sha: newCommitSha }
-    } = await GLOBALS.github.rest.git.createCommit({
-      owner: GLOBALS.owner,
-      repo,
-      ...commit,
-      signature: await GLOBALS.signature.createSignature(commit, GLOBALS.gpgPrivateKey, GLOBALS.gpgPrivateKeyPassword)
-    })
+  const {
+    data: { sha: newCommitSha }
+  } = await GLOBALS.github.rest.git.createCommit({
+    owner: GLOBALS.owner,
+    repo,
+    ...commit,
+    signature: await GLOBALS.signature.createSignature(commit, GLOBALS.gpgPrivateKey, GLOBALS.gpgPrivateKeyPassword)
+  })
 
+  return { newCommitSha, isDiff: baseSha !== treeSha }
+}
+
+const commitFile = async ({ repo, branch, prFilePath, message, content }) => {
+  let branchResult
+  try {
+    branchResult = await getBranch({ repo, branch })
+  } catch (e) {
+    // sometimes the branch is missing api wise, wait 5 seconds
+    await sleep(5000)
+    branchResult = await getBranch({ repo, branch })
+  }
+
+  const {
+    data: {
+      commit: { sha: baseSha }
+    }
+  } = branchResult
+
+  const tree = [
+    {
+      path: prFilePath,
+      mode: '100644',
+      type: 'blob',
+      //   if content null its file deletion
+      ...(content === null ? { sha: null } : { content })
+    }
+  ]
+
+  const { newCommitSha, isDiff } = await createCommit({ repo, tree, baseSha, message })
+
+  if (isDiff) {
     return await GLOBALS.github.rest.git.updateRef({
       owner: GLOBALS.owner,
       repo,
@@ -157,6 +159,7 @@ const commitFile = async ({ repo, branch, prFilePath, message, content }) => {
       force: true
     })
   }
+
   return false
 }
 
@@ -346,7 +349,14 @@ const createPRBranch = async ({ repo, baseBranch }) => {
     }
   } = await getBranch({ repo, branch: baseBranch })
 
-  await createBranch({ repo, branch: CONSTANTS.prBranchName, sha: baseBranchSHA })
+  const tree = {
+    type: '040000',
+    mode: 'tree'
+  }
+
+  const { newCommitSha } = await createCommit({ repo, tree, baseBranchSHA, message: 'Initial pr commit' })
+
+  await createBranch({ repo, branch: CONSTANTS.prBranchName, sha: newCommitSha })
 }
 
 const getFiles = async () => {
