@@ -240,7 +240,7 @@ const createPR = async ({ repo, tree, baseBranch }) => {
   } = await getBranch({ repo, branch: baseBranch })
 
   const message = ''
-  const { newCommitSha, isDiff } = await createCommit({ repo, tree, baseSha, message })
+  const { newCommitSha, isDiff } = await createCommit({ repo, tree: tree.filter((x) => x), baseSha, message })
 
   if (isDiff) {
     await GLOBALS.github.rest.git.createRef({
