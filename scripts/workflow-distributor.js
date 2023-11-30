@@ -108,12 +108,10 @@ const commitFile = async ({ repo, branch, prFilePath, message, content }) => {
 
   let filePayload = { content }
 
-  if (!content) {
+  // We want to allow content == ""
+  if (content === null) {
     filePayload = { sha: null }
   }
-  console.log(prFilePath)
-  console.log(filePayload)
-  console.log(content)
 
   const {
     data: { sha: treeSha }
