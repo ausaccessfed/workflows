@@ -360,10 +360,12 @@ const createPRBranch = async ({ repo, baseBranch }) => {
   } = await getBranch({ repo, branch: baseBranch })
 
   const tree = [
-    // {
-    //   type: '040000',
-    //   mode: 'tree'
-    // }
+    {
+      type: '040000',
+      mode: 'tree',
+      path: '',
+      sha: baseSha
+    }
   ]
 
   const { newCommitSha } = await createCommit({ repo, tree, baseSha, message: 'Initial pr commit' })
