@@ -67,7 +67,6 @@ const getFile = async ({ repo, path, ref }) => {
 }
 
 const createCommit = async ({ repo, baseSha, tree, message }) => {
-  console.dir(tree)
   const {
     data: { sha: treeSha }
   } = await GLOBALS.github.rest.git.createTree({
