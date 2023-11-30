@@ -195,11 +195,20 @@ const createPR = async ({ repo, head, base, message }) => {
 }
 
 const deleteBranch = async ({ repo, branch }) => {
-  return await GLOBALS.github.rest.git.deleteRef({
-    owner: GLOBALS.owner,
-    repo,
-    ref: `heads/${branch}`
-  })
+  let result
+  try {
+    result = await GLOBALS.github.rest.git.deleteRef({
+      owner: GLOBALS.owner,
+      repo,
+      ref: `heads/${branch}`
+    })
+  } catch (err) {
+    console.log('(might not be an error)')
+    console.dir(err.response)
+    console.error(err.stack)
+    result = err.response
+  }
+  return result
 }
 
 const handlePartial = ({ currentContent, newContent: newContentF }) => {
