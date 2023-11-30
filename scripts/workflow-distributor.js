@@ -13,23 +13,25 @@ const CONSTANTS = {
 }
 
 let GLOBALS = {}
-const setGlobals = ({ context, github, fs, glob }) => {
+const setGlobals = ({ context, github, fs, glob, signature, gpgPrivateKey, gpgPrivateKeyPassword }) => {
   const contextPayload = context.payload
-  const committerData = contextPayload.pusher || contextPayload.sender
   GLOBALS = {
+    gpgPrivateKey,
+    gpgPrivateKeyPassword,
+    signature,
     github,
     fs,
     glob,
     owner: contextPayload.organization.login,
-    committer: committerData || {
-      name: 'N/A',
-      email: 'N/A'
+    committer: {
+      email: 'fishwhack9000+terraform@gmail.com',
+      name: 'aaf-terraform',
+      date: new Date(Date.now()).toISOString()
     }
   }
 }
 
 const base64TextToUtf8 = (text) => Buffer.from(text, 'base64').toString('utf8')
-const utf8TextToBase64 = (text) => Buffer.from(text).toString('base64')
 
 const getRepo = async ({ repo }) => {
   return await GLOBALS.github.rest.repos.get({
@@ -57,6 +59,7 @@ const createBranch = async ({ repo, branch, sha }) => {
     })
   } catch (err) {
     console.log('(might not be an error)')
+    console.dir(err.response)
     console.error(err.stack)
     result = err.response
   }
@@ -74,39 +77,97 @@ const getFile = async ({ repo, path, ref }) => {
     })
   } catch (err) {
     console.log('(might not be an error)')
+    console.dir(err.response)
     console.error(err.stack)
     result = err.response
   }
   return result
 }
 
-const commitFile = async ({ repo, branch, prFilePath, message, newContentBase64, fileSHA }) => {
-  return await GLOBALS.github.rest.repos.createOrUpdateFileContents({
-    owner: GLOBALS.owner,
-    repo,
-    branch,
-    path: prFilePath,
-    message,
-    content: newContentBase64,
-    committer: GLOBALS.committer,
-    sha: fileSHA
+const sleep = (ms) => {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms)
   })
 }
 
-const deleteFile = async ({ repo, branch, prFilePath, message, fileSHA }) => {
+const commitFile = async ({ repo, branch, prFilePath, message, content }) => {
+  // sometimes the branch is missing wait 5 seconds
+  let branchResult
+  try {
+    branchResult = await getBranch({ repo, branch })
+  } catch (e) {
+    await sleep(5000)
+    branchResult = await getBranch({ repo, branch })
+  }
+
+  const {
+    data: {
+      commit: { sha: commitSHA }
+    }
+  } = branchResult
+
+  let filePayload = { content }
+
+  if (!content) {
+    filePayload = { sha: null }
+  }
+
+  const {
+    data: { sha: treeSha }
+  } = await GLOBALS.github.rest.git.createTree({
+    owner: GLOBALS.owner,
+    repo,
+    base_tree: commitSHA,
+    tree: [
+      {
+        path: prFilePath,
+        mode: '100644',
+        type: 'blob',
+        ...filePayload
+      }
+    ]
+  })
+
+  const commit = {
+    message,
+    tree: treeSha,
+    parents: [commitSHA],
+    author: GLOBALS.committer,
+    committer: GLOBALS.committer
+  }
+
+  const {
+    data: { sha: newCommitSha }
+  } = await GLOBALS.github.rest.git.createCommit({
+    owner: GLOBALS.owner,
+    repo,
+    ...commit,
+    signature: await GLOBALS.signature.createSignature(commit, GLOBALS.gpgPrivateKey, GLOBALS.gpgPrivateKeyPassword)
+  })
+
+  return await GLOBALS.github.rest.git.updateRef({
+    owner: GLOBALS.owner,
+    repo,
+    ref: `heads/${branch}`,
+    message,
+    sha: newCommitSha,
+    force: true
+  })
+}
+
+const deleteFile = async ({ repo, branch, prFilePath, message }) => {
   let result = {}
   try {
-    return await GLOBALS.github.rest.repos.deleteFile({
-      owner: GLOBALS.owner,
-      branch,
+    return await commitFile({
       repo,
-      path: prFilePath,
+      branch,
+      prFilePath,
       message,
-      sha: fileSHA,
-      committer: GLOBALS.committer
+      content: null
     })
   } catch (err) {
     console.log('(might not be an error)')
+    console.dir(err.response)
     console.error(err.stack)
     result = err.response
   }
@@ -126,13 +187,22 @@ const createPR = async ({ repo, head, base, message }) => {
     })
   } catch (err) {
     console.log('(might not be an error)')
+    console.dir(err.response)
     console.error(err.stack)
     result = err.response
   }
   return result
 }
 
-const handlePartial = ({ currentContentBase64, newContent: newContentF }) => {
+const deleteBranch = async ({ repo, branch }) => {
+  return await GLOBALS.github.rest.git.deleteRef({
+    owner: GLOBALS.owner,
+    repo,
+    ref: `heads/${branch}`
+  })
+}
+
+const handlePartial = ({ currentContent, newContent: newContentF }) => {
   let newContent = newContentF
   const isPartial = CONSTANTS.regex.partial.test(newContent)
 
@@ -140,8 +210,7 @@ const handlePartial = ({ currentContentBase64, newContent: newContentF }) => {
     //  remove partial flag and blank newline at end of template
     newContent = newContent.replace(CONSTANTS.regex.partial, '').replace(/\n$/, '')
 
-    if (currentContentBase64) {
-      const currentContent = base64TextToUtf8(currentContentBase64)
+    if (currentContent) {
       const newContentLines = newContent.split('\n')
 
       let endLineReplacement = null
@@ -155,7 +224,12 @@ const handlePartial = ({ currentContentBase64, newContent: newContentF }) => {
       if (remainingContent) {
         newContent += remainingContent
       } else {
-        newContent += `\n${currentContent}`
+        const currentContentLines = currentContent.split('\n')
+        const linesToBeAdded = currentContentLines
+          .filter((currentContentLine) => !newContentLines.includes(currentContentLine))
+          .join('\n')
+
+        newContent += `\n${linesToBeAdded}`
       }
     }
   }
@@ -196,41 +270,28 @@ const updateFile = async ({ repo, parsedFile }) => {
   const { message, prFilePath } = parsedFile
   let { newContent } = parsedFile
   const {
-    data: { sha: fileSHA, content: currentContentBase64 }
+    data: { content: currentContentBase64 }
   } = await getFile({ repo, path: prFilePath, ref: CONSTANTS.prBranchName })
 
   const isOnceFile = CONSTANTS.regex.once.test(newContent)
   if (isOnceFile) {
-    if (fileSHA) {
+    if (currentContentBase64) {
       //  If file exists then skip
       return
     }
     newContent = newContent.replace(CONSTANTS.regex.once, '')
   }
 
-  newContent = handlePartial({ currentContentBase64, newContent })
+  if (currentContentBase64) {
+    newContent = handlePartial({ currentContent: base64TextToUtf8(currentContentBase64), newContent })
+  }
 
   await commitFile({
     repo,
     branch: CONSTANTS.prBranchName,
     prFilePath,
     message,
-    newContentBase64: utf8TextToBase64(newContent),
-    fileSHA
-  })
-}
-
-const removeFile = async ({ repo, branch, prFilePath, message }) => {
-  const {
-    data: { sha: fileSHA }
-  } = await getFile({ repo, path: prFilePath, ref: branch })
-
-  await deleteFile({
-    repo,
-    branch,
-    prFilePath,
-    message,
-    fileSHA
+    content: newContent
   })
 }
 
@@ -247,7 +308,7 @@ const handleFileRemovals = async ({ repo, parsedFiles, baseBranch }) => {
       (bootstrappedFile) => !bootstrappableFiles.includes(bootstrappedFile)
     )
     for (const prFilePath of filesToBeRemoved) {
-      await removeFile({
+      await deleteFile({
         repo,
         branch: CONSTANTS.prBranchName,
         prFilePath,
@@ -263,20 +324,24 @@ const updateCacheFile = async ({ repo, parsedFile, parsedFiles }) => {
 }
 
 const createPRBranch = async ({ repo, baseBranch }) => {
+  await deleteBranch({ repo, branch: CONSTANTS.prBranchName })
+
   const {
     data: {
       commit: { sha: baseBranchSHA }
     }
   } = await getBranch({ repo, branch: baseBranch })
+
   await createBranch({ repo, branch: CONSTANTS.prBranchName, sha: baseBranchSHA })
 }
+
 const getFiles = async () => {
   const globber = await GLOBALS.glob.create('**/**/distributions/**/**.*', { followSymbolicLinks: false })
   return await globber.glob()
 }
-const run = async ({ github, context, repositories, fs, glob }) => {
-  setGlobals({ context, github, fs, glob })
 
+const run = async ({ github, signature, context, repositories, fs, glob, gpgPrivateKey, gpgPrivateKeyPassword }) => {
+  setGlobals({ context, github, signature, fs, glob, gpgPrivateKey, gpgPrivateKeyPassword })
   const files = await getFiles()
   let cacheParsedFile
   // parses files and then extracts the bootstrap file as its a special one

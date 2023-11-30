@@ -1,8 +1,8 @@
-name: "Renovate Dependency Check"
+name: 'Renovate Dependency Check'
 on:
   workflow_dispatch:
   schedule:
-    - cron: "0 0 * * SUN"
+    - cron: '0 0 * * SUN'
 jobs:
   renovate:
     runs-on: ubuntu-latest
@@ -17,6 +17,6 @@ jobs:
           configurationFile: .github/renovate-config.js
           token: ${{ secrets.ALL_REPO_SCOPED_TOKEN }}
         env:
-          LOG_LEVEL: "debug"
+          LOG_LEVEL: 'info'
           RENOVATE_GIT_PRIVATE_KEY: ${{ secrets.RENOVATE_GPG_PRIVATE_KEY }}
           RENOVATE_REPOSITORIES: '${{ vars.RENOVATE_REPOSITORIES }}'
