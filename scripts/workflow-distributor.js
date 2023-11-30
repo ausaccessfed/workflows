@@ -48,24 +48,6 @@ const getBranch = async ({ repo, branch }) => {
   })
 }
 
-const createBranch = async ({ repo, branch, sha }) => {
-  let result = {}
-  try {
-    result = await GLOBALS.github.rest.git.createRef({
-      owner: GLOBALS.owner,
-      repo,
-      ref: `refs/heads/${branch}`,
-      sha
-    })
-  } catch (err) {
-    console.log('(might not be an error)')
-    console.dir(err.response)
-    console.error(err.stack)
-    result = err.response
-  }
-  return result
-}
-
 const getFile = async ({ repo, path, ref }) => {
   let result = {}
   try {
@@ -84,23 +66,7 @@ const getFile = async ({ repo, path, ref }) => {
   return result
 }
 
-const sleep = (ms) => {
-  return new Promise((resolve) => {
-    setTimeout(resolve, ms)
-  })
-}
-
 const createCommit = async ({ repo, baseSha, tree, message }) => {
-  //   const {
-  //     data: {
-  //       tree: { sha: baseTreeSha }
-  //     }
-  //   } = await GLOBALS.github.rest.git.getCommit({
-  //     owner: GLOBALS.owner,
-  //     repo,
-  //     commit_sha: baseSha
-  //   })
-
   const {
     data: { sha: treeSha }
   } = await GLOBALS.github.rest.git.createTree({
@@ -131,21 +97,12 @@ const createCommit = async ({ repo, baseSha, tree, message }) => {
   return { newCommitSha, isDiff: baseSha !== treeSha }
 }
 
-const commitFile = async ({ repo, branch, prFilePath, message, content }) => {
-  let branchResult
-  try {
-    branchResult = await getBranch({ repo, branch })
-  } catch (e) {
-    // sometimes the branch is missing api wise, wait 5 seconds
-    await sleep(5000)
-    branchResult = await getBranch({ repo, branch })
-  }
-
+const commitFile = async ({ createBranch, repo, branch, prFilePath, message, content }) => {
   const {
     data: {
       commit: { sha: baseSha }
     }
-  } = branchResult
+  } = await getBranch({ repo, branch })
 
   const tree = [
     {
@@ -160,14 +117,21 @@ const commitFile = async ({ repo, branch, prFilePath, message, content }) => {
   const { newCommitSha, isDiff } = await createCommit({ repo, tree, baseSha, message })
 
   if (isDiff) {
-    return await GLOBALS.github.rest.git.updateRef({
-      owner: GLOBALS.owner,
-      repo,
-      ref: `heads/${branch}`,
-      message,
-      sha: newCommitSha,
-      force: true
-    })
+    return createBranch
+      ? await GLOBALS.github.rest.git.createRef({
+          owner: GLOBALS.owner,
+          repo,
+          ref: `refs/heads/${branch}`,
+          sha: newCommitSha
+        })
+      : await GLOBALS.github.rest.git.updateRef({
+          owner: GLOBALS.owner,
+          repo,
+          ref: `heads/${branch}`,
+          message,
+          sha: newCommitSha,
+          force: true
+        })
   }
 
   return false
@@ -293,7 +257,7 @@ const parseFiles = (files) => {
   return parsedFiles
 }
 
-const updateFile = async ({ repo, parsedFile }) => {
+const updateFile = async ({ createBranch, repo, parsedFile }) => {
   const { message, prFilePath } = parsedFile
   let { newContent } = parsedFile
   const {
@@ -316,6 +280,7 @@ const updateFile = async ({ repo, parsedFile }) => {
   await commitFile({
     repo,
     branch: CONSTANTS.prBranchName,
+    createBranch,
     prFilePath,
     message,
     content: newContent
@@ -350,29 +315,6 @@ const updateCacheFile = async ({ repo, parsedFile, parsedFiles }) => {
   await updateFile({ repo, parsedFile })
 }
 
-const createPRBranch = async ({ repo, baseBranch }) => {
-  await deleteBranch({ repo, branch: CONSTANTS.prBranchName })
-
-  const {
-    data: {
-      commit: { sha: baseSha }
-    }
-  } = await getBranch({ repo, branch: baseBranch })
-
-  const tree = [
-    {
-      type: '040000',
-      mode: 'tree',
-      path: '',
-      sha: baseSha
-    }
-  ]
-
-  const { newCommitSha } = await createCommit({ repo, tree, baseSha, message: 'Initial pr commit' })
-
-  await createBranch({ repo, branch: CONSTANTS.prBranchName, sha: newCommitSha })
-}
-
 const getFiles = async () => {
   const globber = await GLOBALS.glob.create('**/**/distributions/**/**.*', { followSymbolicLinks: false })
   return await globber.glob()
@@ -397,11 +339,13 @@ const run = async ({ github, signature, context, repositories, fs, glob, gpgPriv
     const {
       data: { default_branch: baseBranch }
     } = await getRepo({ repo })
-    await createPRBranch({ repo, baseBranch })
+    await deleteBranch({ repo, branch: CONSTANTS.prBranchName })
 
+    let createBranch = true
     // handle files
     for (const parsedFile of parsedFiles) {
-      await updateFile({ repo, parsedFile })
+      await updateFile({ createBranch, repo, parsedFile })
+      createBranch = false
     }
 
     await handleFileRemovals({ repo, parsedFiles, baseBranch })
