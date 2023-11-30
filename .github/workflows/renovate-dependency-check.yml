@@ -6,9 +6,9 @@ on:
 jobs:
   renovate:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        repository: ${{ fromJSON(vars.RENOVATE_REPOSITORIES) }}
+    # strategy:
+    #   matrix:
+    #     repository: ${{ fromJSON(vars.RENOVATE_REPOSITORIES) }}
     permissions:
       contents: read
     steps:
@@ -23,4 +23,5 @@ jobs:
         env:
           LOG_LEVEL: 'info'
           RENOVATE_GIT_PRIVATE_KEY: ${{ secrets.RENOVATE_GPG_PRIVATE_KEY }}
-          RENOVATE_REPOSITORIES: '["${{ matrix.repository }}"]'
+          RENOVATE_REPOSITORIES: '${{ vars.RENOVATE_REPOSITORIES }}'
+          # RENOVATE_REPOSITORIES: '["${{ matrix.repository }}"]'
