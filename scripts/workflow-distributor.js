@@ -30,10 +30,16 @@ const setGlobals = ({ context, github, fs, glob, signature, gpgPrivateKey, gpgPr
     }
   }
 }
+const sleep = (ms) => {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms)
+  })
+}
 
 const base64TextToUtf8 = (text) => Buffer.from(text, 'base64').toString('utf8')
 
 const getRepo = async ({ repo }) => {
+  await sleep(1000)
   return await GLOBALS.github.rest.repos.get({
     owner: GLOBALS.owner,
     repo
@@ -41,6 +47,7 @@ const getRepo = async ({ repo }) => {
 }
 
 const getBranch = async ({ repo, branch }) => {
+  await sleep(1000)
   return await GLOBALS.github.rest.repos.getBranch({
     owner: GLOBALS.owner,
     repo,
@@ -49,6 +56,7 @@ const getBranch = async ({ repo, branch }) => {
 }
 
 const getFile = async ({ repo, path, ref }) => {
+  await sleep(1000)
   let result = {}
   try {
     result = await GLOBALS.github.rest.repos.getContent({
@@ -67,6 +75,7 @@ const getFile = async ({ repo, path, ref }) => {
 }
 
 const createCommit = async ({ repo, baseSha, tree, message }) => {
+  await sleep(1000)
   const {
     data: { sha: treeSha }
   } = await GLOBALS.github.rest.git.createTree({
@@ -85,6 +94,7 @@ const createCommit = async ({ repo, baseSha, tree, message }) => {
   }
 
   // if these are the same for whatever reason then no point committing as zero diff change
+  await sleep(1000)
   const {
     data: { sha: newCommitSha }
   } = await GLOBALS.github.rest.git.createCommit({
@@ -98,6 +108,7 @@ const createCommit = async ({ repo, baseSha, tree, message }) => {
 }
 
 const deleteBranch = async ({ repo, branch }) => {
+  await sleep(1000)
   let result
   try {
     result = await GLOBALS.github.rest.git.deleteRef({
@@ -237,6 +248,8 @@ const createPR = async ({ repo, tree, baseBranch }) => {
   const { newCommitSha, isDiff } = await createCommit({ repo, tree: tree.filter((x) => x), baseSha, message })
 
   if (isDiff) {
+    await sleep(1000)
+
     await GLOBALS.github.rest.git.createRef({
       owner: GLOBALS.owner,
       repo,
@@ -244,6 +257,7 @@ const createPR = async ({ repo, tree, baseBranch }) => {
       sha: newCommitSha
     })
 
+    await sleep(1000)
     await GLOBALS.github.rest.pulls.create({
       owner: GLOBALS.owner,
       repo,
