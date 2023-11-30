@@ -102,7 +102,7 @@ const commitFile = async ({ repo, branch, prFilePath, message, content }) => {
 
   const {
     data: {
-      commit: { sha: commitSHA }
+      commit: { sha: baseSha }
     }
   } = branchResult
 
@@ -111,13 +111,16 @@ const commitFile = async ({ repo, branch, prFilePath, message, content }) => {
   if (!content) {
     filePayload = { sha: null }
   }
+  console.log(prFilePath)
+  console.log(filePayload)
+  console.log(content)
 
   const {
     data: { sha: treeSha }
   } = await GLOBALS.github.rest.git.createTree({
     owner: GLOBALS.owner,
     repo,
-    base_tree: commitSHA,
+    base_tree: baseSha,
     tree: [
       {
         path: prFilePath,
@@ -131,28 +134,32 @@ const commitFile = async ({ repo, branch, prFilePath, message, content }) => {
   const commit = {
     message,
     tree: treeSha,
-    parents: [commitSHA],
+    parents: [baseSha],
     author: GLOBALS.committer,
     committer: GLOBALS.committer
   }
 
-  const {
-    data: { sha: newCommitSha }
-  } = await GLOBALS.github.rest.git.createCommit({
-    owner: GLOBALS.owner,
-    repo,
-    ...commit,
-    signature: await GLOBALS.signature.createSignature(commit, GLOBALS.gpgPrivateKey, GLOBALS.gpgPrivateKeyPassword)
-  })
+  // if these are the same for whatever reason then no point committing as zero diff change
+  if (baseSha !== treeSha) {
+    const {
+      data: { sha: newCommitSha }
+    } = await GLOBALS.github.rest.git.createCommit({
+      owner: GLOBALS.owner,
+      repo,
+      ...commit,
+      signature: await GLOBALS.signature.createSignature(commit, GLOBALS.gpgPrivateKey, GLOBALS.gpgPrivateKeyPassword)
+    })
 
-  return await GLOBALS.github.rest.git.updateRef({
-    owner: GLOBALS.owner,
-    repo,
-    ref: `heads/${branch}`,
-    message,
-    sha: newCommitSha,
-    force: true
-  })
+    return await GLOBALS.github.rest.git.updateRef({
+      owner: GLOBALS.owner,
+      repo,
+      ref: `heads/${branch}`,
+      message,
+      sha: newCommitSha,
+      force: true
+    })
+  }
+  return false
 }
 
 const deleteFile = async ({ repo, branch, prFilePath, message }) => {
