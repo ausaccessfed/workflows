@@ -91,6 +91,16 @@ const sleep = (ms) => {
 }
 
 const createCommit = async ({ repo, baseSha, tree, message }) => {
+  //   const {
+  //     data: {
+  //       tree: { sha: baseTreeSha }
+  //     }
+  //   } = await GLOBALS.github.rest.git.getCommit({
+  //     owner: GLOBALS.owner,
+  //     repo,
+  //     commit_sha: baseSha
+  //   })
+
   const {
     data: { sha: treeSha }
   } = await GLOBALS.github.rest.git.createTree({
@@ -345,16 +355,18 @@ const createPRBranch = async ({ repo, baseBranch }) => {
 
   const {
     data: {
-      commit: { sha: baseBranchSHA }
+      commit: { sha: baseSha }
     }
   } = await getBranch({ repo, branch: baseBranch })
 
-  const tree = {
-    type: '040000',
-    mode: 'tree'
-  }
+  const tree = [
+    {
+      type: '040000',
+      mode: 'tree'
+    }
+  ]
 
-  const { newCommitSha } = await createCommit({ repo, tree, baseBranchSHA, message: 'Initial pr commit' })
+  const { newCommitSha } = await createCommit({ repo, tree, baseSha, message: 'Initial pr commit' })
 
   await createBranch({ repo, branch: CONSTANTS.prBranchName, sha: newCommitSha })
 }
