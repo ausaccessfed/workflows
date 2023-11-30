@@ -32,11 +32,7 @@ const setGlobals = ({ context, github, fs, glob, signature, gpgPrivateKey, gpgPr
 }
 
 const base64TextToUtf8 = (text) => Buffer.from(text, 'base64').toString('utf8')
-const sleep = (ms) => {
-  return new Promise((resolve) => {
-    setTimeout(resolve, ms)
-  })
-}
+
 const getRepo = async ({ repo }) => {
   return await GLOBALS.github.rest.repos.get({
     owner: GLOBALS.owner,
@@ -45,23 +41,11 @@ const getRepo = async ({ repo }) => {
 }
 
 const getBranch = async ({ repo, branch }) => {
-  let result
-  try {
-    result = await GLOBALS.github.rest.repos.getBranch({
-      owner: GLOBALS.owner,
-      repo,
-      branch
-    })
-  } catch (err) {
-    // sleep to avoid the first add delay
-    await sleep(5000)
-    result = await GLOBALS.github.rest.repos.getBranch({
-      owner: GLOBALS.owner,
-      repo,
-      branch
-    })
-  }
-  return result
+  return await GLOBALS.github.rest.repos.getBranch({
+    owner: GLOBALS.owner,
+    repo,
+    branch
+  })
 }
 
 const getFile = async ({ repo, path, ref }) => {
@@ -113,12 +97,12 @@ const createCommit = async ({ repo, baseSha, tree, message }) => {
   return { newCommitSha, isDiff: baseSha !== treeSha }
 }
 
-const commitFile = async ({ createBranch, repo, branch, prFilePath, message, content }) => {
+const commitFile = async ({ createBranch, repo, baseBranch, branch, prFilePath, message, content }) => {
   const {
     data: {
       commit: { sha: baseSha }
     }
-  } = await getBranch({ repo, branch })
+  } = await getBranch({ repo, branch: createBranch ? baseBranch : branch })
 
   const tree = [
     {
@@ -273,7 +257,7 @@ const parseFiles = (files) => {
   return parsedFiles
 }
 
-const updateFile = async ({ createBranch, repo, parsedFile }) => {
+const updateFile = async ({ createBranch, baseBranch, repo, parsedFile }) => {
   const { message, prFilePath } = parsedFile
   let { newContent } = parsedFile
   const {
@@ -296,6 +280,7 @@ const updateFile = async ({ createBranch, repo, parsedFile }) => {
   await commitFile({
     repo,
     branch: CONSTANTS.prBranchName,
+    baseBranch,
     createBranch,
     prFilePath,
     message,
@@ -360,7 +345,7 @@ const run = async ({ github, signature, context, repositories, fs, glob, gpgPriv
     let createBranch = true
     // handle files
     for (const parsedFile of parsedFiles) {
-      await updateFile({ createBranch, repo, parsedFile })
+      await updateFile({ createBranch, baseBranch, repo, parsedFile })
       createBranch = false
     }
 
