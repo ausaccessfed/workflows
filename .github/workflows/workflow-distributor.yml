@@ -9,9 +9,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-    strategy:
-      matrix:
-        repository: ${{ fromJSON(vars.RENOVATE_REPOSITORIES) }}
     steps:
       - name: Checkout
         uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3.6.0
@@ -31,4 +28,4 @@ jobs:
             const signature = require('github-api-signature')
             const {gpgPrivateKey, gpgPrivateKeyPassword} =  process.env
             const script = require('./scripts/workflow-distributor.js')
-            await script({github, context, signature, gpgPrivateKeyPassword, gpgPrivateKey, repositories: ["${{ matrix.repository }}"], fs, glob})
+            await script({github, context, signature, gpgPrivateKeyPassword, gpgPrivateKey, repositories: ${{ vars.RENOVATE_REPOSITORIES }}, fs, glob})
