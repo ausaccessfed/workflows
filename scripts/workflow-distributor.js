@@ -222,11 +222,6 @@ const getFileRemovals = async ({ repo, parsedFiles, baseBranch }) => {
   return filesToBeRemoved
 }
 
-const updateCacheFileTreeObject = async ({ baseBranch, repo, parsedFile, parsedFiles }) => {
-  parsedFile.newContent = parsedFiles.map((file) => file.distributionsFilePath).join('\n')
-  return await updateFileTreeObject({ baseBranch, repo, parsedFile })
-}
-
 const getFiles = async () => {
   const globber = await GLOBALS.glob.create('**/**/distributions/**/**.*', { followSymbolicLinks: false })
   return await globber.glob()
@@ -239,7 +234,7 @@ const createPR = async ({ repo, tree, baseBranch }) => {
     }
   } = await getBranch({ repo, branch: baseBranch })
 
-  const message = ''
+  const message = 'Updating distribution files'
   const { newCommitSha, isDiff } = await createCommit({ repo, tree: tree.filter((x) => x), baseSha, message })
 
   if (isDiff) {
