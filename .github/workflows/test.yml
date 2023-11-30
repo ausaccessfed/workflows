@@ -6,7 +6,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        repository: ${{ vars.RENOVATE_REPOSITORIES }}
+        repository: ${{ fromJSON(vars.RENOVATE_REPOSITORIES) }}
     permissions:
       contents: read
     steps:
