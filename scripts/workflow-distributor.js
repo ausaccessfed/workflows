@@ -203,8 +203,7 @@ const updateFileTreeObject = async ({ baseBranch, repo, parsedFile }) => {
     path: prFilePath,
     mode: '100644',
     type: 'blob',
-    //   if content null its file deletion
-    ...(newContent === null ? { sha: null } : { newContent })
+    content: newContent
   }
 }
 
@@ -223,9 +222,9 @@ const getFileRemovals = async ({ repo, parsedFiles, baseBranch }) => {
   return filesToBeRemoved
 }
 
-const updateCacheFileTreeObject = async ({ repo, parsedFile, parsedFiles }) => {
+const updateCacheFileTreeObject = async ({ baseBranch, repo, parsedFile, parsedFiles }) => {
   parsedFile.newContent = parsedFiles.map((file) => file.distributionsFilePath).join('\n')
-  return await updateFileTreeObject({ repo, parsedFile })
+  return await updateFileTreeObject({ baseBranch, repo, parsedFile })
 }
 
 const getFiles = async () => {
@@ -286,15 +285,20 @@ const run = async ({ github, signature, context, repositories, fs, glob, gpgPriv
     const tree = []
     // handle files
     for (const parsedFile of parsedFiles) {
-      tree.push(await updateFileTreeObject({ repo, parsedFile }))
+      tree.push(await updateFileTreeObject({ baseBranch, repo, parsedFile }))
     }
 
     const filesToBeRemoved = await getFileRemovals({ repo, parsedFiles, baseBranch })
     for (const prFilePath of filesToBeRemoved) {
-      tree.push(await updateFileTreeObject({ repo, parsedFile: { prFilePath, newContent: null } }))
+      tree.push({
+        path: prFilePath,
+        mode: '100644',
+        type: 'blob',
+        sha: null
+      })
     }
 
-    tree.push(await updateCacheFileTreeObject({ repo, parsedFile: cacheParsedFile, parsedFiles }))
+    tree.push(await updateCacheFileTreeObject({ baseBranch, repo, parsedFile: cacheParsedFile, parsedFiles }))
 
     await createPR({ repo, tree, baseBranch })
   }
