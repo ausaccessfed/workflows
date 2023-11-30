@@ -264,16 +264,15 @@ const createPR = async ({ repo, tree, baseBranch }) => {
 const run = async ({ github, signature, context, repositories, fs, glob, gpgPrivateKey, gpgPrivateKeyPassword }) => {
   setGlobals({ context, github, signature, fs, glob, gpgPrivateKey, gpgPrivateKeyPassword })
   const files = await getFiles()
-  let cacheParsedFile
   // parses files and then extracts the bootstrap file as its a special one
-  const parsedFiles = parseFiles(files).reduce((acc, parsedFile) => {
+  let parsedFiles = parseFiles(files)
+  const cacheFileContents = parsedFiles.map((file) => file.distributionsFilePath).join('\n')
+  parsedFiles = parsedFiles.map((parsedFile) => {
     if (parsedFile.distributionsFilePath.includes(CONSTANTS.cacheFilePath)) {
-      cacheParsedFile = parsedFile
-    } else {
-      acc.push(parsedFile)
+      parsedFile.newContent = cacheFileContents
     }
-    return acc
-  }, [])
+    return parsedFile
+  })
 
   for (const repository of repositories) {
     const repo = repository.split('/').pop()
@@ -297,8 +296,6 @@ const run = async ({ github, signature, context, repositories, fs, glob, gpgPriv
         sha: null
       })
     }
-
-    tree.push(await updateCacheFileTreeObject({ baseBranch, repo, parsedFile: cacheParsedFile, parsedFiles }))
 
     await createPR({ repo, tree, baseBranch })
   }
