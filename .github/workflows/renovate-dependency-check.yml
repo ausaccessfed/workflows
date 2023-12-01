@@ -1,8 +1,39 @@
 name: 'Renovate Dependency Check'
 on:
   workflow_dispatch:
+    inputs:
+      repository:
+        description: 'Repository'
+        required: false
+        type: choice
+        options:
+          - 'ausaccessfed/aaf-terraform'
+          - 'ausaccessfed/discovery-service'
+          - 'ausaccessfed/ecr-retagger'
+          - 'ausaccessfed/federationmanager'
+          - 'ausaccessfed/idp'
+          - 'ausaccessfed/image-scanner'
+          - 'ausaccessfed/kubeval-tools'
+          - 'ausaccessfed/lambda-promtail'
+          - 'ausaccessfed/metadata-distribution'
+          - 'ausaccessfed/oidc_relying_party_example'
+          - 'ausaccessfed/publish_app'
+          - 'ausaccessfed/puppeteer-tester'
+          - 'ausaccessfed/rapid-connector'
+          - 'ausaccessfed/rapid-idp-manager'
+          - 'ausaccessfed/reporting-service'
+          - 'ausaccessfed/ruby-base'
+          - 'ausaccessfed/shib-sp'
+          - 'ausaccessfed/validator-service'
+          - 'ausaccessfed/verifid'
+          - 'ausaccessfed/workflows'
+      forceRecreate:
+        description: 'If you should crecreate all prs (this is break glass)'
+        type: boolean
+        required: false
+        default: false
   schedule:
-    - cron: '0 0 * * SUN'
+    - cron: '0 */12 * * *'
 jobs:
   renovate:
     runs-on: ubuntu-latest
@@ -12,6 +43,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3.6.0
 
+      - name: vars
+        id: vars
+        run: |
+          RECREATE_PRS=$([ "${{ inputs.forceRecreate }}" == "true" ] && echo "always" || echo "auto")
+          echo "RECREATE_PRS=$RECREATE_PRS" >> $GITHUB_OUTPUT
+
+          REPOSITORIES=$([ "${{ inputs.repository }}" != "" ] && echo "${{vars.RENOVATE_REPOSITORIES}}" || echo '["${{ inputs.repository }}"]')
+          echo "REPOSITORIES=$REPOSITORIES" >> $GITHUB_OUTPUT
+
       - name: Renovate
         uses: renovatebot/github-action@3cef36a9aba515d8726b491905b3bc766832e221 # v39.0.5
         with:
@@ -20,6 +60,5 @@ jobs:
         env:
           LOG_LEVEL: 'info'
           RENOVATE_GIT_PRIVATE_KEY: ${{ secrets.RENOVATE_GPG_PRIVATE_KEY }}
-          RENOVATE_REPOSITORIES: '["ausaccessfed/discovery-service","ausaccessfed/ecr-retagger","ausaccessfed/federationmanager","ausaccessfed/idp","ausaccessfed/image-scanner","ausaccessfed/kubeval-tools","ausaccessfed/lambda-promtail","ausaccessfed/metadata-distribution","ausaccessfed/oidc_relying_party_example","ausaccessfed/publish_app","ausaccessfed/puppeteer-tester","ausaccessfed/rapid-connector","ausaccessfed/rapid-idp-manager","ausaccessfed/reporting-service","ausaccessfed/ruby-base","ausaccessfed/shib-sp","ausaccessfed/validator-service","ausaccessfed/verifid","ausaccessfed/workflows"]'
-          # RENOVATE_REPOSITORIES: '${{ vars.RENOVATE_REPOSITORIES }}'
-          # "ausaccessfed/aaf-terraform",
+          RENOVATE_RECREATE_WHEN: '${{ steps.vars.outputs.RECREATE_PRS }}'
+          RENOVATE_REPOSITORIES: '${{ steps.vars.outputs.REPOSITORIES }}'
