@@ -6,9 +6,6 @@ on:
 jobs:
   renovate:
     runs-on: ubuntu-latest
-    # strategy:
-    #   matrix:
-    #     repository: ${{ fromJSON(vars.RENOVATE_REPOSITORIES) }}
     permissions:
       contents: read
     steps:
@@ -23,5 +20,6 @@ jobs:
         env:
           LOG_LEVEL: 'info'
           RENOVATE_GIT_PRIVATE_KEY: ${{ secrets.RENOVATE_GPG_PRIVATE_KEY }}
-          RENOVATE_REPOSITORIES: '${{ vars.RENOVATE_REPOSITORIES }}'
-          # RENOVATE_REPOSITORIES: '["${{ matrix.repository }}"]'
+          RENOVATE_REPOSITORIES: '["ausaccessfed/discovery-service","ausaccessfed/ecr-retagger","ausaccessfed/federationmanager","ausaccessfed/idp","ausaccessfed/image-scanner","ausaccessfed/kubeval-tools","ausaccessfed/lambda-promtail","ausaccessfed/metadata-distribution","ausaccessfed/oidc_relying_party_example","ausaccessfed/publish_app","ausaccessfed/puppeteer-tester","ausaccessfed/rapid-connector","ausaccessfed/rapid-idp-manager","ausaccessfed/reporting-service","ausaccessfed/ruby-base","ausaccessfed/shib-sp","ausaccessfed/validator-service","ausaccessfed/verifid","ausaccessfed/workflows"]'
+          # RENOVATE_REPOSITORIES: '${{ vars.RENOVATE_REPOSITORIES }}'
+          # "ausaccessfed/aaf-terraform",
