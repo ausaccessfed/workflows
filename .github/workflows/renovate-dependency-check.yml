@@ -56,6 +56,9 @@ jobs:
           RECREATE_PRS=$([ "${{ inputs.forceRecreate }}" == "true" ] && echo "always" || echo "auto")
           echo "RECREATE_PRS=$RECREATE_PRS" >> $GITHUB_OUTPUT
 
+          LOG_LEVEL=$([ "${{ inputs.logLevel }}" == "" ] && echo "info" || echo "${{ inputs.logLevel }}")
+          echo "LOG_LEVEL=$LOG_LEVEL" >> $GITHUB_OUTPUT
+
           ALL_REPOS=$(echo '${{vars.RENOVATE_REPOSITORIES}}' | sed s/'"ausaccessfed\/aaf-terraform",'//)
           REPOSITORIES=$([ "${{ inputs.repository }}" != "" ] && echo '["${{ inputs.repository }}"]' || echo $ALL_REPOS )
           echo "REPOSITORIES=$REPOSITORIES" >> $GITHUB_OUTPUT
@@ -66,7 +69,7 @@ jobs:
           configurationFile: .github/renovate-config.js
           token: ${{ secrets.ALL_REPO_SCOPED_TOKEN }}
         env:
-          LOG_LEVEL: '${{ inputs.logLevel }}'
+          LOG_LEVEL: '${{ steps.vars.outputs.LOG_LEVEL }}'
           RENOVATE_GIT_PRIVATE_KEY: ${{ secrets.RENOVATE_GPG_PRIVATE_KEY }}
           RENOVATE_RECREATE_WHEN: '${{ steps.vars.outputs.RECREATE_PRS }}'
           RENOVATE_REPOSITORIES: '${{ steps.vars.outputs.REPOSITORIES }}'
