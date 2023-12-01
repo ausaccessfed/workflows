@@ -58,9 +58,9 @@ const getFile = async ({ repo, path, ref }) => {
       ref
     })
   } catch (err) {
-    console.log('(might not be an error)')
-    console.dir(err.response)
-    console.error(err.stack)
+    // console.log('(might not be an error)')
+    // console.dir(err.response)
+    // console.error(err.stack)
     result = err.response
   }
   return result
@@ -85,6 +85,7 @@ const createCommit = async ({ repo, baseSha, tree, message }) => {
   }
 
   // if these are the same for whatever reason then no point committing as zero diff change
+
   const {
     data: { sha: newCommitSha }
   } = await GLOBALS.github.rest.git.createCommit({
@@ -106,9 +107,9 @@ const deleteBranch = async ({ repo, branch }) => {
       ref: `heads/${branch}`
     })
   } catch (err) {
-    console.log('(might not be an error)')
-    console.dir(err.response)
-    console.error(err.stack)
+    // console.log('(might not be an error)')
+    // console.dir(err.response)
+    // console.error(err.stack)
     result = err.response
   }
   return result
@@ -269,6 +270,7 @@ const run = async ({ github, signature, context, repositories, fs, glob, gpgPriv
   })
 
   for (const repository of repositories) {
+    console.log(`starting ${repository}`)
     const repo = repository.split('/').pop()
     const {
       data: { default_branch: baseBranch }
@@ -292,6 +294,7 @@ const run = async ({ github, signature, context, repositories, fs, glob, gpgPriv
     }
 
     await createPR({ repo, tree, baseBranch })
+    console.log(`finished ${repository}`)
   }
 }
 
