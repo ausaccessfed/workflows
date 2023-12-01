@@ -28,7 +28,7 @@ on:
           - 'ausaccessfed/verifid'
           - 'ausaccessfed/workflows'
       forceRecreate:
-        description: 'If you should crecreate all prs (usually no)'
+        description: 'If you should crecreate all prs (this is break glass)'
         type: boolean
         required: false
         default: false
