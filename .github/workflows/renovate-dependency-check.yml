@@ -49,7 +49,7 @@ jobs:
           RECREATE_PRS=$([ "${{ inputs.forceRecreate }}" == "true" ] && echo "always" || echo "auto")
           echo "RECREATE_PRS=$RECREATE_PRS" >> $GITHUB_OUTPUT
 
-          REPOSITORIES=$([ "${{ inputs.repository }}" != "" ] && echo "${{vars.RENOVATE_REPOSITORIES}}" || echo '["${{ inputs.repository }}"]')
+          REPOSITORIES=$([ "${{ inputs.repository }}" != "" ] && echo '["${{ inputs.repository }}"]' || echo '${{vars.RENOVATE_REPOSITORIES}}')
           echo "REPOSITORIES=$REPOSITORIES" >> $GITHUB_OUTPUT
 
       - name: Renovate
