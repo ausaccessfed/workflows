@@ -6,7 +6,8 @@
 const CONSTANTS = {
   regex: {
     once: /#ONCE#(\n)*/,
-    partial: /#PARTIAL#(\n)*/
+    partial: /#PARTIAL#(\n)*/,
+    repository: /#REPOSITORY_MATCH.*#(\n)*/
   },
   cacheFilePath: '.cachedFiles',
   prBranchName: 'feature/distribution_updates'
@@ -48,24 +49,6 @@ const getBranch = async ({ repo, branch }) => {
   })
 }
 
-const createBranch = async ({ repo, branch, sha }) => {
-  let result = {}
-  try {
-    result = await GLOBALS.github.rest.git.createRef({
-      owner: GLOBALS.owner,
-      repo,
-      ref: `refs/heads/${branch}`,
-      sha
-    })
-  } catch (err) {
-    console.log('(might not be an error)')
-    console.dir(err.response)
-    console.error(err.stack)
-    result = err.response
-  }
-  return result
-}
-
 const getFile = async ({ repo, path, ref }) => {
   let result = {}
   try {
@@ -76,57 +59,22 @@ const getFile = async ({ repo, path, ref }) => {
       ref
     })
   } catch (err) {
-    console.log('(might not be an error)')
-    console.dir(err.response)
-    console.error(err.stack)
+    // console.log('(might not be an error)')
+    // console.dir(err.response)
+    // console.error(err.stack)
     result = err.response
   }
   return result
 }
 
-const sleep = (ms) => {
-  return new Promise((resolve) => {
-    setTimeout(resolve, ms)
-  })
-}
-
-const commitFile = async ({ repo, branch, prFilePath, message, content }) => {
-  // sometimes the branch is missing wait 5 seconds
-  let branchResult
-  try {
-    branchResult = await getBranch({ repo, branch })
-  } catch (e) {
-    await sleep(5000)
-    branchResult = await getBranch({ repo, branch })
-  }
-
-  const {
-    data: {
-      commit: { sha: baseSha }
-    }
-  } = branchResult
-
-  let filePayload = { content }
-
-  // We want to allow content == ""
-  if (content === null) {
-    filePayload = { sha: null }
-  }
-
+const createCommit = async ({ repo, baseSha, tree, message }) => {
   const {
     data: { sha: treeSha }
   } = await GLOBALS.github.rest.git.createTree({
     owner: GLOBALS.owner,
     repo,
     base_tree: baseSha,
-    tree: [
-      {
-        path: prFilePath,
-        mode: '100644',
-        type: 'blob',
-        ...filePayload
-      }
-    ]
+    tree
   })
 
   const commit = {
@@ -138,65 +86,17 @@ const commitFile = async ({ repo, branch, prFilePath, message, content }) => {
   }
 
   // if these are the same for whatever reason then no point committing as zero diff change
-  if (baseSha !== treeSha) {
-    const {
-      data: { sha: newCommitSha }
-    } = await GLOBALS.github.rest.git.createCommit({
-      owner: GLOBALS.owner,
-      repo,
-      ...commit,
-      signature: await GLOBALS.signature.createSignature(commit, GLOBALS.gpgPrivateKey, GLOBALS.gpgPrivateKeyPassword)
-    })
 
-    return await GLOBALS.github.rest.git.updateRef({
-      owner: GLOBALS.owner,
-      repo,
-      ref: `heads/${branch}`,
-      message,
-      sha: newCommitSha,
-      force: true
-    })
-  }
-  return false
-}
+  const {
+    data: { sha: newCommitSha }
+  } = await GLOBALS.github.rest.git.createCommit({
+    owner: GLOBALS.owner,
+    repo,
+    ...commit,
+    signature: await GLOBALS.signature.createSignature(commit, GLOBALS.gpgPrivateKey, GLOBALS.gpgPrivateKeyPassword)
+  })
 
-const deleteFile = async ({ repo, branch, prFilePath, message }) => {
-  let result = {}
-  try {
-    return await commitFile({
-      repo,
-      branch,
-      prFilePath,
-      message,
-      content: null
-    })
-  } catch (err) {
-    console.log('(might not be an error)')
-    console.dir(err.response)
-    console.error(err.stack)
-    result = err.response
-  }
-  return result
-}
-
-const createPR = async ({ repo, head, base, message }) => {
-  let result = {}
-  try {
-    result = await GLOBALS.github.rest.pulls.create({
-      owner: GLOBALS.owner,
-      repo,
-      head,
-      base,
-      title: message,
-      body: message
-    })
-  } catch (err) {
-    console.log('(might not be an error)')
-    console.dir(err.response)
-    console.error(err.stack)
-    result = err.response
-  }
-  return result
+  return { newCommitSha, isDiff: baseSha !== treeSha }
 }
 
 const deleteBranch = async ({ repo, branch }) => {
@@ -208,15 +108,15 @@ const deleteBranch = async ({ repo, branch }) => {
       ref: `heads/${branch}`
     })
   } catch (err) {
-    console.log('(might not be an error)')
-    console.dir(err.response)
-    console.error(err.stack)
+    // console.log('(might not be an error)')
+    // console.dir(err.response)
+    // console.error(err.stack)
     result = err.response
   }
   return result
 }
 
-const handlePartial = ({ currentContent, newContent: newContentF }) => {
+const handlePartial = ({ currentContentBase64, newContent: newContentF }) => {
   let newContent = newContentF
   const isPartial = CONSTANTS.regex.partial.test(newContent)
 
@@ -224,7 +124,8 @@ const handlePartial = ({ currentContent, newContent: newContentF }) => {
     //  remove partial flag and blank newline at end of template
     newContent = newContent.replace(CONSTANTS.regex.partial, '').replace(/\n$/, '')
 
-    if (currentContent) {
+    if (currentContentBase64) {
+      const currentContent = base64TextToUtf8(currentContentBase64)
       const newContentLines = newContent.split('\n')
 
       let endLineReplacement = null
@@ -280,73 +181,59 @@ const parseFiles = (files) => {
   return parsedFiles
 }
 
-const updateFile = async ({ repo, parsedFile }) => {
-  const { message, prFilePath } = parsedFile
+const updateFileTreeObject = async ({ baseBranch, repo, parsedFile }) => {
+  const { prFilePath } = parsedFile
   let { newContent } = parsedFile
   const {
     data: { content: currentContentBase64 }
-  } = await getFile({ repo, path: prFilePath, ref: CONSTANTS.prBranchName })
+  } = await getFile({ repo, path: prFilePath, ref: baseBranch })
+
+  const isRepositorySpecific = CONSTANTS.regex.repository.test(newContent)
+  if (isRepositorySpecific) {
+    // #REPOSITORY_MATCH discovery-service,ecr-retagger #
+    // to
+    // ["discovery-service","ecr-retagger"]
+    const repoSplits = newContent.split('REPOSITORY_MATCH')[1].split('#')[0].trim().split(',')
+    const shouldBeAdded = repoSplits.includes(repo)
+    if (!shouldBeAdded) {
+      //  If repo isnt in list then we dont care
+      return null
+    }
+    newContent = newContent.replace(CONSTANTS.regex.repository, '')
+  }
 
   const isOnceFile = CONSTANTS.regex.once.test(newContent)
   if (isOnceFile) {
     if (currentContentBase64) {
       //  If file exists then skip
-      return
+      return null
     }
     newContent = newContent.replace(CONSTANTS.regex.once, '')
   }
 
-  if (currentContentBase64) {
-    newContent = handlePartial({ currentContent: base64TextToUtf8(currentContentBase64), newContent })
-  }
+  newContent = handlePartial({ currentContentBase64, newContent })
 
-  await commitFile({
-    repo,
-    branch: CONSTANTS.prBranchName,
-    prFilePath,
-    message,
+  return {
+    path: prFilePath,
+    mode: '100644',
+    type: 'blob',
     content: newContent
-  })
+  }
 }
 
-const handleFileRemovals = async ({ repo, parsedFiles, baseBranch }) => {
+const getFileRemovals = async ({ repo, parsedFiles, baseBranch }) => {
   const {
     data: { sha: distributionsRefFileSHA, content: distributionsRefBase64Content }
   } = await getFile({ repo, path: CONSTANTS.cacheFilePath, ref: baseBranch })
   let distributionsRefContent = ''
+  let filesToBeRemoved = []
   if (distributionsRefFileSHA) {
     distributionsRefContent = base64TextToUtf8(distributionsRefBase64Content)
     const bootstrappedFiles = distributionsRefContent.split('\n')
     const bootstrappableFiles = parsedFiles.map((parsedFile) => parsedFile.distributionsFilePath)
-    const filesToBeRemoved = bootstrappedFiles.filter(
-      (bootstrappedFile) => !bootstrappableFiles.includes(bootstrappedFile)
-    )
-    for (const prFilePath of filesToBeRemoved) {
-      await deleteFile({
-        repo,
-        branch: CONSTANTS.prBranchName,
-        prFilePath,
-        message: `Remove ${prFilePath}`
-      })
-    }
+    filesToBeRemoved = bootstrappedFiles.filter((bootstrappedFile) => !bootstrappableFiles.includes(bootstrappedFile))
   }
-}
-
-const updateCacheFile = async ({ repo, parsedFile, parsedFiles }) => {
-  parsedFile.newContent = parsedFiles.map((file) => file.distributionsFilePath).join('\n')
-  await updateFile({ repo, parsedFile })
-}
-
-const createPRBranch = async ({ repo, baseBranch }) => {
-  await deleteBranch({ repo, branch: CONSTANTS.prBranchName })
-
-  const {
-    data: {
-      commit: { sha: baseBranchSHA }
-    }
-  } = await getBranch({ repo, branch: baseBranch })
-
-  await createBranch({ repo, branch: CONSTANTS.prBranchName, sha: baseBranchSHA })
+  return filesToBeRemoved
 }
 
 const getFiles = async () => {
@@ -354,41 +241,80 @@ const getFiles = async () => {
   return await globber.glob()
 }
 
+const createPR = async ({ repo, tree, baseBranch }) => {
+  const {
+    data: {
+      commit: { sha: baseSha }
+    }
+  } = await getBranch({ repo, branch: baseBranch })
+
+  const message = 'Updating distribution files'
+  const { newCommitSha, isDiff } = await createCommit({ repo, tree: tree.filter((x) => x), baseSha, message })
+
+  if (isDiff) {
+    await GLOBALS.github.rest.git.createRef({
+      owner: GLOBALS.owner,
+      repo,
+      ref: `refs/heads/${CONSTANTS.prBranchName}`,
+      sha: newCommitSha
+    })
+
+    await GLOBALS.github.rest.pulls.create({
+      owner: GLOBALS.owner,
+      repo,
+      head: CONSTANTS.prBranchName,
+      base: baseBranch,
+      title: message,
+      body: message
+    })
+  }
+}
+
+const processRepositorySpecificFlag = ({ parsedFile, repo }) => {
+  const { newContent } = parsedFile
+
+  return parsedFile
+}
+
 const run = async ({ github, signature, context, repositories, fs, glob, gpgPrivateKey, gpgPrivateKeyPassword }) => {
   setGlobals({ context, github, signature, fs, glob, gpgPrivateKey, gpgPrivateKeyPassword })
   const files = await getFiles()
-  let cacheParsedFile
   // parses files and then extracts the bootstrap file as its a special one
-  const parsedFiles = parseFiles(files).reduce((acc, parsedFile) => {
+  let parsedFiles = parseFiles(files)
+  const cacheFileContents = parsedFiles.map((file) => file.distributionsFilePath).join('\n')
+  parsedFiles = parsedFiles.map((parsedFile) => {
     if (parsedFile.distributionsFilePath.includes(CONSTANTS.cacheFilePath)) {
-      cacheParsedFile = parsedFile
-    } else {
-      acc.push(parsedFile)
+      parsedFile.newContent = cacheFileContents
     }
-    return acc
-  }, [])
+    return parsedFile
+  })
 
   for (const repository of repositories) {
+    console.log(`starting ${repository}`)
     const repo = repository.split('/').pop()
     const {
       data: { default_branch: baseBranch }
     } = await getRepo({ repo })
-    await createPRBranch({ repo, baseBranch })
+    await deleteBranch({ repo, branch: CONSTANTS.prBranchName })
 
+    const tree = []
     // handle files
     for (const parsedFile of parsedFiles) {
-      await updateFile({ repo, parsedFile })
+      tree.push(await updateFileTreeObject({ baseBranch, repo, parsedFile }))
     }
 
-    await handleFileRemovals({ repo, parsedFiles, baseBranch })
-    await updateCacheFile({ repo, parsedFile: cacheParsedFile, parsedFiles })
+    const filesToBeRemoved = await getFileRemovals({ repo, parsedFiles, baseBranch })
+    for (const prFilePath of filesToBeRemoved) {
+      tree.push({
+        path: prFilePath,
+        mode: '100644',
+        type: 'blob',
+        sha: null
+      })
+    }
 
-    await createPR({
-      repo,
-      head: CONSTANTS.prBranchName,
-      base: baseBranch,
-      message: 'Update distributable files'
-    })
+    await createPR({ repo, tree, baseBranch })
+    console.log(`finished ${repository}`)
   }
 }
 

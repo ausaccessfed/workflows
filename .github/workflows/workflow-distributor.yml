@@ -2,6 +2,8 @@ name: 'Distribute Workflows'
 on:
   workflow_dispatch:
   push:
+    paths:
+      - '.github/workflows/distributions/**'
     branches:
       - main
 jobs:
@@ -9,18 +11,15 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-    strategy:
-      matrix:
-        repository: ${{ fromJSON(vars.RENOVATE_REPOSITORIES) }}
     steps:
       - name: Checkout
-        uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3.6.0
-      - uses: actions/setup-node@v3
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+      - uses: actions/setup-node@8f152de45cc393bb48ce5d89d36b731f54556e65 # v4.0.0
         with:
           node-version: 16
       - run: npm install github-api-signature
 
-      - uses: actions/github-script@d7906e4ad0b1822421a7e6a35d5ca353c962f410 # v6.4.1
+      - uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
         env:
           gpgPrivateKey: ${{secrets.GPG_PRIVATE_KEY}}
           gpgPrivateKeyPassword: ${{secrets.GPG_PRIVATE_KEY_PASSWORD}}
@@ -31,4 +30,4 @@ jobs:
             const signature = require('github-api-signature')
             const {gpgPrivateKey, gpgPrivateKeyPassword} =  process.env
             const script = require('./scripts/workflow-distributor.js')
-            await script({github, context, signature, gpgPrivateKeyPassword, gpgPrivateKey, repositories: ["${{ matrix.repository }}"], fs, glob})
+            await script({github, context, signature, gpgPrivateKeyPassword, gpgPrivateKey, repositories: ${{ vars.RENOVATE_REPOSITORIES }}, fs, glob})

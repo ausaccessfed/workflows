@@ -1,26 +1,74 @@
 name: 'Renovate Dependency Check'
 on:
   workflow_dispatch:
+    inputs:
+      repository:
+        description: 'Repository'
+        required: false
+        type: choice
+        options:
+          - 'ausaccessfed/aaf-terraform'
+          - 'ausaccessfed/discovery-service'
+          - 'ausaccessfed/ecr-retagger'
+          - 'ausaccessfed/federationmanager'
+          - 'ausaccessfed/idp'
+          - 'ausaccessfed/image-scanner'
+          - 'ausaccessfed/kubeval-tools'
+          - 'ausaccessfed/lambda-promtail'
+          - 'ausaccessfed/metadata-distribution'
+          - 'ausaccessfed/oidc_relying_party_example'
+          - 'ausaccessfed/publish_app'
+          - 'ausaccessfed/puppeteer-tester'
+          - 'ausaccessfed/rapid-connector'
+          - 'ausaccessfed/rapid-idp-manager'
+          - 'ausaccessfed/reporting-service'
+          - 'ausaccessfed/ruby-base'
+          - 'ausaccessfed/shib-sp'
+          - 'ausaccessfed/validator-service'
+          - 'ausaccessfed/verifid'
+          - 'ausaccessfed/workflows'
+      forceRecreate:
+        description: 'If you should crecreate all prs (this is break glass)'
+        type: boolean
+        required: false
+        default: false
+      logLevel:
+        description: 'Log level'
+        type: choice
+        default: 'info'
+        options:
+          - info
+          - debug
   schedule:
-    - cron: '0 0 * * SUN'
+    - cron: '0 */12 * * *'
 jobs:
   renovate:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        repository: ${{ fromJSON(vars.RENOVATE_REPOSITORIES) }}
     permissions:
       contents: read
     steps:
       - name: Checkout
-        uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3.6.0
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
+      - name: vars
+        id: vars
+        run: |
+          RECREATE_PRS=$([ "${{ inputs.forceRecreate }}" == "true" ] && echo "always" || echo "auto")
+          echo "RECREATE_PRS=$RECREATE_PRS" >> $GITHUB_OUTPUT
+
+          LOG_LEVEL=$([ "${{ inputs.logLevel }}" == "" ] && echo "info" || echo "${{ inputs.logLevel }}")
+          echo "LOG_LEVEL=$LOG_LEVEL" >> $GITHUB_OUTPUT
+
+          REPOSITORIES=$([ "${{ inputs.repository }}" != "" ] && echo '["${{ inputs.repository }}"]' || echo '${{vars.RENOVATE_REPOSITORIES}}' )
+          echo "REPOSITORIES=$REPOSITORIES" >> $GITHUB_OUTPUT
 
       - name: Renovate
-        uses: renovatebot/github-action@3cef36a9aba515d8726b491905b3bc766832e221 # v39.0.5
+        uses: renovatebot/github-action@5d3fbef92a76cbf78f5732d17c07a2e76e6f7555 # v39.1.4
         with:
           configurationFile: .github/renovate-config.js
           token: ${{ secrets.ALL_REPO_SCOPED_TOKEN }}
         env:
-          LOG_LEVEL: 'info'
+          LOG_LEVEL: '${{ steps.vars.outputs.LOG_LEVEL }}'
           RENOVATE_GIT_PRIVATE_KEY: ${{ secrets.RENOVATE_GPG_PRIVATE_KEY }}
-          RENOVATE_REPOSITORIES: '["${{ matrix.repository }}"]'
+          RENOVATE_RECREATE_WHEN: '${{ steps.vars.outputs.RECREATE_PRS }}'
+          RENOVATE_REPOSITORIES: '${{ steps.vars.outputs.REPOSITORIES }}'
