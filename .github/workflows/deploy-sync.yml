@@ -161,6 +161,17 @@ jobs:
           IMAGE_TAG=$(echo "$IMAGE_TAG" | tr / _)
           echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_OUTPUT
 
+          SHOULD_PUSH_IMAGE_TO_ECR=$([ \
+            "$IS_DEFAULT_BRANCH_PUSH" == "true" \
+            -o \
+            "$IS_SLASH_DEPLOY" == "true" \
+            -o \
+            "$IS_DEFAULT_DEVELOPMENT_BRANCH_PUSH" == "true" \
+            -o \
+            "$IS_MONTHLY_BUILD" == "true" \
+          ] && echo "true" || echo "false")
+          echo "SHOULD_PUSH_IMAGE_TO_ECR=$SHOULD_PUSH_IMAGE_TO_ECR" >> $GITHUB_OUTPUT
+
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           ref: ${{ steps.env1.outputs.BRANCH_NAME }}
@@ -415,23 +426,14 @@ jobs:
             true
       # TODO: change the true above when were ready to enforce
       - name: Push to ECR
+        if: steps.env1.outputs.SHOULD_PUSH_IMAGE_TO_ECR == 'true'
         run: |
-          if [ \
-              "${{steps.env1.outputs.IS_DEFAULT_BRANCH_PUSH}}" == "true" \
-              -o \
-              "${{steps.env1.outputs.IS_SLASH_DEPLOY}}" == "true" \
-              -o \
-              "${{steps.env1.outputs.IS_DEFAULT_DEVELOPMENT_BRANCH_PUSH}}" == "true" \
-              -o \
-              "${{steps.env1.outputs.IS_MONTHLY_BUILD}}" == "true" \
-            ]; then
-            if [ "${{ steps.env2.outputs.USE_BUILDX }}" == "true" ]; then
-              export PRODUCTION_PUSH_COMMAND="${{ steps.build-production.outputs.BUILDX_PUSH_PRODUCTION_COMMAND }}"
-              export PRODUCTION_LATEST_PUSH_COMMAND="echo 'BUILDX doesnt do anything here'"
-            else
-              export PRODUCTION_PUSH_COMMAND="docker push ${{ steps.env2.outputs.PRODUCTION_IMAGE_ID_TAG }}"
-              export PRODUCTION_LATEST_PUSH_COMMAND="docker push ${{ steps.env2.outputs.LATEST_IMAGE_ID_TAG }}"
-            fi
+          if [ "${{ steps.env2.outputs.USE_BUILDX }}" == "true" ]; then
+            export PRODUCTION_PUSH_COMMAND="${{ steps.build-production.outputs.BUILDX_PUSH_PRODUCTION_COMMAND }}"
+            export PRODUCTION_LATEST_PUSH_COMMAND="echo 'BUILDX doesnt do anything here'"
+          else
+            export PRODUCTION_PUSH_COMMAND="docker push ${{ steps.env2.outputs.PRODUCTION_IMAGE_ID_TAG }}"
+            export PRODUCTION_LATEST_PUSH_COMMAND="docker push ${{ steps.env2.outputs.LATEST_IMAGE_ID_TAG }}"
           fi
 
           if [ "${{steps.env1.outputs.IS_DEFAULT_CACHE_BRANCH_PUSH}}" == "true" ]; then
@@ -441,29 +443,21 @@ jobs:
               export CACHE_PUSH_COMMAND="docker push ${{ steps.env2.outputs.CACHE_IMAGE_ID_TAG }}"
             fi
           fi
+
           ./.github/reusable_workflow/scripts/push_images.sh
 
-          if [ \
-              "${{steps.env1.outputs.IS_DEFAULT_BRANCH_PUSH}}" == "true" \
-              -o \
-              "${{steps.env1.outputs.IS_SLASH_DEPLOY}}" == "true" \
-              -o \
-              "${{steps.env1.outputs.IS_DEFAULT_DEVELOPMENT_BRANCH_PUSH}}" == "true" \
-              -o \
-              "${{steps.env1.outputs.IS_MONTHLY_BUILD}}" == "true" \
-            ]; then
-              cat push_production.txt || echo "no output"
-              if [ -f push_production_error.txt ]; then
-                cat push_production_error.txt
-                exit 1
-              fi
-
-              cat push_production_latest.txt || echo "no output"
-              if [ -f push_production_latest_error.txt ]; then
-                cat push_production_latest_error.txt
-                exit 1
-              fi
+          cat push_production.txt || echo "no output"
+          if [ -f push_production_error.txt ]; then
+            cat push_production_error.txt
+            exit 1
           fi
+
+          cat push_production_latest.txt || echo "no output"
+          if [ -f push_production_latest_error.txt ]; then
+            cat push_production_latest_error.txt
+            exit 1
+          fi
+
           if [ "${{steps.env1.outputs.IS_DEFAULT_CACHE_BRANCH_PUSH}}" == "true" ]; then
             cat push_cache.txt || echo "no output"
             if [ -f push_cache_error.txt ]; then
