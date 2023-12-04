@@ -289,8 +289,6 @@ const run = async ({ github, signature, context, repositories, fs, glob, gpgPriv
     return parsedFile
   })
 
-  repositories = ['ausaccessfed/workflows', 'ausaccessfed/reporting-service']
-
   for (const repository of repositories) {
     console.log(`starting ${repository}`)
     const repo = repository.split('/').pop()
