@@ -4,7 +4,7 @@ on:
     inputs:
       AUTO_MERGEABLE_LABELS:
         type: string
-        default: "development,test,devDependencies,testDependencies"
+        default: 'development,test,devDependencies,testDependencies'
     secrets:
       REPO_SCOPED_TOKEN:
         required: true
@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       GITHUB_TOKEN: ${{secrets.REPO_SCOPED_TOKEN}}
-    name: "PR housekeeping"
+    name: 'PR housekeeping'
     steps:
       - uses: actions/github-script@d7906e4ad0b1822421a7e6a35d5ca353c962f410 # v6.4.1
         with:
@@ -22,8 +22,8 @@ jobs:
             const {
                 payload: {
                     pull_request: {
-                        number: pull_number, 
-                        user: { login: actor, id: actor_id }, 
+                        number: pull_number,
+                        user: { login: actor, id: actor_id },
                         labels,
                         title,
                         node_id
