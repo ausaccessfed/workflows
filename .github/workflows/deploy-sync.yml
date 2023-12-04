@@ -6,86 +6,86 @@ on:
         required: true
         type: string
       dev_url:
-        default: ""
+        default: ''
         type: string
       event_name:
         required: true
         type: string
       event_comment_body:
-        default: ""
+        default: ''
         type: string
       event_comment_id:
-        default: ""
+        default: ''
         type: string
       default_branch:
-        default: "master"
+        default: 'master'
         type: string
       ## if not set defaults to default_branch
       default_branch_for_caching:
-        default: ""
+        default: ''
         type: string
       ## if not set defaults to default_branch
       default_develop_branch:
-        default: ""
+        default: ''
         type: string
       version_command:
-        default: "cat .ruby-version"
+        default: 'cat .ruby-version'
         type: string
       ## if not set defaults to ecr_repository
       projects:
-        default: ""
+        default: ''
         type: string
       ## if not set will use docker build, if set will use buildx
       platforms:
-        default: ""
+        default: ''
         type: string
       runner:
-        default: "ubuntu-latest"
+        default: 'ubuntu-latest'
         type: string
       extra_task_1_name:
-        default: "N/A"
+        default: 'N/A'
         type: string
       extra_task_1:
-        default: ""
+        default: ''
         type: string
       extra_task_2_name:
-        default: "N/A"
+        default: 'N/A'
         type: string
       extra_task_2:
-        default: ""
+        default: ''
         type: string
       extra_task_3_name:
-        default: "N/A"
+        default: 'N/A'
         type: string
       extra_task_3:
-        default: ""
+        default: ''
         type: string
       extra_task_4_name:
-        default: "N/A"
+        default: 'N/A'
         type: string
       extra_task_4:
-        default: ""
+        default: ''
         type: string
       extra_task_5_name:
-        default: "N/A"
+        default: 'N/A'
         type: string
       extra_task_5:
-        default: ""
+        default: ''
         type: string
       extra_task_6_name:
-        default: "N/A"
+        default: 'N/A'
         type: string
       extra_task_6:
-        default: ""
+        default: ''
         type: string
       development_environments:
-        default: "development"
+        default: 'development'
         type: string
       test_environments:
-        default: ""
+        default: ''
         type: string
       production_environments:
-        default: "test,production"
+        default: 'test,production'
         type: string
     secrets:
       DOCKER_ECR:
@@ -105,7 +105,7 @@ jobs:
         env:
           MYSQL_ROOT_PASSWORD: password
         ports:
-          - "3306:3306"
+          - '3306:3306'
     steps:
       - name: Delete huge unnecessary tools folder
         run: rm -rf /opt/hostedtoolcache
@@ -121,8 +121,8 @@ jobs:
           sha: ${{ steps.comment-branch.outputs.head_sha }}
           token: ${{ secrets.GITHUB_TOKEN }}
           status: pending
-          description: "testing, building and pushing image"
-          context: "Dev federation deploy"
+          description: 'testing, building and pushing image'
+          context: 'Dev federation deploy'
 
       - id: env1
         name: set envs
@@ -182,7 +182,7 @@ jobs:
 
       - name: Login to Amazon ECR
         id: login-ecr
-        uses: aws-actions/amazon-ecr-login@5a88a04c91d5c6f97aae0d9be790e64d9b1d47b7 # v1.7.1
+        uses: aws-actions/amazon-ecr-login@062b18b96a7aff071d4dc91bc00c4c1a7945b076 # v2.0.1
 
       - name: set more envs
         id: env2
@@ -428,7 +428,7 @@ jobs:
             if [ "${{ steps.env2.outputs.USE_BUILDX }}" == "true" ]; then
               export PRODUCTION_PUSH_COMMAND="${{ steps.build-production.outputs.BUILDX_PUSH_PRODUCTION_COMMAND }}"
               export PRODUCTION_LATEST_PUSH_COMMAND="echo 'BUILDX doesnt do anything here'"
-            else 
+            else
               export PRODUCTION_PUSH_COMMAND="docker push ${{ steps.env2.outputs.PRODUCTION_IMAGE_ID_TAG }}"
               export PRODUCTION_LATEST_PUSH_COMMAND="docker push ${{ steps.env2.outputs.LATEST_IMAGE_ID_TAG }}"
             fi
@@ -517,15 +517,15 @@ jobs:
           STATUS="failure"
           URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 
-          if [ "${{ steps.build-test.outcome }}" == "failure" ]; then 
+          if [ "${{ steps.build-test.outcome }}" == "failure" ]; then
             OUTPUT="${OUTPUT}Building the Test image has failed! "
           fi
 
-          if [ "${{ steps.build-production-result.outcome }}" == "failure" ]; then 
+          if [ "${{ steps.build-production-result.outcome }}" == "failure" ]; then
             OUTPUT="${OUTPUT}Building the Production image has failed!"
           fi
 
-          if [ "$OUTPUT" == "" ]; then 
+          if [ "$OUTPUT" == "" ]; then
             OUTPUT="Manifest updated, Deploying to ${{ inputs.dev_url }} (may take up to 5 minutes)"
             STATUS="success"
             URL="${{ inputs.dev_url }}"
@@ -550,4 +550,4 @@ jobs:
           status: ${{ steps.failure-check.outputs.ADHOC_STATUS }}
           targetUrl: ${{ steps.failure-check.outputs.ADHOC_URL }}
           description: ${{ steps.failure-check.outputs.ADHOC_OUTPUT }}
-          context: "Dev federation deploy"
+          context: 'Dev federation deploy'
