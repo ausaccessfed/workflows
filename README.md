@@ -8,6 +8,7 @@ This repo contains a directory of files in `.github/workflows/distributions`, Wh
 
 * If it contains `#ONCE#`, the file will only ever be added once, if its already found then nothing is done
 * If it contains `#PARTIAL#`, the file assumes that from the top of the file down to the last line will be replaced in the source repo if it exists, otherwise it is just added verbatim
+* If it contains `#REPOSITORY_MATCH` then the provided repos are used as a subsetting filter, i.e `#REPOSITORY_MATCH repo1,repo2,repo3 #` will match 3 repos names repo1 repo2 repo3, all other repos will be ignored for said file
 * If none of these apply it simply is added.
 * If a file is removed from `.github/workflows/distributions` a pr is created to remove it
 

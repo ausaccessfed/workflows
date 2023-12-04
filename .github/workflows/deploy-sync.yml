@@ -161,12 +161,12 @@ jobs:
           IMAGE_TAG=$(echo "$IMAGE_TAG" | tr / _)
           echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_OUTPUT
 
-      - uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v4.1.0
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           ref: ${{ steps.env1.outputs.BRANCH_NAME }}
 
       - name: Checkout reusable workflow dir
-        uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v4.1.0
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           repository: ausaccessfed/workflows
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -182,7 +182,7 @@ jobs:
 
       - name: Login to Amazon ECR
         id: login-ecr
-        uses: aws-actions/amazon-ecr-login@2f9f10ea3fa2eed41ac443fee8bfbd059af2d0a4 # v1.6.0
+        uses: aws-actions/amazon-ecr-login@5a88a04c91d5c6f97aae0d9be790e64d9b1d47b7 # v1.7.1
 
       - name: set more envs
         id: env2
@@ -230,7 +230,7 @@ jobs:
 
       - name: Set up QEMU
         if: steps.env2.outputs.USE_BUILDX == 'true'
-        uses: docker/setup-qemu-action@27d0a4f181a40b142cce983c5393082c365d1480 # v1.2.0
+        uses: docker/setup-qemu-action@68827325e0b33c7199eb31dd4e31fbe9023e06e3 # v3.0.0
 
       - name: Set up Docker Buildx
         if: steps.env2.outputs.USE_BUILDX == 'true'
