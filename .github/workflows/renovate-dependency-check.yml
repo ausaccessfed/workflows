@@ -59,8 +59,7 @@ jobs:
           LOG_LEVEL=$([ "${{ inputs.logLevel }}" == "" ] && echo "info" || echo "${{ inputs.logLevel }}")
           echo "LOG_LEVEL=$LOG_LEVEL" >> $GITHUB_OUTPUT
 
-          ALL_REPOS=$(echo '${{vars.RENOVATE_REPOSITORIES}}' | sed s/'"ausaccessfed\/aaf-terraform",'//)
-          REPOSITORIES=$([ "${{ inputs.repository }}" != "" ] && echo '["${{ inputs.repository }}"]' || echo $ALL_REPOS )
+          REPOSITORIES=$([ "${{ inputs.repository }}" != "" ] && echo '["${{ inputs.repository }}"]' || echo '${{vars.RENOVATE_REPOSITORIES}}' )
           echo "REPOSITORIES=$REPOSITORIES" >> $GITHUB_OUTPUT
 
       - name: Renovate
