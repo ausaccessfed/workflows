@@ -115,7 +115,7 @@ const deleteBranch = async ({ repo, branch }) => {
   return result
 }
 
-const handlePartial = ({ currentContent, newContent: newContentF }) => {
+const handlePartial = ({ currentContentBase64, newContent: newContentF }) => {
   let newContent = newContentF
   const isPartial = CONSTANTS.regex.partial.test(newContent)
 
@@ -123,7 +123,8 @@ const handlePartial = ({ currentContent, newContent: newContentF }) => {
     //  remove partial flag and blank newline at end of template
     newContent = newContent.replace(CONSTANTS.regex.partial, '').replace(/\n$/, '')
 
-    if (currentContent) {
+    if (currentContentBase64) {
+      const currentContent = base64TextToUtf8(currentContentBase64)
       const newContentLines = newContent.split('\n')
 
       let endLineReplacement = null
@@ -195,9 +196,7 @@ const updateFileTreeObject = async ({ baseBranch, repo, parsedFile }) => {
     newContent = newContent.replace(CONSTANTS.regex.once, '')
   }
 
-  if (currentContentBase64) {
-    newContent = handlePartial({ currentContent: base64TextToUtf8(currentContentBase64), newContent })
-  }
+  newContent = handlePartial({ currentContentBase64, newContent })
 
   return {
     path: prFilePath,
