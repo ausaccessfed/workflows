@@ -87,6 +87,9 @@ on:
       production_environments:
         default: 'test,production'
         type: string
+      save_test_artifacts:
+        default: false
+        type: boolean
     secrets:
       DOCKER_ECR:
         required: true
@@ -404,6 +407,18 @@ jobs:
             cat task_${NUMBER}_error.txt
             exit 1
           fi
+
+      - name: zip artifacts
+        if: always() && steps.env1.outputs.IS_DEFAULT_BRANCH_PUSH != 'true' && inputs.save_test_artifacts
+        #  TODO: adjust this to support more than 1 folder at some point (getting capybara/puppeteer results for now)
+        # TODO: for now it assumes the test run will mount /tmp/screenshots (see puppeteer for example)
+        run: |
+          zip -r screenshots.zip /tmp/screenshots
+      - uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3.1.3
+        if: always() && steps.env1.outputs.IS_DEFAULT_BRANCH_PUSH != 'true' && inputs.save_test_artifacts
+        with:
+          name: failed_images
+          path: screenshots.zip
 
       - name: Run Image lint on production image
         run: |
