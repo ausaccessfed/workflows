@@ -208,7 +208,7 @@ jobs:
           echo "IMAGE_SCANNER_IMAGE_ID_TAG=$ECR_REGISTRY/image-scanner:latest" >> $GITHUB_OUTPUT
 
           VERSION=$(${{ inputs.version_command }})
-          BASE_IMAGE="${{ secrets.DOCKER_ECR }}ruby-base:${VERSION}"
+          BASE_IMAGE="${{ secrets.DOCKER_ECR }}/ruby-base:${VERSION}"
           echo "BASE_IMAGE=$BASE_IMAGE" >> $GITHUB_OUTPUT
 
           # Strip git ref prefix from version
