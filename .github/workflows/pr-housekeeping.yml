@@ -15,6 +15,9 @@ jobs:
       GITHUB_TOKEN: ${{secrets.REPO_SCOPED_TOKEN}}
     name: 'PR housekeeping'
     steps:
+      - name: wait for labels
+        run: |
+          sleep 30
       - uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
         with:
           github-token: ${{secrets.REPO_SCOPED_TOKEN}}
@@ -46,8 +49,6 @@ jobs:
             });
 
             const titleRegex = new RegExp(/.*upgrade|updating.*/,"i")
-            console.log("automerges?")
-            console.log(actor_id == "118229371" && actor == "aaf-terraform" && titleRegex.test(title))
             if (actor_id == "118229371" && actor == "aaf-terraform" && titleRegex.test(title)) {
                 // Sadly the rest api does not support enableAutomerge
                 const mutation = `mutation($pullRequestId:ID!, $mergeMethod:PullRequestMergeMethod) {
@@ -59,11 +60,6 @@ jobs:
                 await github.graphql(mutation, {
                     pullRequestId: node_id, mergeMethod: "SQUASH"
                 })
-
-                console.log("autoapproves?")
-                console.log(labelNames)
-                console.log(allowedLabels)
-                console.log(labelNames.some(item => allowedLabels.includes(item)))
 
                 //If anything is common between the two list of labels auto approve
                 if (labelNames.some(item => allowedLabels.includes(item))) {
