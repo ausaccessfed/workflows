@@ -46,6 +46,8 @@ jobs:
             });
 
             const titleRegex = new RegExp(/.*upgrade|updating.*/,"i")
+            console.log("automerges?")
+            console.log(actor_id == "118229371" && actor == "aaf-terraform" && titleRegex.test(title))
             if (actor_id == "118229371" && actor == "aaf-terraform" && titleRegex.test(title)) {
                 // Sadly the rest api does not support enableAutomerge
                 const mutation = `mutation($pullRequestId:ID!, $mergeMethod:PullRequestMergeMethod) {
@@ -57,6 +59,11 @@ jobs:
                 await github.graphql(mutation, {
                     pullRequestId: node_id, mergeMethod: "SQUASH"
                 })
+
+                console.log("autoapproves?")
+                console.log(labelNames)
+                console.log(allowedLabels)
+                console.log(labelNames.some(item => allowedLabels.includes(item)))
 
                 //If anything is common between the two list of labels auto approve
                 if (labelNames.some(item => allowedLabels.includes(item))) {
