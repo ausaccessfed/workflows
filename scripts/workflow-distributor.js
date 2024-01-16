@@ -7,7 +7,8 @@ const CONSTANTS = {
   regex: {
     once: /#ONCE#(\n)*/,
     partial: /#PARTIAL#(\n)*/,
-    repository: /#REPOSITORY_MATCH.*#(\n)*/
+    repositoryMatch: /#REPOSITORY_MATCH.*#(\n)*/,
+    repositoryExclusion: /#REPOSITORY_EXCLUSION_MATCH.*#(\n)*/
   },
   cacheFilePath: '.cachedFiles',
   prBranchName: 'feature/distribution_updates'
@@ -141,7 +142,10 @@ const handlePartial = ({ currentContentBase64, newContent: newContentF }) => {
       } else {
         const currentContentLines = currentContent.split('\n')
         const linesToBeAdded = currentContentLines
-          .filter((currentContentLine) => !newContentLines.includes(currentContentLine))
+          .filter(
+            (currentContentLine) =>
+              !newContentLines.includes(currentContentLine) && endLineReplacement !== currentContentLine
+          )
           .join('\n')
 
         newContent += `\n${linesToBeAdded}`
@@ -188,8 +192,7 @@ const updateFileTreeObject = async ({ baseBranch, repo, parsedFile }) => {
     data: { content: currentContentBase64 }
   } = await getFile({ repo, path: prFilePath, ref: baseBranch })
 
-  const isRepositorySpecific = CONSTANTS.regex.repository.test(newContent)
-  if (isRepositorySpecific) {
+  if (CONSTANTS.regex.repositoryMatch.test(newContent)) {
     // #REPOSITORY_MATCH discovery-service,ecr-retagger #
     // to
     // ["discovery-service","ecr-retagger"]
@@ -199,7 +202,20 @@ const updateFileTreeObject = async ({ baseBranch, repo, parsedFile }) => {
       //  If repo isnt in list then we dont care
       return null
     }
-    newContent = newContent.replace(CONSTANTS.regex.repository, '')
+    newContent = newContent.replace(CONSTANTS.regex.repositoryMatch, '')
+  }
+
+  if (CONSTANTS.regex.repositoryExclusion.test(newContent)) {
+    // #REPOSITORY_EXCLUSION_MATCH discovery-service,ecr-retagger #
+    // to
+    // ["discovery-service","ecr-retagger"]
+    const repoSplits = newContent.split('REPOSITORY_EXCLUSION_MATCH')[1].split('#')[0].trim().split(',')
+    const shouldntBeAdded = repoSplits.includes(repo)
+    if (shouldntBeAdded) {
+      //  If repo is in list then we dont care
+      return null
+    }
+    newContent = newContent.replace(CONSTANTS.regex.repositoryExclusion, '')
   }
 
   const isOnceFile = CONSTANTS.regex.once.test(newContent)
@@ -268,12 +284,6 @@ const createPR = async ({ repo, tree, baseBranch }) => {
       body: message
     })
   }
-}
-
-const processRepositorySpecificFlag = ({ parsedFile, repo }) => {
-  const { newContent } = parsedFile
-
-  return parsedFile
 }
 
 const run = async ({ github, signature, context, repositories, fs, glob, gpgPrivateKey, gpgPrivateKeyPassword }) => {
