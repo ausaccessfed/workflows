@@ -209,7 +209,7 @@ const updateFileTreeObject = async ({ baseBranch, repo, parsedFile }) => {
     const repoSplits = newContent.split('REPOSITORY_EXCLUSION_MATCH')[1].split('#')[0].trim().split(',')
     const shouldntBeAdded = repoSplits.includes(repo)
     if (shouldntBeAdded) {
-      //  If repo isnt in list then we dont care
+      //  If repo is in list then we dont care
       return null
     }
     newContent = newContent.replace(CONSTANTS.regex.repositoryExclusion, '')
