@@ -142,7 +142,10 @@ const handlePartial = ({ currentContentBase64, newContent: newContentF }) => {
       } else {
         const currentContentLines = currentContent.split('\n')
         const linesToBeAdded = currentContentLines
-          .filter((currentContentLine) => !newContentLines.includes(currentContentLine))
+          .filter(
+            (currentContentLine) =>
+              !newContentLines.includes(currentContentLine) && endLineReplacement !== currentContentLine
+          )
           .join('\n')
 
         newContent += `\n${linesToBeAdded}`
