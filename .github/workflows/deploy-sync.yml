@@ -208,6 +208,7 @@ jobs:
           echo "IMAGE_SCANNER_IMAGE_ID_TAG=$ECR_REGISTRY/image-scanner:latest" >> $GITHUB_OUTPUT
 
           VERSION=$(${{ inputs.version_command }})
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
           BASE_IMAGE="${{ secrets.DOCKER_ECR }}ruby-base:${VERSION}"
           echo "BASE_IMAGE=$BASE_IMAGE" >> $GITHUB_OUTPUT
 
@@ -254,7 +255,7 @@ jobs:
         id: build-test
         run: |
           BUILD_TEST_COMMAND=""
-          COMMON="--target development --build-arg BUILDKIT_INLINE_CACHE=1 --build-arg BASE_IMAGE=${{ steps.env2.outputs.BASE_IMAGE }}  --cache-from ${{ steps.env2.outputs.CACHE_IMAGE_ID_TAG }} "
+          COMMON="--target development --build-arg BUILDKIT_INLINE_CACHE=1 --build-arg VERSION=${{ steps.env2.outputs.VERSION }} --build-arg BASE_IMAGE=${{ steps.env2.outputs.BASE_IMAGE }}  --cache-from ${{ steps.env2.outputs.CACHE_IMAGE_ID_TAG }} "
 
           if [ "${{ steps.env2.outputs.USE_BUILDX }}" == "true" ]; then
             BUILD_TEST_COMMAND="docker buildx build --platform=${{ inputs.platforms }} $COMMON -t ${{ steps.env2.outputs.CACHE_IMAGE_ID_TAG }} -t ${{ steps.env2.outputs.LOCAL_CACHE_IMAGE_ID_TAG }} ."
