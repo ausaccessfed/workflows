@@ -31,6 +31,10 @@ on:
       version_command:
         default: 'cat .ruby-version'
         type: string
+      ## used to allow for custom "latest" tags i.e ruby-base so we can tag with 3.2.2 or 3.3
+      latest_image_tag:
+        default: 'latest'
+        type: string
       ## if not set defaults to ecr_repository
       projects:
         default: ''
@@ -219,7 +223,7 @@ jobs:
 
           echo "PRODUCTION_IMAGE_ID_TAG=$IMAGE_ID:${{ steps.env1.outputs.IMAGE_TAG }}" >> $GITHUB_OUTPUT
 
-          echo "LATEST_IMAGE_ID_TAG=$IMAGE_ID:latest" >> $GITHUB_OUTPUT
+          echo "LATEST_IMAGE_ID_TAG=$IMAGE_ID:${{ inputs.latest_image_tag }}" >> $GITHUB_OUTPUT
 
           echo "CACHE_IMAGE_ID_TAG=$IMAGE_ID:cache" >> $GITHUB_OUTPUT
 
