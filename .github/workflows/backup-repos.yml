@@ -1,7 +1,9 @@
 name: "Backup all repositories"
 on:
   schedule:
-    - cron: "0 0 * * *"
+    # Our Recovery Point Objective (RPO) is four hours.
+    # Back up every three hours to give us some extra breathing room on top of that.
+    - cron: "0 */3 * * *"
 jobs:
   backup-repos:
     runs-on: ubuntu-latest
