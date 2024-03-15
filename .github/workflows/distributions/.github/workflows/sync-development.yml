@@ -1,5 +1,5 @@
 #PARTIAL#
-#REPOSITORY_MATCH discovery-service,federationmanager,metadata-distribution,oidc_relying_party_example,rapid-connector,rapid-idp-manager,reporting-service,shib-sp,validator-service,verifid #
+#REPOSITORY_MATCH discovery-service,federationmanager,oidc_relying_party_example,rapid-connector,rapid-idp-manager,reporting-service,shib-sp,validator-service,verifid #
 name: Sync development
 on:
   workflow_dispatch:

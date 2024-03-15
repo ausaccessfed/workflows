@@ -15,7 +15,6 @@ on:
           - 'ausaccessfed/image-scanner'
           - 'ausaccessfed/kubeval-tools'
           - 'ausaccessfed/lambda-promtail'
-          - 'ausaccessfed/metadata-distribution'
           - 'ausaccessfed/oidc_relying_party_example'
           - 'ausaccessfed/publish_app'
           - 'ausaccessfed/puppeteer-tester'
