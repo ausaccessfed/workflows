@@ -553,10 +553,10 @@ eslint-plugin-prettier@5.1.3:
     prettier-linter-helpers "^1.0.0"
     synckit "^0.8.6"
 
-eslint-plugin-yml@1.13.1:
-  version "1.13.1"
-  resolved "https://registry.yarnpkg.com/eslint-plugin-yml/-/eslint-plugin-yml-1.13.1.tgz#c5950d5c88cf03d8c92e382f1b5a8e0f04fbc618"
-  integrity sha512-J1gNca5cWUIlo6ilQJBlPwap2ggVuc7gaOxiCdYjmncyWN8aNHErEhk2ICFj6shr8Jz27c3AU1Ie7i6HqVa4Hw==
+eslint-plugin-yml@1.13.2:
+  version "1.13.2"
+  resolved "https://registry.yarnpkg.com/eslint-plugin-yml/-/eslint-plugin-yml-1.13.2.tgz#e4ef9a3316da3fc1cb35919c43ca9d1fe12e220a"
+  integrity sha512-1i71VhmsG5UxE41rIJmJjhlTTxYy7upAY5Hqj8AdBc7rfJzRIZr3a2spuOS8+N7ZDCWsHAWY3J6lzQNQHDv6Uw==
   dependencies:
     debug "^4.3.2"
     eslint-compat-utils "^0.5.0"
