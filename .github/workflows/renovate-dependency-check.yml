@@ -26,6 +26,10 @@ on:
           - 'ausaccessfed/validator-service'
           - 'ausaccessfed/verifid'
           - 'ausaccessfed/workflows'
+          - 'ausaccessfed/rapid-idp-2step-auth'
+          - 'ausaccessfed/rapid-idp-discovery'
+          - 'ausaccessfed/rapid-idp-eduperson-attributes'
+          - 'ausaccessfed/rapid-idp-login-module'
       forceRecreate:
         description: 'If you should crecreate all prs (this is break glass)'
         type: boolean
