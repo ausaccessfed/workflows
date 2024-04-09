@@ -46,6 +46,18 @@ on:
       runner:
         default: 'ubuntu-latest'
         type: string
+      development_environments:
+        default: 'development'
+        type: string
+      test_environments:
+        default: ''
+        type: string
+      production_environments:
+        default: 'test,production'
+        type: string
+      save_test_artifacts:
+        default: false
+        type: boolean
       extra_task_1_name:
         default: 'N/A'
         type: string
@@ -82,18 +94,30 @@ on:
       extra_task_6:
         default: ''
         type: string
-      development_environments:
-        default: 'development'
+      extra_task_7_name:
+        default: 'N/A'
         type: string
-      test_environments:
+      extra_task_7:
         default: ''
         type: string
-      production_environments:
-        default: 'test,production'
+      extra_task_8_name:
+        default: 'N/A'
         type: string
-      save_test_artifacts:
-        default: false
-        type: boolean
+      extra_task_8:
+        default: ''
+        type: string
+      extra_task_9_name:
+        default: 'N/A'
+        type: string
+      extra_task_9:
+        default: ''
+        type: string
+      extra_task_10_name:
+        default: 'N/A'
+        type: string
+      extra_task_10:
+        default: ''
+        type: string
     secrets:
       DOCKER_ECR:
         required: true
@@ -406,6 +430,50 @@ jobs:
         if: steps.env1.outputs.IS_SLASH_DEPLOY == 'false' && inputs.extra_task_6 != '' && always()
         env:
           NUMBER: 6
+        run: |
+          cat task_${NUMBER}.txt || echo "no output"
+          if [ -f task_${NUMBER}_error.txt ]; then
+            cat task_${NUMBER}_error.txt
+            exit 1
+          fi
+      - name: ${{ inputs.extra_task_7_name }} Result
+        id: extra-task-7
+        if: steps.env1.outputs.IS_SLASH_DEPLOY == 'false' && inputs.extra_task_7 != '' && always()
+        env:
+          NUMBER: 7
+        run: |
+          cat task_${NUMBER}.txt || echo "no output"
+          if [ -f task_${NUMBER}_error.txt ]; then
+            cat task_${NUMBER}_error.txt
+            exit 1
+          fi
+      - name: ${{ inputs.extra_task_8_name }} Result
+        id: extra-task-8
+        if: steps.env1.outputs.IS_SLASH_DEPLOY == 'false' && inputs.extra_task_8 != '' && always()
+        env:
+          NUMBER: 8
+        run: |
+          cat task_${NUMBER}.txt || echo "no output"
+          if [ -f task_${NUMBER}_error.txt ]; then
+            cat task_${NUMBER}_error.txt
+            exit 1
+          fi
+      - name: ${{ inputs.extra_task_9_name }} Result
+        id: extra-task-9
+        if: steps.env1.outputs.IS_SLASH_DEPLOY == 'false' && inputs.extra_task_9 != '' && always()
+        env:
+          NUMBER: 9
+        run: |
+          cat task_${NUMBER}.txt || echo "no output"
+          if [ -f task_${NUMBER}_error.txt ]; then
+            cat task_${NUMBER}_error.txt
+            exit 1
+          fi
+      - name: ${{ inputs.extra_task_10_name }} Result
+        id: extra-task-10
+        if: steps.env1.outputs.IS_SLASH_DEPLOY == 'false' && inputs.extra_task_10 != '' && always()
+        env:
+          NUMBER: 10
         run: |
           cat task_${NUMBER}.txt || echo "no output"
           if [ -f task_${NUMBER}_error.txt ]; then
