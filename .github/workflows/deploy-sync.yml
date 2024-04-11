@@ -380,7 +380,7 @@ jobs:
           if [ -f task_${NUMBER}_error.txt ]; then
             cat task_${NUMBER}_error.txt
             exit 1
-          fi
+          fi 
       - name: ${{ inputs.extra_task_2_name }} Result
         id: extra-task-2
         if: steps.env1.outputs.IS_SLASH_DEPLOY == 'false' && inputs.extra_task_2 != '' && always()
