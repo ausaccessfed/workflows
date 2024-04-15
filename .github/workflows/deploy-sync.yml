@@ -337,6 +337,10 @@ jobs:
             export EXTRA_TASK_4='${{ inputs.extra_task_4 }}'
             export EXTRA_TASK_5='${{ inputs.extra_task_5 }}'
             export EXTRA_TASK_6='${{ inputs.extra_task_6 }}'
+            export EXTRA_TASK_7='${{ inputs.extra_task_7 }}'
+            export EXTRA_TASK_8='${{ inputs.extra_task_8 }}'
+            export EXTRA_TASK_9='${{ inputs.extra_task_9 }}'
+            export EXTRA_TASK_10='${{ inputs.extra_task_10 }}'
           fi
 
           IMAGE_SCANNER_EXTRAS=""
