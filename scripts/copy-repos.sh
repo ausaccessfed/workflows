@@ -19,7 +19,6 @@ for i in "${items[@]}"; do
         echo "Repo not found cloning $repo"
         git clone -b "$defaultBranchRef" "https://${GH_TOKEN}@github.com/ausaccessfed/${repo}.git" "$repoFolder"
     fi
-    pwd
     echo "backing up $repo"
     cd "$repoFolder" || exit
     zip -qr "../zips/$repo.zip" .
