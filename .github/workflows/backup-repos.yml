@@ -1,8 +1,9 @@
 name: 'Backup all repositories'
 on:
-  push:
-    branches:
-      - feature/reafactor-backup
+  # change branch to run in a pr
+  # push:
+  #   branches:
+  #     - feature/reafactor-backup
   schedule:
     # Our Recovery Point Objective (RPO) is four hours.
     # Back up every three hours to give us some extra breathing room on top of that.
@@ -24,6 +25,14 @@ jobs:
           aws-region: ap-southeast-2
           role-to-assume: ${{ secrets.ROLE }}
           role-session-name: GithubActions-workflows-ci
+
+      - name: restore backup directory
+        uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
+        with:
+          path: tmp
+          key: ${{ runner.os }}-backup-${{ hashFiles('**') }}
+          restore-keys: |
+            ${{ runner.os }}-backup-
 
       - name: Backup
         run: |
