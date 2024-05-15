@@ -21,6 +21,7 @@ for i in "${items[@]}"; do
     done
 done
 
+find $dir -type f -size 0 -delete
 expected=$(wc -w <<<"${items[@]}")
 actual=$(ls -1 $dir | wc -l)
 aws s3 sync $dir s3://aaf-archived-repositories
