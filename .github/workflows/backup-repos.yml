@@ -25,3 +25,11 @@ jobs:
       - name: Backup
         run: |
           bash ./scripts/copy-repos.sh "${{ secrets.ALL_REPO_SCOPED_TOKEN }}"
+
+      - name: Cache backup directory
+        uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
+        with:
+          path: tmp
+          key: ${{ runner.os }}-backup-${{ hashFiles('**') }}
+          restore-keys: |
+            ${{ runner.os }}-backup-
