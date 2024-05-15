@@ -22,7 +22,7 @@ for i in "${items[@]}"; do
     pwd
     echo "backing up $repo"
     cd "$repoFolder" || exit
-    zip -r "../zips/$repo.zip" .
+    zip -qr "../zips/$repo.zip" .
     cd - || exit
 done
 
