@@ -63,7 +63,14 @@ module.exports = {
       depTypeTemplate: 'yum',
       versioningTemplate: 'loose',
       registryUrlTemplate: "https://yum2npm.io/repos/{{replace '/' '/modules/' registryUrl}}/packages"
-    }
+    },
+    {
+      fileMatch: ['\\.tf$'],
+      matchStrings: [
+        '.*repository.*"(?<registryUrl>[a-z].*)\".*\n.*chart.*"(?<depName>[a-z].*)\".*\n.*version.*"(?<currentValue>[^"].*)\"',
+      ],
+      datasourceTemplate: 'helm',
+    },
   ],
   packageRules: [
     {
@@ -90,6 +97,9 @@ module.exports = {
       matchPackagePatterns: ['eslint', 'prettier'],
       groupName: 'lint',
       addLabels: ['devDependencies']
+    },
+    {
+      "matchFileNames": ['helm/**'], addLabels: ["helm"]
     },
     { matchFileNames: ['Dockerfile'], addLabels: ['dockerDependencies'] },
     { matchDepTypes: ['development'], addLabels: ['devDependencies'] },
