@@ -37,7 +37,7 @@ module.exports = {
     {
       customType: 'regex',
       description: 'Update Kubernetes version for Amazon EKS',
-      fileMatch: ['.+\\.tf$'],
+      fileMatch: ['layer-2/modules/eks/main\\.tf$'],
       matchStrings: [
         '\\s*#\\s*renovate:\\s*datasource=(?<datasource>[^\\s]+)\\s*depName=(?<depName>.*?)( versioning=(?<versioning>.*?))?\\s.*?_version\\s*=\\s*"(?<currentValue>.*)"'
       ],
@@ -65,7 +65,7 @@ module.exports = {
       registryUrlTemplate: "https://yum2npm.io/repos/{{replace '/' '/modules/' registryUrl}}/packages"
     },
     {
-      fileMatch: ['\\.tf$'],
+      fileMatch: ['helm/**/local.*\\.tf$'],
       matchStrings: [
         '.*repository.*"(?<registryUrl>[a-z].*)\".*\n.*chart.*"(?<depName>[a-z].*)\".*\n.*version.*"(?<currentValue>[^"].*)\"',
       ],
