@@ -65,6 +65,7 @@ module.exports = {
       registryUrlTemplate: "https://yum2npm.io/repos/{{replace '/' '/modules/' registryUrl}}/packages"
     },
     {
+      customType: 'regex',
       fileMatch: ['helm/**/local.*\\.tf$'],
       matchStrings: [
         '.*repository.*"(?<registryUrl>[a-z].*)\".*\n.*chart.*"(?<depName>[a-z].*)\".*\n.*version.*"(?<currentValue>[^"].*)\"',
