@@ -68,7 +68,7 @@ module.exports = {
       customType: 'regex',
       fileMatch: ['helm/.*local.*\\.tf$'],
       matchStrings: [
-        '.*repository.*"(?<registryUrl>[a-z].*)\".*\n.*chart.*"(?<depName>[a-z].*)\".*\n.*version.*"(?<currentValue>[^"].*)\"',
+        '.*repository.*"(?<registryUrl>[a-z].*)\".*\n.*chart.*"(?<depName>[a-z].*)\".*\n.*version.*"(?<currentValue>.*)\"',
       ],
       datasourceTemplate: 'helm',
     },
