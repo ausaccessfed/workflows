@@ -247,6 +247,8 @@ jobs:
 
           echo "PRODUCTION_IMAGE_ID_TAG=$IMAGE_ID:${{ steps.env1.outputs.IMAGE_TAG }}" >> $GITHUB_OUTPUT
 
+          echo "SIMPLE_PRODUCTION_IMAGE_ID_TAG=${{ inputs.ecr_repository }}:${{ steps.env1.outputs.IMAGE_TAG }}" >> $GITHUB_OUTPUT
+
           echo "LATEST_IMAGE_ID_TAG=$IMAGE_ID:${{ inputs.latest_image_tag }}" >> $GITHUB_OUTPUT
 
           echo "CACHE_IMAGE_ID_TAG=$IMAGE_ID:cache" >> $GITHUB_OUTPUT
@@ -311,7 +313,7 @@ jobs:
         id: build-production
         run: |
           BUILD_PRODUCTION_COMMAND=""
-          COMMON="--target production --build-arg BUILDKIT_INLINE_CACHE=1 --build-arg RUBY_VERSION=${{ steps.env2.outputs.RUBY_VERSION }} --build-arg RELEASE_VERSION=${{ steps.env1.outputs.IMAGE_TAG }} --build-arg BASE_IMAGE=${{ steps.env2.outputs.BASE_IMAGE }}  --cache-from ${{ steps.env2.outputs.CACHE_IMAGE_ID_TAG }} -t ${{ steps.env2.outputs.PRODUCTION_IMAGE_ID_TAG }} -t ${{ steps.env2.outputs.LATEST_IMAGE_ID_TAG }}"
+          COMMON="--target production --build-arg BUILDKIT_INLINE_CACHE=1 --build-arg RUBY_VERSION=${{ steps.env2.outputs.RUBY_VERSION }} --build-arg RELEASE_VERSION=${{ steps.env1.outputs.IMAGE_TAG }} --build-arg BASE_IMAGE=${{ steps.env2.outputs.BASE_IMAGE }}  --cache-from ${{ steps.env2.outputs.CACHE_IMAGE_ID_TAG }} -t ${{ steps.env2.outputs.PRODUCTION_IMAGE_ID_TAG }} -t ${{ steps.env2.outputs.SIMPLE_PRODUCTION_IMAGE_ID_TAG }} -t ${{ steps.env2.outputs.LATEST_IMAGE_ID_TAG }}"
           if [ "${{ steps.env2.outputs.USE_BUILDX }}" == "true" ]; then
             BUILD_PRODUCTION_COMMAND="docker buildx build --platform=${{ inputs.platforms }} $COMMON ."
           else
@@ -501,7 +503,7 @@ jobs:
         run: |
           ${{ steps.build-production.outputs.IMAGE_SCANNER_COMMON }} \
             ./scripts/lint \
-            ${{ steps.env2.outputs.PRODUCTION_IMAGE_ID_TAG }} \
+            ${{ steps.env2.outputs.SIMPLE_PRODUCTION_IMAGE_ID_TAG }} \
             /app/Dockerfile
 
       # TODO: master/main branch merges or monthly builds only for now
