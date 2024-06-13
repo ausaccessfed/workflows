@@ -203,12 +203,12 @@ jobs:
           ] && echo "true" || echo "false")
           echo "SHOULD_PUSH_IMAGE_TO_ECR=$SHOULD_PUSH_IMAGE_TO_ECR" >> $GITHUB_OUTPUT
 
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
         with:
           ref: ${{ steps.env1.outputs.BRANCH_NAME }}
 
       - name: Checkout reusable workflow dir
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
         with:
           repository: ausaccessfed/workflows
           token: ${{ secrets.GITHUB_TOKEN }}
