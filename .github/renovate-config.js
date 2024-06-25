@@ -36,13 +36,22 @@ module.exports = {
   customManagers: [
     {
       customType: 'regex',
-      description: 'Update Kubernetes version for Amazon EKS',
-      fileMatch: ['layer-2/modules/eks/main\\.tf$'],
+      description: 'Update EOF',
+      fileMatch: ['layer-2/modules/(eks|redis)/main\\.tf$'],
       matchStrings: [
         '\\s*#\\s*renovate:\\s*datasource=(?<datasource>[^\\s]+)\\s*depName=(?<depName>.*?)( versioning=(?<versioning>.*?))?\\s.*?_version\\s*=\\s*"(?<currentValue>.*)"'
       ],
       datasourceTemplate: 'endoflife-date',
       versioningTemplate: '{{#if versioning}}{{{versioning}}}{{/if}}'
+    },
+    {
+      description: "Update RDS",
+      customType: "regex",
+      fileMatch: ["layer-2/.*services\\.tf$"],
+      matchStrings: [
+        "\\s*#\\s*renovate:\\s*amiFilter=(?<lookupName>.+?) depName=(?<depName>.*) versioning=(?<versioning>.*)\\s*.*_version\\s*=\\s*\"(?<currentValue>.*)\""
+      ],
+      datasourceTemplate: "aws-rds"
     },
     {
       customType: 'regex',
@@ -83,6 +92,12 @@ module.exports = {
       matchDatasources: ['endoflife-date'],
       matchPackageNames: ['amazon-eks'],
       extractVersion: '^(?<version>.*)-eks.+$'
+    },
+
+    {
+      matchDatasources: ["endoflife-date"],
+      matchPackageNames: ["redis"],
+      extractVersion: "^(?<version>.*)\\..+$"
     },
     {
       matchDatasources: ['github-releases'],
