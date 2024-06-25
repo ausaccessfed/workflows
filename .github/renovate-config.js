@@ -31,7 +31,7 @@ module.exports = {
   prHourlyLimit: 0,
   prConcurrentLimit: 0,
   commitMessageAction: 'Upgrade',
-  commitMessageTopic: '{{packageName}}/{{depName}}',
+  commitMessageTopic: '{{depName}}',
   commitMessageExtra: '{{currentVersion}} -> {{newVersion}}',
   customManagers: [
     {
