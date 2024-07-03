@@ -132,7 +132,7 @@ jobs:
     if: inputs.event_name != 'issue_comment' || (contains(inputs.event_comment_body, '/deploy')  && contains(fromJSON(vars.ALLOWED_ACTORS), github.event.comment.user.login))
     services:
       mysql:
-        image: mysql:8
+        image: mysql:9
         env:
           MYSQL_ROOT_PASSWORD: password
         ports:
