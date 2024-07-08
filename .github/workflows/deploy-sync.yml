@@ -284,18 +284,18 @@ jobs:
           BUILD_TEST_COMMAND="docker buildx build --platform=${{ inputs.platforms }} $COMMON -t ${{ steps.env2.outputs.CACHE_IMAGE_ID_TAG }} -t ${{ steps.env2.outputs.LOCAL_CACHE_IMAGE_ID_TAG }} ."
 
           BUILD_PUSH_TEST_COMMAND="docker buildx build --push --platform=${{ inputs.platforms }} $COMMON -t ${{ steps.env2.outputs.CACHE_IMAGE_ID_TAG }} ."
-          echo "BUILD_PUSH_TEST_COMMAND=$BUILDX_PUSH_TEST_COMMAND" >> $GITHUB_OUTPUT
+          echo "BUILD_PUSH_TEST_COMMAND=$BUILD_PUSH_TEST_COMMAND" >> $GITHUB_OUTPUT
 
           ## Note this is only needed as buildx doesnt support --load with multiple platforms yet but is on roadmap
           ## if it is ever supported simply remove this and the "Load test oci image step" and add --load to the first BUILD_TEST_COMMAND
           BUILD_LOAD_TEST_COMMAND="docker buildx build --load $COMMON -t ${{ steps.env2.outputs.LOCAL_CACHE_IMAGE_ID_TAG }} ."
-          echo "BUILD_LOAD_TEST_COMMAND=$BUILDX_LOAD_TEST_COMMAND" >> $GITHUB_OUTPUT
+          echo "BUILD_LOAD_TEST_COMMAND=$BUILD_LOAD_TEST_COMMAND" >> $GITHUB_OUTPUT
 
           DOCKER_BUILDKIT=1 $BUILD_TEST_COMMAND
 
       - name: Load Test OCI Image
         id: load-test
-        run: $(${{ steps.build-test.outputs.BUILDX_LOAD_TEST_COMMAND }})
+        run: $(${{ steps.build-test.outputs.BUILD_LOAD_TEST_COMMAND }})
 
       - name: Build Production OCI Image and Run additional tasks
         id: build-production
@@ -305,12 +305,12 @@ jobs:
           BUILD_PRODUCTION_COMMAND="docker buildx build --platform=${{ inputs.platforms }} $COMMON ."
 
           BUILD_PUSH_PRODUCTION_COMMAND="docker buildx build --push --platform=${{ inputs.platforms }} $COMMON ."
-          echo "BUILD_PUSH_PRODUCTION_COMMAND=$BUILDX_PUSH_PRODUCTION_COMMAND" >> $GITHUB_OUTPUT
+          echo "BUILD_PUSH_PRODUCTION_COMMAND=$BUILD_PUSH_PRODUCTION_COMMAND" >> $GITHUB_OUTPUT
 
           ## Note this is only needed as buildx doesnt support --load with multiple platforms yet but is on roadmap
           ## if it is ever supported simply remove this and the "Load test oci image step" and add --load to the first BUILD_TEST_COMMAND
           BUILD_LOAD_PRODUCTION_COMMAND="docker buildx build --load $COMMON -t app:production ."
-          echo "BUILD_LOAD_PRODUCTION_COMMAND=$BUILDX_LOAD_PRODUCTION_COMMAND" >> $GITHUB_OUTPUT
+          echo "BUILD_LOAD_PRODUCTION_COMMAND=$BUILD_LOAD_PRODUCTION_COMMAND" >> $GITHUB_OUTPUT
 
           export BUILD_PRODUCTION_COMMAND="$BUILD_PRODUCTION_COMMAND"
 
@@ -348,7 +348,7 @@ jobs:
 
       - name: Load Production OCI Image
         id: load-production
-        run: $(${{ steps.build-production.outputs.BUILDX_LOAD_PRODUCTION_COMMAND }})
+        run: $(${{ steps.build-production.outputs.BUILD_LOAD_PRODUCTION_COMMAND }})
 
       - name: Build Production Result
         id: build-production-result
@@ -506,11 +506,11 @@ jobs:
       - name: Push to ECR
         if: steps.env1.outputs.SHOULD_PUSH_IMAGE_TO_ECR == 'true'
         run: |
-          export PRODUCTION_PUSH_COMMAND="${{ steps.build-production.outputs.BUILDX_PUSH_PRODUCTION_COMMAND }}"
+          export PRODUCTION_PUSH_COMMAND="${{ steps.build-production.outputs.BUILD_PUSH_PRODUCTION_COMMAND }}"
           export PRODUCTION_LATEST_PUSH_COMMAND="echo 'BUILDX doesnt do anything here'"
 
           if [ "${{steps.env1.outputs.IS_DEFAULT_CACHE_BRANCH_PUSH}}" == "true" ]; then
-            export CACHE_PUSH_COMMAND="${{ steps.build-test.outputs.BUILDX_PUSH_TEST_COMMAND }}"
+            export CACHE_PUSH_COMMAND="${{ steps.build-test.outputs.BUILD_PUSH_TEST_COMMAND }}"
           fi
 
           ./.github/reusable_workflow/scripts/push_images.sh
