@@ -39,9 +39,8 @@ on:
       projects:
         default: ''
         type: string
-      ## if not set will use docker build, if set will use buildx
       platforms:
-        default: ''
+        default: 'linux/amd64'
         type: string
       runner:
         default: 'ubuntu-latest'
@@ -272,59 +271,46 @@ jobs:
           echo "`date "+%Y-%m-%d %H:%M:%S"` REBUILD" >> .FORCE_NEW_DOCKER_BUILD
 
       - name: Set up QEMU
-        if: steps.env2.outputs.USE_BUILDX == 'true'
         uses: docker/setup-qemu-action@5927c834f5b4fdf503fca6f4c7eccda82949e1ee # v3.1.0
 
       - name: Set up Docker Buildx
-        if: steps.env2.outputs.USE_BUILDX == 'true'
         uses: docker/setup-buildx-action@4fd812986e6c8c2a69e18311145f9371337f27d4 # v3.4.0
 
       - name: Build Test OCI Image
         id: build-test
         run: |
-          BUILD_TEST_COMMAND=""
           COMMON="--target development --build-arg BUILDKIT_INLINE_CACHE=1 --build-arg RUBY_VERSION=${{ steps.env2.outputs.RUBY_VERSION }} --build-arg BASE_IMAGE=${{ steps.env2.outputs.BASE_IMAGE }}  --cache-from ${{ steps.env2.outputs.CACHE_IMAGE_ID_TAG }} "
 
-          if [ "${{ steps.env2.outputs.USE_BUILDX }}" == "true" ]; then
-            BUILD_TEST_COMMAND="docker buildx build --platform=${{ inputs.platforms }} $COMMON -t ${{ steps.env2.outputs.CACHE_IMAGE_ID_TAG }} -t ${{ steps.env2.outputs.LOCAL_CACHE_IMAGE_ID_TAG }} ."
-          else
-            docker pull ${{ steps.env2.outputs.CACHE_IMAGE_ID_TAG }} || echo "true"
-            BUILD_TEST_COMMAND="docker build $COMMON -t ${{ steps.env2.outputs.CACHE_IMAGE_ID_TAG }} -t ${{ steps.env2.outputs.LOCAL_CACHE_IMAGE_ID_TAG }} ."
-          fi
+          BUILD_TEST_COMMAND="docker buildx build --platform=${{ inputs.platforms }} $COMMON -t ${{ steps.env2.outputs.CACHE_IMAGE_ID_TAG }} -t ${{ steps.env2.outputs.LOCAL_CACHE_IMAGE_ID_TAG }} ."
 
-          BUILDX_PUSH_TEST_COMMAND="docker buildx build --push --platform=${{ inputs.platforms }} $COMMON -t ${{ steps.env2.outputs.CACHE_IMAGE_ID_TAG }} ."
-          echo "BUILDX_PUSH_TEST_COMMAND=$BUILDX_PUSH_TEST_COMMAND" >> $GITHUB_OUTPUT
+          BUILD_PUSH_TEST_COMMAND="docker buildx build --push --platform=${{ inputs.platforms }} $COMMON -t ${{ steps.env2.outputs.CACHE_IMAGE_ID_TAG }} ."
+          echo "BUILD_PUSH_TEST_COMMAND=$BUILDX_PUSH_TEST_COMMAND" >> $GITHUB_OUTPUT
 
           ## Note this is only needed as buildx doesnt support --load with multiple platforms yet but is on roadmap
           ## if it is ever supported simply remove this and the "Load test oci image step" and add --load to the first BUILD_TEST_COMMAND
-          BUILDX_LOAD_TEST_COMMAND="docker buildx build --load $COMMON -t ${{ steps.env2.outputs.LOCAL_CACHE_IMAGE_ID_TAG }} ."
-          echo "BUILDX_LOAD_TEST_COMMAND=$BUILDX_LOAD_TEST_COMMAND" >> $GITHUB_OUTPUT
+          BUILD_LOAD_TEST_COMMAND="docker buildx build --load $COMMON -t ${{ steps.env2.outputs.LOCAL_CACHE_IMAGE_ID_TAG }} ."
+          echo "BUILD_LOAD_TEST_COMMAND=$BUILDX_LOAD_TEST_COMMAND" >> $GITHUB_OUTPUT
 
           DOCKER_BUILDKIT=1 $BUILD_TEST_COMMAND
 
       - name: Load Test OCI Image
-        if: steps.env2.outputs.USE_BUILDX == 'true'
         id: load-test
         run: $(${{ steps.build-test.outputs.BUILDX_LOAD_TEST_COMMAND }})
 
       - name: Build Production OCI Image and Run additional tasks
         id: build-production
         run: |
-          BUILD_PRODUCTION_COMMAND=""
           COMMON="--target production --build-arg BUILDKIT_INLINE_CACHE=1 --build-arg RUBY_VERSION=${{ steps.env2.outputs.RUBY_VERSION }} --build-arg RELEASE_VERSION=${{ steps.env1.outputs.IMAGE_TAG }} --build-arg BASE_IMAGE=${{ steps.env2.outputs.BASE_IMAGE }}  --cache-from ${{ steps.env2.outputs.CACHE_IMAGE_ID_TAG }} -t ${{ steps.env2.outputs.PRODUCTION_IMAGE_ID_TAG }} -t ${{ steps.env2.outputs.LATEST_IMAGE_ID_TAG }}"
-          if [ "${{ steps.env2.outputs.USE_BUILDX }}" == "true" ]; then
-            BUILD_PRODUCTION_COMMAND="docker buildx build --platform=${{ inputs.platforms }} $COMMON ."
-          else
-            BUILD_PRODUCTION_COMMAND="docker build $COMMON ."
-          fi
 
-          BUILDX_PUSH_PRODUCTION_COMMAND="docker buildx build --push --platform=${{ inputs.platforms }} $COMMON ."
-          echo "BUILDX_PUSH_PRODUCTION_COMMAND=$BUILDX_PUSH_PRODUCTION_COMMAND" >> $GITHUB_OUTPUT
+          BUILD_PRODUCTION_COMMAND="docker buildx build --platform=${{ inputs.platforms }} $COMMON ."
+
+          BUILD_PUSH_PRODUCTION_COMMAND="docker buildx build --push --platform=${{ inputs.platforms }} $COMMON ."
+          echo "BUILD_PUSH_PRODUCTION_COMMAND=$BUILDX_PUSH_PRODUCTION_COMMAND" >> $GITHUB_OUTPUT
 
           ## Note this is only needed as buildx doesnt support --load with multiple platforms yet but is on roadmap
           ## if it is ever supported simply remove this and the "Load test oci image step" and add --load to the first BUILD_TEST_COMMAND
-          BUILDX_LOAD_PRODUCTION_COMMAND="docker buildx build --load $COMMON -t app:production ."
-          echo "BUILDX_LOAD_PRODUCTION_COMMAND=$BUILDX_LOAD_PRODUCTION_COMMAND" >> $GITHUB_OUTPUT
+          BUILD_LOAD_PRODUCTION_COMMAND="docker buildx build --load $COMMON -t app:production ."
+          echo "BUILD_LOAD_PRODUCTION_COMMAND=$BUILDX_LOAD_PRODUCTION_COMMAND" >> $GITHUB_OUTPUT
 
           export BUILD_PRODUCTION_COMMAND="$BUILD_PRODUCTION_COMMAND"
 
@@ -361,7 +347,6 @@ jobs:
           ./.github/reusable_workflow/scripts/additional_tasks.sh
 
       - name: Load Production OCI Image
-        if: steps.env2.outputs.USE_BUILDX == 'true'
         id: load-production
         run: $(${{ steps.build-production.outputs.BUILDX_LOAD_PRODUCTION_COMMAND }})
 
@@ -521,20 +506,11 @@ jobs:
       - name: Push to ECR
         if: steps.env1.outputs.SHOULD_PUSH_IMAGE_TO_ECR == 'true'
         run: |
-          if [ "${{ steps.env2.outputs.USE_BUILDX }}" == "true" ]; then
-            export PRODUCTION_PUSH_COMMAND="${{ steps.build-production.outputs.BUILDX_PUSH_PRODUCTION_COMMAND }}"
-            export PRODUCTION_LATEST_PUSH_COMMAND="echo 'BUILDX doesnt do anything here'"
-          else
-            export PRODUCTION_PUSH_COMMAND="docker push ${{ steps.env2.outputs.PRODUCTION_IMAGE_ID_TAG }}"
-            export PRODUCTION_LATEST_PUSH_COMMAND="docker push ${{ steps.env2.outputs.LATEST_IMAGE_ID_TAG }}"
-          fi
+          export PRODUCTION_PUSH_COMMAND="${{ steps.build-production.outputs.BUILDX_PUSH_PRODUCTION_COMMAND }}"
+          export PRODUCTION_LATEST_PUSH_COMMAND="echo 'BUILDX doesnt do anything here'"
 
           if [ "${{steps.env1.outputs.IS_DEFAULT_CACHE_BRANCH_PUSH}}" == "true" ]; then
-            if [ "${{ steps.env2.outputs.USE_BUILDX }}" == "true" ]; then
-              export CACHE_PUSH_COMMAND="${{ steps.build-test.outputs.BUILDX_PUSH_TEST_COMMAND }}"
-            else
-              export CACHE_PUSH_COMMAND="docker push ${{ steps.env2.outputs.CACHE_IMAGE_ID_TAG }}"
-            fi
+            export CACHE_PUSH_COMMAND="${{ steps.build-test.outputs.BUILDX_PUSH_TEST_COMMAND }}"
           fi
 
           ./.github/reusable_workflow/scripts/push_images.sh
