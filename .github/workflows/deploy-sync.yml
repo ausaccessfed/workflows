@@ -128,10 +128,22 @@ on:
         required: true
 jobs:
   run:
+    outputs:
+      ADHOC_OUTPUT: ${{ steps.failure-check.outputs.ADHOC_OUTPUT }}
+      ADHOC_URL: ${{ steps.failure-check.outputs.ADHOC_URL }}
+      ADHOC_STATUS: ${{ steps.failure-check.outputs.ADHOC_STATUS }}
+      head_sha: ${{ steps.comment-branch.outputs.head_sha }}
+      IS_SLASH_DEPLOY: ${{ steps.env1.outputs.IS_SLASH_DEPLOY }}
+      PUBLISH_APP_IMAGE_ID_TAG: ${{ steps.env2.outputs.PUBLISH_APP_IMAGE_ID_TAG }}
+      IMAGE_TAG: ${{ steps.env1.outputs.IMAGE_TAG }}
+      PROJECTS: ${{ steps.env2.outputs.PROJECTS }}
+      IS_DEFAULT_DEVELOPMENT_BRANCH_PUSH: ${{ steps.env1.outputs.IS_DEFAULT_DEVELOPMENT_BRANCH_PUSH }}
+      IS_MONTHLY_BUILD: ${{ steps.env1.outputs.IS_MONTHLY_BUILD }}
+      IS_DEFAULT_BRANCH_PUSH: ${{ steps.env1.outputs.IS_DEFAULT_BRANCH_PUSH }}
     strategy:
       matrix:
         arch: ${{ fromJSON(inputs.platforms) }}
-    runs-on: ${{ (matrix.arch == 'linux/amd64' && 'ubuntu-latest') || matrix.arch == 'linux/arm64' && 'arm64-4core' }}
+    runs-on: ${{ (matrix.arch == 'linux/amd64' && 'ubuntu-latest') || (matrix.arch == 'linux/arm64' && 'arm64-4core') }}
     name: run
     if: inputs.event_name != 'issue_comment' || (contains(inputs.event_comment_body, '/deploy')  && contains(fromJSON(vars.ALLOWED_ACTORS), github.event.comment.user.login))
     services:
@@ -514,41 +526,6 @@ jobs:
             fi
           fi
 
-      ## no point making the gitops repo triggers async, they will fight each other
-      ## and usually only 1 if statement is called anyway
-      - name: Update GitOps Repo to trigger deploys
-        if: inputs.production_environments != '' && (steps.env1.outputs.IS_DEFAULT_BRANCH_PUSH == 'true' || steps.env1.outputs.IS_MONTHLY_BUILD == 'true')
-        run: |
-          printenv > .envs
-           docker run --env-file .envs \
-           -e PROJECTS="${{ steps.env2.outputs.PROJECTS }}" \
-           -e IMAGE_TAG=${{ steps.env1.outputs.IMAGE_TAG }} \
-           -e ENVIRONMENTS="${{ inputs.production_environments }}" \
-           -e ECR_REPOSITORY="${{ inputs.ecr_repository }}" \
-           ${{ steps.env2.outputs.PUBLISH_APP_IMAGE_ID_TAG }}
-
-      - name: Update GitOps Repo to trigger deploys for test
-        if: inputs.test_environments != '' && steps.env1.outputs.IS_DEFAULT_DEVELOPMENT_BRANCH_PUSH == 'true'
-        run: |
-          printenv > .envs
-           docker run --env-file .envs \
-           -e PROJECTS="${{ steps.env2.outputs.PROJECTS }}" \
-           -e IMAGE_TAG=${{ steps.env1.outputs.IMAGE_TAG }} \
-           -e ENVIRONMENTS="${{ inputs.test_environments }}" \
-           -e ECR_REPOSITORY="${{ inputs.ecr_repository }}" \
-           ${{ steps.env2.outputs.PUBLISH_APP_IMAGE_ID_TAG }}
-
-      - name: Update GitOps Repo to trigger deploys for development
-        if: inputs.development_environments != '' && steps.env1.outputs.IS_SLASH_DEPLOY == 'true'
-        run: |
-          printenv > .envs
-           docker run --env-file .envs \
-           -e PROJECTS="${{ steps.env2.outputs.PROJECTS }}" \
-           -e IMAGE_TAG=${{ steps.env1.outputs.IMAGE_TAG }} \
-           -e ENVIRONMENTS="${{ inputs.development_environments }}" \
-           -e ECR_REPOSITORY="${{ inputs.ecr_repository }}" \
-           ${{ steps.env2.outputs.PUBLISH_APP_IMAGE_ID_TAG }}
-
       - name: check for failures
         id: failure-check
         if: steps.env1.outputs.IS_SLASH_DEPLOY == 'true' && always()
@@ -583,13 +560,53 @@ jobs:
               /repos/ausaccessfed/${{ inputs.ecr_repository }}/issues/comments/${{ inputs.event_comment_id }}
           fi
 
+  finish:
+    needs: [run]
+    name: 'Finish'
+    runs-on: ubuntu-latest
+    steps:
+      ## no point making the gitops repo triggers async, they will fight each other
+      ## and usually only 1 if statement is called anyway
+      - name: Update GitOps Repo to trigger deploys
+        if: inputs.production_environments != '' && (needs.run.outputs.IS_DEFAULT_BRANCH_PUSH == 'true' || needs.run.outputs.IS_MONTHLY_BUILD == 'true')
+        run: |
+          printenv > .envs
+           docker run --env-file .envs \
+           -e PROJECTS="${{ needs.run.outputs.PROJECTS }}" \
+           -e IMAGE_TAG=${{ needs.run.outputs.IMAGE_TAG }} \
+           -e ENVIRONMENTS="${{ inputs.production_environments }}" \
+           -e ECR_REPOSITORY="${{ inputs.ecr_repository }}" \
+           ${{ needs.run.outputs.PUBLISH_APP_IMAGE_ID_TAG }}
+
+      - name: Update GitOps Repo to trigger deploys for test
+        if: inputs.test_environments != '' && needs.run.outputs.IS_DEFAULT_DEVELOPMENT_BRANCH_PUSH == 'true'
+        run: |
+          printenv > .envs
+           docker run --env-file .envs \
+           -e PROJECTS="${{ needs.run.outputs.PROJECTS }}" \
+           -e IMAGE_TAG=${{ needs.run.outputs.IMAGE_TAG }} \
+           -e ENVIRONMENTS="${{ inputs.test_environments }}" \
+           -e ECR_REPOSITORY="${{ inputs.ecr_repository }}" \
+           ${{ needs.run.outputs.PUBLISH_APP_IMAGE_ID_TAG }}
+
+      - name: Update GitOps Repo to trigger deploys for development
+        if: inputs.development_environments != '' && needs.run.outputs.IS_SLASH_DEPLOY == 'true'
+        run: |
+          printenv > .envs
+           docker run --env-file .envs \
+           -e PROJECTS="${{ needs.run.outputs.PROJECTS }}" \
+           -e IMAGE_TAG=${{ needs.run.outputs.IMAGE_TAG }} \
+           -e ENVIRONMENTS="${{ inputs.development_environments }}" \
+           -e ECR_REPOSITORY="${{ inputs.ecr_repository }}" \
+           ${{ needs.run.outputs.PUBLISH_APP_IMAGE_ID_TAG }}
+
       - name: Set final commit status
-        if: steps.env1.outputs.IS_SLASH_DEPLOY == 'true' && always()
+        if: needs.run.outputs.IS_SLASH_DEPLOY == 'true' && always()
         uses: myrotvorets/set-commit-status-action@3730c0a348a2ace3c110851bed53331bc6406e9f # v2.0.1
         with:
-          sha: ${{ steps.comment-branch.outputs.head_sha }}
+          sha: ${{ needs.run.outputs.head_sha }}
           token: ${{ secrets.GITHUB_TOKEN }}
-          status: ${{ steps.failure-check.outputs.ADHOC_STATUS }}
-          targetUrl: ${{ steps.failure-check.outputs.ADHOC_URL }}
-          description: ${{ steps.failure-check.outputs.ADHOC_OUTPUT }}
+          status: ${{ needs.run.outputs.ADHOC_STATUS }}
+          targetUrl: ${{ needs.run.outputs.ADHOC_URL }}
+          description: ${{ needs.run.outputs.ADHOC_OUTPUT }}
           context: 'Dev federation deploy'
