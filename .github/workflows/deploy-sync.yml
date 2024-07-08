@@ -120,8 +120,6 @@ on:
         default: ''
         type: string
     secrets:
-      DOCKER_ECR:
-        required: true
       ROLE:
         required: true
       SNYK_TOKEN:
@@ -196,15 +194,18 @@ jobs:
           aws-region: ap-southeast-2
           role-to-assume: ${{ secrets.ROLE }}
           role-session-name: GithubActions-${{ inputs.ecr_repository }}-ci
+          mask-aws-account-id: 'false'
 
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@062b18b96a7aff071d4dc91bc00c4c1a7945b076 # v2.0.1
+        with:
+          mask-password: 'false'
 
       - name: set more envs
         id: env
         env:
-          ECR_REGISTRY: ${{ secrets.DOCKER_ECR }}
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         run: |
           IS_SLASH_DEPLOY=$([ "${{ inputs.event_name }}" == "issue_comment" ] && echo "true" || echo "false")
           echo "IS_SLASH_DEPLOY=$IS_SLASH_DEPLOY" >> $GITHUB_OUTPUT
@@ -247,7 +248,7 @@ jobs:
 
           RUBY_VERSION=$(${{ inputs.version_command }})
           echo "RUBY_VERSION=$RUBY_VERSION" >> $GITHUB_OUTPUT
-          BASE_IMAGE="${{ secrets.DOCKER_ECR }}ruby-base:${RUBY_VERSION}"
+          BASE_IMAGE="$ECR_REGISTRY/ruby-base:${RUBY_VERSION}"
           echo "BASE_IMAGE=$BASE_IMAGE" >> $GITHUB_OUTPUT
 
           # Strip git ref prefix from version
