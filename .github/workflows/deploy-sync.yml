@@ -279,38 +279,24 @@ jobs:
       - name: Build Test OCI Image
         id: build-test
         run: |
-          COMMON="--target development --build-arg BUILDKIT_INLINE_CACHE=1 --build-arg RUBY_VERSION=${{ steps.env2.outputs.RUBY_VERSION }} --build-arg BASE_IMAGE=${{ steps.env2.outputs.BASE_IMAGE }}  --cache-from ${{ steps.env2.outputs.CACHE_IMAGE_ID_TAG }} "
+          COMMON="docker buildx build --platform=${{ inputs.platforms }} --target development --build-arg BUILDKIT_INLINE_CACHE=1 --build-arg RUBY_VERSION=${{ steps.env2.outputs.RUBY_VERSION }} --build-arg BASE_IMAGE=${{ steps.env2.outputs.BASE_IMAGE }}  --cache-from ${{ steps.env2.outputs.CACHE_IMAGE_ID_TAG }} "
 
-          BUILD_TEST_COMMAND="docker buildx build --platform=${{ inputs.platforms }} $COMMON -t ${{ steps.env2.outputs.CACHE_IMAGE_ID_TAG }} -t ${{ steps.env2.outputs.LOCAL_CACHE_IMAGE_ID_TAG }} ."
+          BUILD_TEST_COMMAND="$COMMON --load -t ${{ steps.env2.outputs.CACHE_IMAGE_ID_TAG }} -t ${{ steps.env2.outputs.LOCAL_CACHE_IMAGE_ID_TAG }} ."
+          BUILD_PUSH_TEST_COMMAND="$COMMON --push  -t ${{ steps.env2.outputs.CACHE_IMAGE_ID_TAG }} ."
 
-          BUILD_PUSH_TEST_COMMAND="docker buildx build --push --platform=${{ inputs.platforms }} $COMMON -t ${{ steps.env2.outputs.CACHE_IMAGE_ID_TAG }} ."
           echo "BUILD_PUSH_TEST_COMMAND=$BUILD_PUSH_TEST_COMMAND" >> $GITHUB_OUTPUT
 
-          ## Note this is only needed as buildx doesnt support --load with multiple platforms yet but is on roadmap
-          ## if it is ever supported simply remove this and the "Load test oci image step" and add --load to the first BUILD_TEST_COMMAND
-          BUILD_LOAD_TEST_COMMAND="docker buildx build --load $COMMON -t ${{ steps.env2.outputs.LOCAL_CACHE_IMAGE_ID_TAG }} ."
-          echo "BUILD_LOAD_TEST_COMMAND=$BUILD_LOAD_TEST_COMMAND" >> $GITHUB_OUTPUT
-
           DOCKER_BUILDKIT=1 $BUILD_TEST_COMMAND
-
-      - name: Load Test OCI Image
-        id: load-test
-        run: $(${{ steps.build-test.outputs.BUILD_LOAD_TEST_COMMAND }})
 
       - name: Build Production OCI Image and Run additional tasks
         id: build-production
         run: |
-          COMMON="--target production --build-arg BUILDKIT_INLINE_CACHE=1 --build-arg RUBY_VERSION=${{ steps.env2.outputs.RUBY_VERSION }} --build-arg RELEASE_VERSION=${{ steps.env1.outputs.IMAGE_TAG }} --build-arg BASE_IMAGE=${{ steps.env2.outputs.BASE_IMAGE }}  --cache-from ${{ steps.env2.outputs.CACHE_IMAGE_ID_TAG }} -t ${{ steps.env2.outputs.PRODUCTION_IMAGE_ID_TAG }} -t ${{ steps.env2.outputs.LATEST_IMAGE_ID_TAG }}"
+          COMMON="docker buildx build --platform=${{ inputs.platforms }} --target production --build-arg BUILDKIT_INLINE_CACHE=1 --build-arg RUBY_VERSION=${{ steps.env2.outputs.RUBY_VERSION }} --build-arg RELEASE_VERSION=${{ steps.env1.outputs.IMAGE_TAG }} --build-arg BASE_IMAGE=${{ steps.env2.outputs.BASE_IMAGE }}  --cache-from ${{ steps.env2.outputs.CACHE_IMAGE_ID_TAG }} -t ${{ steps.env2.outputs.PRODUCTION_IMAGE_ID_TAG }} -t ${{ steps.env2.outputs.LATEST_IMAGE_ID_TAG }}"
 
-          BUILD_PRODUCTION_COMMAND="docker buildx build --platform=${{ inputs.platforms }} $COMMON ."
+          BUILD_PRODUCTION_COMMAND="$COMMON --load ."
+          BUILD_PUSH_PRODUCTION_COMMAND="$COMMON --push ."
 
-          BUILD_PUSH_PRODUCTION_COMMAND="docker buildx build --push --platform=${{ inputs.platforms }} $COMMON ."
           echo "BUILD_PUSH_PRODUCTION_COMMAND=$BUILD_PUSH_PRODUCTION_COMMAND" >> $GITHUB_OUTPUT
-
-          ## Note this is only needed as buildx doesnt support --load with multiple platforms yet but is on roadmap
-          ## if it is ever supported simply remove this and the "Load test oci image step" and add --load to the first BUILD_TEST_COMMAND
-          BUILD_LOAD_PRODUCTION_COMMAND="docker buildx build --load $COMMON -t app:production ."
-          echo "BUILD_LOAD_PRODUCTION_COMMAND=$BUILD_LOAD_PRODUCTION_COMMAND" >> $GITHUB_OUTPUT
 
           export BUILD_PRODUCTION_COMMAND="$BUILD_PRODUCTION_COMMAND"
 
@@ -345,10 +331,6 @@ jobs:
           echo "IMAGE_SCANNER_COMMON=$IMAGE_SCANNER_COMMON" >> $GITHUB_OUTPUT
 
           ./.github/reusable_workflow/scripts/additional_tasks.sh
-
-      - name: Load Production OCI Image
-        id: load-production
-        run: $(${{ steps.build-production.outputs.BUILD_LOAD_PRODUCTION_COMMAND }})
 
       - name: Build Production Result
         id: build-production-result
@@ -490,9 +472,7 @@ jobs:
       #       ${{ steps.env2.outputs.SIMPLE_PRODUCTION_IMAGE_ID_TAG }} \
       #       /app/Dockerfile
 
-      # TODO: master/main branch merges or monthly builds only for now
       - name: Run Image scan on production image for cves
-        if: steps.env1.outputs.IS_DEFAULT_BRANCH_PUSH == 'true' || steps.env1.outputs.IS_MONTHLY_BUILD == 'true'
         run: |
           IMAGE_SHA="$(docker images --no-trunc --quiet ${{ steps.env2.outputs.PRODUCTION_IMAGE_ID_TAG }})"
           ${{ steps.build-production.outputs.IMAGE_SCANNER_COMMON }} \
@@ -502,7 +482,7 @@ jobs:
             /app/Dockerfile \
             ${{ secrets.SNYK_TOKEN }} \
             true
-      # TODO: change the true above when were ready to enforce
+
       - name: Push to ECR
         if: steps.env1.outputs.SHOULD_PUSH_IMAGE_TO_ECR == 'true'
         run: |
