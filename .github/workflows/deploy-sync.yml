@@ -40,8 +40,9 @@ on:
         default: ''
         type: string
       platforms:
-        default: 'linux/amd64'
+        default: "['linux/amd64']"
         type: string
+      # TODO: once we remove this arg from flow, make it the first used as an override
       runner:
         default: 'ubuntu-latest'
         type: string
@@ -262,12 +263,6 @@ jobs:
           fi
           echo "PROJECTS=$PROJECTS" >> $GITHUB_OUTPUT
 
-          USE_BUILDX="false"
-          if [ "${{ inputs.platforms }}" != "" ]; then
-            USE_BUILDX="true"
-          fi
-          echo "USE_BUILDX=$USE_BUILDX" >> $GITHUB_OUTPUT
-
       - name: Force docker image to be rebuilt from scratch
         if: inputs.event_name == 'schedule'
         run: |
@@ -282,7 +277,7 @@ jobs:
       - name: Build Test OCI Image
         id: build-test
         run: |
-          COMMON="docker buildx build --platform=${{ inputs.platforms }} --target development --build-arg BUILDKIT_INLINE_CACHE=1 --build-arg RUBY_VERSION=${{ steps.env2.outputs.RUBY_VERSION }} --build-arg BASE_IMAGE=${{ steps.env2.outputs.BASE_IMAGE }}  --cache-from ${{ steps.env2.outputs.CACHE_IMAGE_ID_TAG }} "
+          COMMON="docker buildx build --platform=${{ matrix.arch }} --target development --build-arg BUILDKIT_INLINE_CACHE=1 --build-arg RUBY_VERSION=${{ steps.env2.outputs.RUBY_VERSION }} --build-arg BASE_IMAGE=${{ steps.env2.outputs.BASE_IMAGE }}  --cache-from ${{ steps.env2.outputs.CACHE_IMAGE_ID_TAG }} "
 
           BUILD_TEST_COMMAND="$COMMON --load -t ${{ steps.env2.outputs.CACHE_IMAGE_ID_TAG }} -t ${{ steps.env2.outputs.LOCAL_CACHE_IMAGE_ID_TAG }} ."
           BUILD_PUSH_TEST_COMMAND="$COMMON --push  -t ${{ steps.env2.outputs.CACHE_IMAGE_ID_TAG }} ."
@@ -294,7 +289,7 @@ jobs:
       - name: Build Production OCI Image and Run additional tasks
         id: build-production
         run: |
-          COMMON="docker buildx build --platform=${{ inputs.platforms }} --target production --build-arg BUILDKIT_INLINE_CACHE=1 --build-arg RUBY_VERSION=${{ steps.env2.outputs.RUBY_VERSION }} --build-arg RELEASE_VERSION=${{ steps.env1.outputs.IMAGE_TAG }} --build-arg BASE_IMAGE=${{ steps.env2.outputs.BASE_IMAGE }}  --cache-from ${{ steps.env2.outputs.CACHE_IMAGE_ID_TAG }} -t ${{ steps.env2.outputs.PRODUCTION_IMAGE_ID_TAG }} -t ${{ steps.env2.outputs.LATEST_IMAGE_ID_TAG }}"
+          COMMON="docker buildx build --platform=${{ matrix.arch }} --target production --build-arg BUILDKIT_INLINE_CACHE=1 --build-arg RUBY_VERSION=${{ steps.env2.outputs.RUBY_VERSION }} --build-arg RELEASE_VERSION=${{ steps.env1.outputs.IMAGE_TAG }} --build-arg BASE_IMAGE=${{ steps.env2.outputs.BASE_IMAGE }}  --cache-from ${{ steps.env2.outputs.CACHE_IMAGE_ID_TAG }} -t ${{ steps.env2.outputs.PRODUCTION_IMAGE_ID_TAG }} -t ${{ steps.env2.outputs.LATEST_IMAGE_ID_TAG }}"
 
           BUILD_PRODUCTION_COMMAND="$COMMON --load ."
           BUILD_PUSH_PRODUCTION_COMMAND="$COMMON --push ."
