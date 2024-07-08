@@ -127,36 +127,30 @@ on:
       SNYK_TOKEN:
         required: true
 jobs:
-  run:
+  init:
     outputs:
-      ADHOC_OUTPUT: ${{ steps.failure-check.outputs.ADHOC_OUTPUT }}
-      ADHOC_URL: ${{ steps.failure-check.outputs.ADHOC_URL }}
-      ADHOC_STATUS: ${{ steps.failure-check.outputs.ADHOC_STATUS }}
       head_sha: ${{ steps.comment-branch.outputs.head_sha }}
-      IS_SLASH_DEPLOY: ${{ steps.env1.outputs.IS_SLASH_DEPLOY }}
-      PUBLISH_APP_IMAGE_ID_TAG: ${{ steps.env2.outputs.PUBLISH_APP_IMAGE_ID_TAG }}
-      IMAGE_TAG: ${{ steps.env1.outputs.IMAGE_TAG }}
-      PROJECTS: ${{ steps.env2.outputs.PROJECTS }}
-      IS_DEFAULT_DEVELOPMENT_BRANCH_PUSH: ${{ steps.env1.outputs.IS_DEFAULT_DEVELOPMENT_BRANCH_PUSH }}
-      IS_MONTHLY_BUILD: ${{ steps.env1.outputs.IS_MONTHLY_BUILD }}
-      IS_DEFAULT_BRANCH_PUSH: ${{ steps.env1.outputs.IS_DEFAULT_BRANCH_PUSH }}
-    strategy:
-      matrix:
-        arch: ${{ fromJSON(inputs.platforms) }}
-    runs-on: ${{ (matrix.arch == 'linux/amd64' && 'ubuntu-latest') || (matrix.arch == 'linux/arm64' && 'arm64-4core') }}
-    name: run
+      IS_SLASH_DEPLOY: ${{ steps.env.outputs.IS_SLASH_DEPLOY }}
+      PUBLISH_APP_IMAGE_ID_TAG: ${{ steps.env.outputs.PUBLISH_APP_IMAGE_ID_TAG }}
+      IMAGE_TAG: ${{ steps.env.outputs.IMAGE_TAG }}
+      PROJECTS: ${{ steps.env.outputs.PROJECTS }}
+      IS_DEFAULT_DEVELOPMENT_BRANCH_PUSH: ${{ steps.env.outputs.IS_DEFAULT_DEVELOPMENT_BRANCH_PUSH }}
+      IS_MONTHLY_BUILD: ${{ steps.env.outputs.IS_MONTHLY_BUILD }}
+      IS_DEFAULT_BRANCH_PUSH: ${{ steps.env.outputs.IS_DEFAULT_BRANCH_PUSH }}
+      BRANCH_NAME: ${{ steps.branch.outputs.BRANCH_NAME }}
+      CACHE_IMAGE_ID_TAG: ${{ steps.env.outputs.CACHE_IMAGE_ID_TAG }}
+      RUBY_VERSION: ${{ steps.env.outputs.RUBY_VERSION }}
+      LOCAL_CACHE_IMAGE_ID_TAG: ${{ steps.env.outputs.LOCAL_CACHE_IMAGE_ID_TAG }}
+      BASE_IMAGE: ${{ steps.env.outputs.BASE_IMAGE }}
+      PRODUCTION_IMAGE_ID_TAG: ${{ steps.env.outputs.PRODUCTION_IMAGE_ID_TAG }}
+      LATEST_IMAGE_ID_TAG: ${{ steps.env.outputs.LATEST_IMAGE_ID_TAG }}
+      IMAGE_SCANNER_IMAGE_ID_TAG: ${{ steps.env.outputs.IMAGE_SCANNER_IMAGE_ID_TAG }}
+      SHOULD_PUSH_IMAGE_TO_ECR: ${{ steps.env.outputs.SHOULD_PUSH_IMAGE_TO_ECR }}
+      IS_DEFAULT_CACHE_BRANCH_PUSH: ${{ steps.env.outputs.IS_DEFAULT_CACHE_BRANCH_PUSH }}
+    name: init
+    runs-on: ubuntu-latest
     if: inputs.event_name != 'issue_comment' || (contains(inputs.event_comment_body, '/deploy')  && contains(fromJSON(vars.ALLOWED_ACTORS), github.event.comment.user.login))
-    services:
-      mysql:
-        image: mysql:8
-        env:
-          MYSQL_ROOT_PASSWORD: password
-        ports:
-          - '3306:3306'
     steps:
-      - name: Delete huge unnecessary tools folder
-        run: rm -rf /opt/hostedtoolcache
-
       - uses: xt0rted/pull-request-comment-branch@d97294d304604fa98a2600a6e2f916a84b596dc7 # v2.0.0
         if: inputs.event_name == 'issue_comment'
         id: comment-branch
@@ -171,7 +165,7 @@ jobs:
           description: 'testing, building and pushing image'
           context: 'Dev federation deploy'
 
-      - id: env1
+      - id: branch
         name: set envs
         run: |
           ## PR comment branch || pr branch || default branch
@@ -184,44 +178,9 @@ jobs:
           fi
           echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_OUTPUT
 
-          IS_SLASH_DEPLOY=$([ "${{ inputs.event_name }}" == "issue_comment" ] && echo "true" || echo "false")
-          echo "IS_SLASH_DEPLOY=$IS_SLASH_DEPLOY" >> $GITHUB_OUTPUT
-
-          IS_MONTHLY_BUILD=$([ "${{ inputs.event_name }}" == "schedule" ] && echo "true" || echo "false")
-          echo "IS_MONTHLY_BUILD=$IS_MONTHLY_BUILD" >> $GITHUB_OUTPUT
-
-          IS_DEFAULT_BRANCH_PUSH=$(([ "${{ inputs.event_name }}" == "push" ] && [ "$BRANCH_NAME" == "${{ inputs.default_branch }}" ]) && echo "true" || echo "false")
-          echo "IS_DEFAULT_BRANCH_PUSH=$IS_DEFAULT_BRANCH_PUSH" >> $GITHUB_OUTPUT
-
-          IS_DEFAULT_DEVELOPMENT_BRANCH_PUSH=$(([ "${{ inputs.event_name }}" == "push" ] && [ "$BRANCH_NAME" == "${{ inputs.default_develop_branch }}" ]) && echo "true" || echo "false")
-          echo "IS_DEFAULT_DEVELOPMENT_BRANCH_PUSH=$IS_DEFAULT_DEVELOPMENT_BRANCH_PUSH" >> $GITHUB_OUTPUT
-
-          DEFAULT_BRANCH_FOR_CACHING=$([ "${{ inputs.default_branch_for_caching }}" == "" ] && echo "${{ inputs.default_branch }}" || echo "${{ inputs.default_branch_for_caching }}")
-          IS_DEFAULT_CACHE_BRANCH_PUSH=$(([ "${{ inputs.event_name }}" == "push" ] && [ "$BRANCH_NAME" == "$DEFAULT_BRANCH_FOR_CACHING" ]) && echo "true" || echo "false")
-          echo "IS_DEFAULT_CACHE_BRANCH_PUSH=$IS_DEFAULT_CACHE_BRANCH_PUSH" >> $GITHUB_OUTPUT
-
-          if [ "$IS_SLASH_DEPLOY" == "true" ]; then
-            IMAGE_TAG=adhoc-${{steps.comment-branch.outputs.head_ref}}-${{steps.comment-branch.outputs.head_sha}}
-          else
-            IMAGE_TAG=stable-${{ github.sha }}
-          fi
-          IMAGE_TAG=$(echo "$IMAGE_TAG" | tr / _)
-          echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_OUTPUT
-
-          SHOULD_PUSH_IMAGE_TO_ECR=$([ \
-            "$IS_DEFAULT_BRANCH_PUSH" == "true" \
-            -o \
-            "$IS_SLASH_DEPLOY" == "true" \
-            -o \
-            "$IS_DEFAULT_DEVELOPMENT_BRANCH_PUSH" == "true" \
-            -o \
-            "$IS_MONTHLY_BUILD" == "true" \
-          ] && echo "true" || echo "false")
-          echo "SHOULD_PUSH_IMAGE_TO_ECR=$SHOULD_PUSH_IMAGE_TO_ECR" >> $GITHUB_OUTPUT
-
       - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
         with:
-          ref: ${{ steps.env1.outputs.BRANCH_NAME }}
+          ref: ${{ steps.branch.outputs.BRANCH_NAME }}
 
       - name: Checkout reusable workflow dir
         uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
@@ -243,10 +202,45 @@ jobs:
         uses: aws-actions/amazon-ecr-login@062b18b96a7aff071d4dc91bc00c4c1a7945b076 # v2.0.1
 
       - name: set more envs
-        id: env2
+        id: env
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         run: |
+          IS_SLASH_DEPLOY=$([ "${{ inputs.event_name }}" == "issue_comment" ] && echo "true" || echo "false")
+          echo "IS_SLASH_DEPLOY=$IS_SLASH_DEPLOY" >> $GITHUB_OUTPUT
+
+          IS_MONTHLY_BUILD=$([ "${{ inputs.event_name }}" == "schedule" ] && echo "true" || echo "false")
+          echo "IS_MONTHLY_BUILD=$IS_MONTHLY_BUILD" >> $GITHUB_OUTPUT
+
+          IS_DEFAULT_BRANCH_PUSH=$(([ "${{ inputs.event_name }}" == "push" ] && [ "${{steps.branch.outputs.BRANCH_NAME}}" == "${{ inputs.default_branch }}" ]) && echo "true" || echo "false")
+          echo "IS_DEFAULT_BRANCH_PUSH=$IS_DEFAULT_BRANCH_PUSH" >> $GITHUB_OUTPUT
+
+          IS_DEFAULT_DEVELOPMENT_BRANCH_PUSH=$(([ "${{ inputs.event_name }}" == "push" ] && [ "${{steps.branch.outputs.BRANCH_NAME}}" == "${{ inputs.default_develop_branch }}" ]) && echo "true" || echo "false")
+          echo "IS_DEFAULT_DEVELOPMENT_BRANCH_PUSH=$IS_DEFAULT_DEVELOPMENT_BRANCH_PUSH" >> $GITHUB_OUTPUT
+
+          DEFAULT_BRANCH_FOR_CACHING=$([ "${{ inputs.default_branch_for_caching }}" == "" ] && echo "${{ inputs.default_branch }}" || echo "${{ inputs.default_branch_for_caching }}")
+          IS_DEFAULT_CACHE_BRANCH_PUSH=$(([ "${{ inputs.event_name }}" == "push" ] && [ "${{steps.branch.outputs.BRANCH_NAME}}" == "$DEFAULT_BRANCH_FOR_CACHING" ]) && echo "true" || echo "false")
+          echo "IS_DEFAULT_CACHE_BRANCH_PUSH=$IS_DEFAULT_CACHE_BRANCH_PUSH" >> $GITHUB_OUTPUT
+
+          if [ "$IS_SLASH_DEPLOY" == "true" ]; then
+            IMAGE_TAG=adhoc-${{steps.comment-branch.outputs.head_ref}}-${{steps.comment-branch.outputs.head_sha}}
+          else
+            IMAGE_TAG=stable-${{ github.sha }}
+          fi
+          IMAGE_TAG=$(echo "$IMAGE_TAG" | tr / _)
+          echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_OUTPUT
+
+          SHOULD_PUSH_IMAGE_TO_ECR=$([ \
+            "$IS_DEFAULT_BRANCH_PUSH" == "true" \
+            -o \
+            "$IS_SLASH_DEPLOY" == "true" \
+            -o \
+            "$IS_DEFAULT_DEVELOPMENT_BRANCH_PUSH" == "true" \
+            -o \
+            "$IS_MONTHLY_BUILD" == "true" \
+          ] && echo "true" || echo "false")
+          echo "SHOULD_PUSH_IMAGE_TO_ECR=$SHOULD_PUSH_IMAGE_TO_ECR" >> $GITHUB_OUTPUT
+
           echo "ECR_REGISTRY=$ECR_REGISTRY" >> $GITHUB_OUTPUT
           echo "PUBLISH_APP_IMAGE_ID_TAG=$ECR_REGISTRY/publish_app:latest" >> $GITHUB_OUTPUT
           echo "IMAGE_SCANNER_IMAGE_ID_TAG=$ECR_REGISTRY/image-scanner:latest" >> $GITHUB_OUTPUT
@@ -261,7 +255,7 @@ jobs:
 
           echo "IMAGE_ID=$IMAGE_ID" >> $GITHUB_OUTPUT
 
-          echo "PRODUCTION_IMAGE_ID_TAG=$IMAGE_ID:${{ steps.env1.outputs.IMAGE_TAG }}" >> $GITHUB_OUTPUT
+          echo "PRODUCTION_IMAGE_ID_TAG=$IMAGE_ID:$IMAGE_TAG" >> $GITHUB_OUTPUT
 
           echo "LATEST_IMAGE_ID_TAG=$IMAGE_ID:${{ inputs.latest_image_tag }}" >> $GITHUB_OUTPUT
 
@@ -275,6 +269,51 @@ jobs:
             PROJECTS="${{ inputs.projects }}"
           fi
           echo "PROJECTS=$PROJECTS" >> $GITHUB_OUTPUT
+
+  run:
+    outputs:
+      ADHOC_OUTPUT: ${{ steps.failure-check.outputs.ADHOC_OUTPUT }}
+      ADHOC_URL: ${{ steps.failure-check.outputs.ADHOC_URL }}
+      ADHOC_STATUS: ${{ steps.failure-check.outputs.ADHOC_STATUS }}
+    needs: [init]
+    strategy:
+      matrix:
+        arch: ${{ fromJSON(inputs.platforms) }}
+    runs-on: ${{ (matrix.arch == 'linux/amd64' && 'ubuntu-latest') || (matrix.arch == 'linux/arm64' && 'arm64-4core') }}
+    name: run
+    services:
+      mysql:
+        image: mysql:8
+        env:
+          MYSQL_ROOT_PASSWORD: password
+        ports:
+          - '3306:3306'
+    steps:
+      - name: Delete huge unnecessary tools folder
+        run: rm -rf /opt/hostedtoolcache
+
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+        with:
+          ref: ${{ needs.init.outputs.BRANCH_NAME }}
+
+      - name: Checkout reusable workflow dir
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+        with:
+          repository: ausaccessfed/workflows
+          token: ${{ secrets.GITHUB_TOKEN }}
+          ref: main
+          path: .github/reusable_workflow
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502 # v4.0.2
+        with:
+          aws-region: ap-southeast-2
+          role-to-assume: ${{ secrets.ROLE }}
+          role-session-name: GithubActions-${{ inputs.ecr_repository }}-ci
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@062b18b96a7aff071d4dc91bc00c4c1a7945b076 # v2.0.1
 
       - name: Force docker image to be rebuilt from scratch
         if: inputs.event_name == 'schedule'
@@ -290,10 +329,10 @@ jobs:
       - name: Build Test OCI Image
         id: build-test
         run: |
-          COMMON="docker buildx build --platform=${{ matrix.arch }} --target development --build-arg BUILDKIT_INLINE_CACHE=1 --build-arg RUBY_VERSION=${{ steps.env2.outputs.RUBY_VERSION }} --build-arg BASE_IMAGE=${{ steps.env2.outputs.BASE_IMAGE }}  --cache-from ${{ steps.env2.outputs.CACHE_IMAGE_ID_TAG }} "
+          COMMON="docker buildx build --platform=${{ matrix.arch }} --target development --build-arg BUILDKIT_INLINE_CACHE=1 --build-arg RUBY_VERSION=${{ needs.init.outputs.RUBY_VERSION }} --build-arg BASE_IMAGE=${{ needs.init.outputs.BASE_IMAGE }}  --cache-from ${{ needs.init.outputs.CACHE_IMAGE_ID_TAG }} "
 
-          BUILD_TEST_COMMAND="$COMMON --load -t ${{ steps.env2.outputs.CACHE_IMAGE_ID_TAG }} -t ${{ steps.env2.outputs.LOCAL_CACHE_IMAGE_ID_TAG }} ."
-          BUILD_PUSH_TEST_COMMAND="$COMMON --push  -t ${{ steps.env2.outputs.CACHE_IMAGE_ID_TAG }} ."
+          BUILD_TEST_COMMAND="$COMMON --load -t ${{ needs.init.outputs.CACHE_IMAGE_ID_TAG }} -t ${{ needs.init.outputs.LOCAL_CACHE_IMAGE_ID_TAG }} ."
+          BUILD_PUSH_TEST_COMMAND="$COMMON --push  -t ${{ needs.init.outputs.CACHE_IMAGE_ID_TAG }} ."
 
           echo "BUILD_PUSH_TEST_COMMAND=$BUILD_PUSH_TEST_COMMAND" >> $GITHUB_OUTPUT
 
@@ -302,7 +341,7 @@ jobs:
       - name: Build Production OCI Image and Run additional tasks
         id: build-production
         run: |
-          COMMON="docker buildx build --platform=${{ matrix.arch }} --target production --build-arg BUILDKIT_INLINE_CACHE=1 --build-arg RUBY_VERSION=${{ steps.env2.outputs.RUBY_VERSION }} --build-arg RELEASE_VERSION=${{ steps.env1.outputs.IMAGE_TAG }} --build-arg BASE_IMAGE=${{ steps.env2.outputs.BASE_IMAGE }}  --cache-from ${{ steps.env2.outputs.CACHE_IMAGE_ID_TAG }} -t ${{ steps.env2.outputs.PRODUCTION_IMAGE_ID_TAG }} -t ${{ steps.env2.outputs.LATEST_IMAGE_ID_TAG }}"
+          COMMON="docker buildx build --platform=${{ matrix.arch }} --target production --build-arg BUILDKIT_INLINE_CACHE=1 --build-arg RUBY_VERSION=${{ needs.init.outputs.RUBY_VERSION }} --build-arg RELEASE_VERSION=${{ needs.init.outputs.IMAGE_TAG }} --build-arg BASE_IMAGE=${{ needs.init.outputs.BASE_IMAGE }}  --cache-from ${{ needs.init.outputs.CACHE_IMAGE_ID_TAG }} -t ${{ needs.init.outputs.PRODUCTION_IMAGE_ID_TAG }} -t ${{ needs.init.outputs.LATEST_IMAGE_ID_TAG }}"
 
           BUILD_PRODUCTION_COMMAND="$COMMON --load ."
           BUILD_PUSH_PRODUCTION_COMMAND="$COMMON --push ."
@@ -313,7 +352,7 @@ jobs:
 
           export EXTRA_TASK_INC=10
           # Make sure EXTRA_TASK_INC inc is greater than the amount of EXTRA_TASKS
-          if [ "${{steps.env1.outputs.IS_SLASH_DEPLOY}}" == "false" ]; then
+          if [ "${{needs.init.outputs.IS_SLASH_DEPLOY}}" == "false" ]; then
             export EXTRA_TASK_1='${{ inputs.extra_task_1 }}'
             export EXTRA_TASK_2='${{ inputs.extra_task_2 }}'
             export EXTRA_TASK_3='${{ inputs.extra_task_3 }}'
@@ -338,7 +377,7 @@ jobs:
           fi
 
           # must run as root to access the docker socket
-          IMAGE_SCANNER_COMMON="docker run -u 0 -v /var/run/docker.sock:/var/run/docker.sock ${IMAGE_SCANNER_EXTRAS} ${{ steps.env2.outputs.IMAGE_SCANNER_IMAGE_ID_TAG }}"
+          IMAGE_SCANNER_COMMON="docker run -u 0 -v /var/run/docker.sock:/var/run/docker.sock ${IMAGE_SCANNER_EXTRAS} ${{ needs.init.outputs.IMAGE_SCANNER_IMAGE_ID_TAG }}"
           echo "IMAGE_SCANNER_COMMON=$IMAGE_SCANNER_COMMON" >> $GITHUB_OUTPUT
 
           ./.github/reusable_workflow/scripts/additional_tasks.sh
@@ -354,7 +393,7 @@ jobs:
           fi
       - name: ${{ inputs.extra_task_1_name }} Result
         id: extra-task-1
-        if: steps.env1.outputs.IS_SLASH_DEPLOY == 'false' && inputs.extra_task_1 != '' && always()
+        if: needs.init.outputs.IS_SLASH_DEPLOY == 'false' && inputs.extra_task_1 != '' && always()
         env:
           NUMBER: 1
         run: |
@@ -365,7 +404,7 @@ jobs:
           fi
       - name: ${{ inputs.extra_task_2_name }} Result
         id: extra-task-2
-        if: steps.env1.outputs.IS_SLASH_DEPLOY == 'false' && inputs.extra_task_2 != '' && always()
+        if: needs.init.outputs.IS_SLASH_DEPLOY == 'false' && inputs.extra_task_2 != '' && always()
         env:
           NUMBER: 2
         run: |
@@ -376,7 +415,7 @@ jobs:
           fi
       - name: ${{ inputs.extra_task_3_name }} Result
         id: extra-task-3
-        if: steps.env1.outputs.IS_SLASH_DEPLOY == 'false' && inputs.extra_task_3 != '' && always()
+        if: needs.init.outputs.IS_SLASH_DEPLOY == 'false' && inputs.extra_task_3 != '' && always()
         env:
           NUMBER: 3
         run: |
@@ -387,7 +426,7 @@ jobs:
           fi
       - name: ${{ inputs.extra_task_4_name }} Result
         id: extra-task-4
-        if: steps.env1.outputs.IS_SLASH_DEPLOY == 'false' && inputs.extra_task_4 != '' && always()
+        if: needs.init.outputs.IS_SLASH_DEPLOY == 'false' && inputs.extra_task_4 != '' && always()
         env:
           NUMBER: 4
         run: |
@@ -398,7 +437,7 @@ jobs:
           fi
       - name: ${{ inputs.extra_task_5_name }} Result
         id: extra-task-5
-        if: steps.env1.outputs.IS_SLASH_DEPLOY == 'false' && inputs.extra_task_5 != '' && always()
+        if: needs.init.outputs.IS_SLASH_DEPLOY == 'false' && inputs.extra_task_5 != '' && always()
         env:
           NUMBER: 5
         run: |
@@ -409,7 +448,7 @@ jobs:
           fi
       - name: ${{ inputs.extra_task_6_name }} Result
         id: extra-task-6
-        if: steps.env1.outputs.IS_SLASH_DEPLOY == 'false' && inputs.extra_task_6 != '' && always()
+        if: needs.init.outputs.IS_SLASH_DEPLOY == 'false' && inputs.extra_task_6 != '' && always()
         env:
           NUMBER: 6
         run: |
@@ -420,7 +459,7 @@ jobs:
           fi
       - name: ${{ inputs.extra_task_7_name }} Result
         id: extra-task-7
-        if: steps.env1.outputs.IS_SLASH_DEPLOY == 'false' && inputs.extra_task_7 != '' && always()
+        if: needs.init.outputs.IS_SLASH_DEPLOY == 'false' && inputs.extra_task_7 != '' && always()
         env:
           NUMBER: 7
         run: |
@@ -431,7 +470,7 @@ jobs:
           fi
       - name: ${{ inputs.extra_task_8_name }} Result
         id: extra-task-8
-        if: steps.env1.outputs.IS_SLASH_DEPLOY == 'false' && inputs.extra_task_8 != '' && always()
+        if: needs.init.outputs.IS_SLASH_DEPLOY == 'false' && inputs.extra_task_8 != '' && always()
         env:
           NUMBER: 8
         run: |
@@ -442,7 +481,7 @@ jobs:
           fi
       - name: ${{ inputs.extra_task_9_name }} Result
         id: extra-task-9
-        if: steps.env1.outputs.IS_SLASH_DEPLOY == 'false' && inputs.extra_task_9 != '' && always()
+        if: needs.init.outputs.IS_SLASH_DEPLOY == 'false' && inputs.extra_task_9 != '' && always()
         env:
           NUMBER: 9
         run: |
@@ -453,7 +492,7 @@ jobs:
           fi
       - name: ${{ inputs.extra_task_10_name }} Result
         id: extra-task-10
-        if: steps.env1.outputs.IS_SLASH_DEPLOY == 'false' && inputs.extra_task_10 != '' && always()
+        if: needs.init.outputs.IS_SLASH_DEPLOY == 'false' && inputs.extra_task_10 != '' && always()
         env:
           NUMBER: 10
         run: |
@@ -464,13 +503,13 @@ jobs:
           fi
 
       - name: zip artifacts
-        if: always() && steps.env1.outputs.IS_DEFAULT_BRANCH_PUSH != 'true' && inputs.save_test_artifacts
+        if: always() && needs.init.outputs.IS_DEFAULT_BRANCH_PUSH != 'true' && inputs.save_test_artifacts
         #  TODO: adjust this to support more than 1 folder at some point (getting capybara/puppeteer results for now)
         # TODO: for now it assumes the test run will mount /tmp/screenshots (see puppeteer for example)
         run: |
           zip -r screenshots.zip /tmp/screenshots
       - uses: actions/upload-artifact@0b2256b8c012f0828dc542b3febcab082c67f72b # v4.3.4
-        if: always() && steps.env1.outputs.IS_DEFAULT_BRANCH_PUSH != 'true' && inputs.save_test_artifacts
+        if: always() && needs.init.outputs.IS_DEFAULT_BRANCH_PUSH != 'true' && inputs.save_test_artifacts
         with:
           name: failed_images
           path: screenshots.zip
@@ -480,27 +519,27 @@ jobs:
       #   run: |
       #     ${{ steps.build-production.outputs.IMAGE_SCANNER_COMMON }} \
       #       ./scripts/lint \
-      #       ${{ steps.env2.outputs.SIMPLE_PRODUCTION_IMAGE_ID_TAG }} \
+      #       ${{ needs.init.outputs.SIMPLE_PRODUCTION_IMAGE_ID_TAG }} \
       #       /app/Dockerfile
 
       - name: Run Image scan on production image for cves
         run: |
-          IMAGE_SHA="$(docker images --no-trunc --quiet ${{ steps.env2.outputs.PRODUCTION_IMAGE_ID_TAG }})"
+          IMAGE_SHA="$(docker images --no-trunc --quiet ${{ needs.init.outputs.PRODUCTION_IMAGE_ID_TAG }})"
           ${{ steps.build-production.outputs.IMAGE_SCANNER_COMMON }} \
             ./scripts/scan \
-            ${{ steps.env2.outputs.PRODUCTION_IMAGE_ID_TAG }} \
+            ${{ needs.init.outputs.PRODUCTION_IMAGE_ID_TAG }} \
             $IMAGE_SHA \
             /app/Dockerfile \
             ${{ secrets.SNYK_TOKEN }} \
             true
 
       - name: Push to ECR
-        if: steps.env1.outputs.SHOULD_PUSH_IMAGE_TO_ECR == 'true'
+        if: needs.init.outputs.SHOULD_PUSH_IMAGE_TO_ECR == 'true'
         run: |
           export PRODUCTION_PUSH_COMMAND="${{ steps.build-production.outputs.BUILD_PUSH_PRODUCTION_COMMAND }}"
           export PRODUCTION_LATEST_PUSH_COMMAND="echo 'BUILDX doesnt do anything here'"
 
-          if [ "${{steps.env1.outputs.IS_DEFAULT_CACHE_BRANCH_PUSH}}" == "true" ]; then
+          if [ "${{needs.init.outputs.IS_DEFAULT_CACHE_BRANCH_PUSH}}" == "true" ]; then
             export CACHE_PUSH_COMMAND="${{ steps.build-test.outputs.BUILD_PUSH_TEST_COMMAND }}"
           fi
 
@@ -518,7 +557,7 @@ jobs:
             exit 1
           fi
 
-          if [ "${{steps.env1.outputs.IS_DEFAULT_CACHE_BRANCH_PUSH}}" == "true" ]; then
+          if [ "${{needs.init.outputs.IS_DEFAULT_CACHE_BRANCH_PUSH}}" == "true" ]; then
             cat push_cache.txt || echo "no output"
             if [ -f push_cache_error.txt ]; then
               cat push_cache_error.txt
@@ -528,7 +567,7 @@ jobs:
 
       - name: check for failures
         id: failure-check
-        if: steps.env1.outputs.IS_SLASH_DEPLOY == 'true' && always()
+        if: needs.init.outputs.IS_SLASH_DEPLOY == 'true' && always()
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -561,50 +600,50 @@ jobs:
           fi
 
   finish:
-    needs: [run]
+    needs: [run, init]
     name: 'Finish'
     runs-on: ubuntu-latest
     steps:
       ## no point making the gitops repo triggers async, they will fight each other
       ## and usually only 1 if statement is called anyway
       - name: Update GitOps Repo to trigger deploys
-        if: inputs.production_environments != '' && (needs.run.outputs.IS_DEFAULT_BRANCH_PUSH == 'true' || needs.run.outputs.IS_MONTHLY_BUILD == 'true')
+        if: inputs.production_environments != '' && (needs.init.outputs.IS_DEFAULT_BRANCH_PUSH == 'true' || needs.init.outputs.IS_MONTHLY_BUILD == 'true')
         run: |
           printenv > .envs
            docker run --env-file .envs \
-           -e PROJECTS="${{ needs.run.outputs.PROJECTS }}" \
-           -e IMAGE_TAG=${{ needs.run.outputs.IMAGE_TAG }} \
+           -e PROJECTS="${{ needs.init.outputs.PROJECTS }}" \
+           -e IMAGE_TAG=${{ needs.init.outputs.IMAGE_TAG }} \
            -e ENVIRONMENTS="${{ inputs.production_environments }}" \
            -e ECR_REPOSITORY="${{ inputs.ecr_repository }}" \
-           ${{ needs.run.outputs.PUBLISH_APP_IMAGE_ID_TAG }}
+           ${{ needs.init.outputs.PUBLISH_APP_IMAGE_ID_TAG }}
 
       - name: Update GitOps Repo to trigger deploys for test
-        if: inputs.test_environments != '' && needs.run.outputs.IS_DEFAULT_DEVELOPMENT_BRANCH_PUSH == 'true'
+        if: inputs.test_environments != '' && needs.init.outputs.IS_DEFAULT_DEVELOPMENT_BRANCH_PUSH == 'true'
         run: |
           printenv > .envs
            docker run --env-file .envs \
-           -e PROJECTS="${{ needs.run.outputs.PROJECTS }}" \
-           -e IMAGE_TAG=${{ needs.run.outputs.IMAGE_TAG }} \
+           -e PROJECTS="${{ needs.init.outputs.PROJECTS }}" \
+           -e IMAGE_TAG=${{ needs.init.outputs.IMAGE_TAG }} \
            -e ENVIRONMENTS="${{ inputs.test_environments }}" \
            -e ECR_REPOSITORY="${{ inputs.ecr_repository }}" \
-           ${{ needs.run.outputs.PUBLISH_APP_IMAGE_ID_TAG }}
+           ${{ needs.init.outputs.PUBLISH_APP_IMAGE_ID_TAG }}
 
       - name: Update GitOps Repo to trigger deploys for development
-        if: inputs.development_environments != '' && needs.run.outputs.IS_SLASH_DEPLOY == 'true'
+        if: inputs.development_environments != '' && needs.init.outputs.IS_SLASH_DEPLOY == 'true'
         run: |
           printenv > .envs
            docker run --env-file .envs \
-           -e PROJECTS="${{ needs.run.outputs.PROJECTS }}" \
-           -e IMAGE_TAG=${{ needs.run.outputs.IMAGE_TAG }} \
+           -e PROJECTS="${{ needs.init.outputs.PROJECTS }}" \
+           -e IMAGE_TAG=${{ needs.init.outputs.IMAGE_TAG }} \
            -e ENVIRONMENTS="${{ inputs.development_environments }}" \
            -e ECR_REPOSITORY="${{ inputs.ecr_repository }}" \
-           ${{ needs.run.outputs.PUBLISH_APP_IMAGE_ID_TAG }}
+           ${{ needs.init.outputs.PUBLISH_APP_IMAGE_ID_TAG }}
 
       - name: Set final commit status
-        if: needs.run.outputs.IS_SLASH_DEPLOY == 'true' && always()
+        if: needs.init.outputs.IS_SLASH_DEPLOY == 'true' && always()
         uses: myrotvorets/set-commit-status-action@3730c0a348a2ace3c110851bed53331bc6406e9f # v2.0.1
         with:
-          sha: ${{ needs.run.outputs.head_sha }}
+          sha: ${{ needs.init.outputs.head_sha }}
           token: ${{ secrets.GITHUB_TOKEN }}
           status: ${{ needs.run.outputs.ADHOC_STATUS }}
           targetUrl: ${{ needs.run.outputs.ADHOC_URL }}
