@@ -43,6 +43,7 @@ on:
         default: "['linux/amd64']"
         type: string
       # TODO: once we remove this arg from flow, make it the first used as an override
+      # Or we jsut drop it entirly?
       runner:
         default: 'ubuntu-latest'
         type: string
