@@ -35,6 +35,10 @@ on:
       latest_image_tag:
         default: 'latest'
         type: string
+      ## If set to '' then service will not be started
+      mysql_image_tag_version:
+        default: '8'
+        type: string
       ## if not set defaults to ecr_repository
       projects:
         default: ''
@@ -284,7 +288,7 @@ jobs:
     name: run
     services:
       mysql:
-        image: mysql:8
+        image: ${{ ( inputs.mysql_image_tag_version != '' ) && format('mysql:{0}', inputs.mysql_image_tag_version) || '' }}
         env:
           MYSQL_ROOT_PASSWORD: password
         ports:
