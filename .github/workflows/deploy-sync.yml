@@ -327,7 +327,7 @@ jobs:
         id: build-production
         run: |
           ARCH=${{ matrix.arch }}
-          COMMON="docker buildx build --platform=$ARCH --target production --build-arg BUILDKIT_INLINE_CACHE=1 --build-arg RUBY_VERSION=${{ needs.init.outputs.RUBY_VERSION }} --build-arg RELEASE_VERSION=${{ needs.init.outputs.IMAGE_TAG }} --build-arg BASE_IMAGE=${{ needs.init.outputs.BASE_IMAGE }}  --cache-from ${{ needs.init.outputs.CACHE_IMAGE_ID_TAG }} -t ${{ needs.init.outputs.PRODUCTION_IMAGE_ID_TAG }} -t ${{ needs.init.outputs.LATEST_IMAGE_ID_TAG }}  -t ${{ needs.init.outputs.PRODUCTION_IMAGE_ID_TAG }}-${{ inputs.latest_image_tag }}-${ARCH//\//_}"
+          COMMON="docker buildx build --platform=$ARCH --target production --build-arg BUILDKIT_INLINE_CACHE=1 --build-arg RUBY_VERSION=${{ needs.init.outputs.RUBY_VERSION }} --build-arg RELEASE_VERSION=${{ needs.init.outputs.IMAGE_TAG }} --build-arg BASE_IMAGE=${{ needs.init.outputs.BASE_IMAGE }}  --cache-from ${{ needs.init.outputs.CACHE_IMAGE_ID_TAG }} -t ${{ needs.init.outputs.PRODUCTION_IMAGE_ID_TAG }} -t ${{ needs.init.outputs.LATEST_IMAGE_ID_TAG }}  -t ${{ needs.init.outputs.PRODUCTION_IMAGE_ID_TAG }}-${ARCH//\//_}"
 
           BUILD_PRODUCTION_COMMAND="$COMMON --load ."
           BUILD_PUSH_PRODUCTION_COMMAND="$COMMON --push ."
@@ -598,7 +598,7 @@ jobs:
 
       - name: Create and Push Docker Manifest
         run: |
-          PLATFORMS_STRING=$(echo "${{ inputs.platforms }}" | tr -d "[]'" | tr / _ | awk -v ORS=' ' 'BEGIN{RS=","}{print "${{ needs.init.outputs.PRODUCTION_IMAGE_ID_TAG }}-${{ inputs.latest_image_tag }}-"$0}')
+          PLATFORMS_STRING=$(echo "${{ inputs.platforms }}" | tr -d "[]'" | tr / _ | awk -v ORS=' ' 'BEGIN{RS=","}{print "${{ needs.init.outputs.PRODUCTION_IMAGE_ID_TAG }}-"$0}')
           docker buildx imagetools create --tag ${{ needs.init.outputs.PRODUCTION_IMAGE_ID_TAG }} $PLATFORMS_STRING ${{ needs.init.outputs.LATEST_IMAGE_ID_TAG }}
           docker buildx imagetools create --tag ${{ needs.init.outputs.LATEST_IMAGE_ID_TAG }} $PLATFORMS_STRING ${{ needs.init.outputs.PRODUCTION_IMAGE_ID_TAG }}
 
