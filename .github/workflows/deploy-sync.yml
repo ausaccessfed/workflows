@@ -523,7 +523,6 @@ jobs:
         if: needs.init.outputs.SHOULD_PUSH_IMAGE_TO_ECR == 'true'
         run: |
           export PRODUCTION_PUSH_COMMAND="${{ steps.build-production.outputs.BUILD_PUSH_PRODUCTION_COMMAND }}"
-          export PRODUCTION_LATEST_PUSH_COMMAND="echo 'BUILDX doesnt do anything here'"
 
           if [ "${{needs.init.outputs.IS_DEFAULT_CACHE_BRANCH_PUSH}}" == "true" ]; then
             export CACHE_PUSH_COMMAND="${{ steps.build-test.outputs.BUILD_PUSH_TEST_COMMAND }}"
@@ -534,12 +533,6 @@ jobs:
           cat push_production.txt || echo "no output"
           if [ -f push_production_error.txt ]; then
             cat push_production_error.txt
-            exit 1
-          fi
-
-          cat push_production_latest.txt || echo "no output"
-          if [ -f push_production_latest_error.txt ]; then
-            cat push_production_latest_error.txt
             exit 1
           fi
 
