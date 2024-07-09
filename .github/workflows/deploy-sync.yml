@@ -180,32 +180,17 @@ jobs:
         with:
           ref: ${{ steps.branch.outputs.BRANCH_NAME }}
 
-      - name: Checkout reusable workflow dir
-        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+      - name: Step name
+        id: get_secrets
+        uses: aws-actions/aws-secretsmanager-get-secrets@4e95aaf6ba8028772f5384971d4fedccfaab8621 # v2.0.6
         with:
-          repository: ausaccessfed/workflows
-          token: ${{ secrets.GITHUB_TOKEN }}
-          ref: main
-          path: .github/reusable_workflow
-
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502 # v4.0.2
-        with:
-          aws-region: ap-southeast-2
-          role-to-assume: ${{ secrets.ROLE }}
-          role-session-name: GithubActions-${{ inputs.ecr_repository }}-ci
-          mask-aws-account-id: 'false'
-
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@062b18b96a7aff071d4dc91bc00c4c1a7945b076 # v2.0.1
-        with:
-          mask-password: 'false'
+          secret-ids: |
+            DOCKER_ECR, aaf-terraform-DOCKER_ECR
 
       - name: set more envs
         id: env
         env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REGISTRY: ${{ steps.get_secrets.outputs.DOCKER_ECR }}
         run: |
           IS_SLASH_DEPLOY=$([ "${{ inputs.event_name }}" == "issue_comment" ] && echo "true" || echo "false")
           echo "IS_SLASH_DEPLOY=$IS_SLASH_DEPLOY" >> $GITHUB_OUTPUT
