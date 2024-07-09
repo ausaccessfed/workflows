@@ -191,13 +191,6 @@ jobs:
           role-to-assume: ${{ secrets.ROLE }}
           role-session-name: GithubActions-${{ inputs.ecr_repository }}-ci
 
-      - name: Step name
-        id: get_secrets
-        uses: aws-actions/aws-secretsmanager-get-secrets@4e95aaf6ba8028772f5384971d4fedccfaab8621 # v2.0.6
-        with:
-          secret-ids: |
-            DOCKER_ECR, aaf-terraform-DOCKER_ECR
-
       - name: set more envs
         id: env
         run: |
@@ -235,6 +228,8 @@ jobs:
             "$IS_MONTHLY_BUILD" == "true" \
           ] && echo "true" || echo "false")
           echo "SHOULD_PUSH_IMAGE_TO_ECR=$SHOULD_PUSH_IMAGE_TO_ECR" >> $GITHUB_OUTPUT
+
+          DOCKER_ECR=$(aws secretsmanager get-secret-value --secret-id "aaf-terraform-DOCKER_ECR" --query 'SecretString' --output text)
 
           echo "PUBLISH_APP_IMAGE_ID_TAG=$DOCKER_ECR/publish_app:latest" >> $GITHUB_OUTPUT
           echo "IMAGE_SCANNER_IMAGE_ID_TAG=$DOCKER_ECR/image-scanner:latest" >> $GITHUB_OUTPUT
