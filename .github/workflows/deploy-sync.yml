@@ -46,8 +46,6 @@ on:
       platforms:
         default: "['linux/amd64']"
         type: string
-      # TODO: once we remove this arg from flow, make it the first used as an override
-      # Or we jsut drop it entirly?
       runner:
         default: 'ubuntu-latest'
         type: string
@@ -131,7 +129,7 @@ on:
 jobs:
   init:
     outputs:
-      head_sha: ${{ steps.comment-branch.outputs.head_sha }}
+      HEAD_SHA: ${{ steps.comment-branch.outputs.HEAD_SHA }}
       IS_SLASH_DEPLOY: ${{ steps.env.outputs.IS_SLASH_DEPLOY }}
       PUBLISH_APP_IMAGE_ID_TAG: ${{ steps.env.outputs.PUBLISH_APP_IMAGE_ID_TAG }}
       IMAGE_TAG: ${{ steps.env.outputs.IMAGE_TAG }}
@@ -161,7 +159,7 @@ jobs:
         uses: myrotvorets/set-commit-status-action@3730c0a348a2ace3c110851bed53331bc6406e9f # v2.0.1
         if: inputs.event_name == 'issue_comment'
         with:
-          sha: ${{ steps.comment-branch.outputs.head_sha }}
+          sha: ${{ steps.comment-branch.outputs.HEAD_SHA }}
           token: ${{ secrets.GITHUB_TOKEN }}
           status: pending
           description: 'testing, building and pushing image'
@@ -211,7 +209,7 @@ jobs:
           echo "IS_DEFAULT_CACHE_BRANCH_PUSH=$IS_DEFAULT_CACHE_BRANCH_PUSH" >> $GITHUB_OUTPUT
 
           if [ "$IS_SLASH_DEPLOY" == "true" ]; then
-            IMAGE_TAG=adhoc-${{steps.comment-branch.outputs.head_ref}}-${{steps.comment-branch.outputs.head_sha}}
+            IMAGE_TAG=adhoc-${{steps.comment-branch.outputs.head_ref}}-${{steps.comment-branch.outputs.HEAD_SHA}}
           else
             IMAGE_TAG=stable-${{ github.sha }}
           fi
@@ -268,7 +266,8 @@ jobs:
     strategy:
       matrix:
         arch: ${{ fromJSON(inputs.platforms) }}
-    runs-on: ${{ (matrix.arch == 'linux/amd64' && 'ubuntu-latest') || (matrix.arch == 'linux/arm64' && 'arm64-4core') }}
+    # TODO: need to make runner more configurable atm asssumes we only want amd
+    runs-on: ${{ (matrix.arch == 'linux/amd64' && inputs.runner) || (matrix.arch == 'linux/arm64' && 'arm64-4core') }}
     name: run
     services:
       mysql:
@@ -643,7 +642,7 @@ jobs:
         if: needs.init.outputs.IS_SLASH_DEPLOY == 'true' && always()
         uses: myrotvorets/set-commit-status-action@3730c0a348a2ace3c110851bed53331bc6406e9f # v2.0.1
         with:
-          sha: ${{ needs.init.outputs.head_sha }}
+          sha: ${{ needs.init.outputs.HEAD_SHA }}
           token: ${{ secrets.GITHUB_TOKEN }}
           status: ${{ needs.run.outputs.ADHOC_STATUS }}
           targetUrl: ${{ needs.run.outputs.ADHOC_URL }}
