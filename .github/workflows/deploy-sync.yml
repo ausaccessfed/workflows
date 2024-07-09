@@ -590,6 +590,18 @@ jobs:
           role-to-assume: ${{ secrets.ROLE }}
           role-session-name: GithubActions-${{ inputs.ecr_repository }}-ci
 
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+
+      - name: Log in to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Create and Push Docker Manifest
+        run: |
+          PLATFORMS_STRING=$(echo "${{ inputs.platforms }}" | tr -d "[]'" | tr / _ | awk -v ORS=' ' 'BEGIN{RS=","}{print "${{ needs.init.outputs.IMAGE_TAG }}-"$0}')
+          docker buildx imagetools create
+           --tag ${{ needs.init.outputs.IMAGE_TAG }} $PLATFORMS_STRING ${{ needs.init.outputs.LATEST_IMAGE_ID_TAG }}
+
       ## no point making the gitops repo triggers async, they will fight each other
       ## and usually only 1 if statement is called anyway
       - name: Update GitOps Repo to trigger deploys
