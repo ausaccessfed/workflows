@@ -229,7 +229,7 @@ jobs:
           ] && echo "true" || echo "false")
           echo "SHOULD_PUSH_IMAGE_TO_ECR=$SHOULD_PUSH_IMAGE_TO_ECR" >> $GITHUB_OUTPUT
 
-          DOCKER_ECR=$(aws secretsmanager get-secret-value --secret-id "aaf-terraform-DOCKER_ECR" --query 'SecretString' --output text)
+          DOCKER_ECR=$(aws secretsmanager get-secret-value --secret-id "aaf-terraform-DOCKER_ECR" --query 'SecretString' --output text | sed 's:/*$::')
 
           echo "PUBLISH_APP_IMAGE_ID_TAG=$DOCKER_ECR/publish_app:latest" >> $GITHUB_OUTPUT
           echo "IMAGE_SCANNER_IMAGE_ID_TAG=$DOCKER_ECR/image-scanner:latest" >> $GITHUB_OUTPUT
