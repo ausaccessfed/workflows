@@ -578,7 +578,7 @@ jobs:
               /repos/ausaccessfed/${{ inputs.ecr_repository }}/issues/comments/${{ inputs.event_comment_id }}
           fi
 
-  handleImageDecorations:
+  updateEcrManifests:
     needs: [run, init]
     name: 'Handle Image Decorations'
     runs-on: ubuntu-latest
@@ -607,48 +607,61 @@ jobs:
             docker buildx imagetools create --tag ${{ needs.init.outputs.LATEST_IMAGE_ID_TAG }} $PLATFORMS_STRING ${{ needs.init.outputs.PRODUCTION_IMAGE_ID_TAG }}
           fi
 
+  updateTerraformManifests:
+    needs: [run, init]
+    name: 'Handle Image Decorations'
+    runs-on: ubuntu-latest
+    if: needs.init.outputs.SHOULD_PUSH_IMAGE_TO_ECR == 'true'
+    steps:
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502 # v4.0.2
+        with:
+          aws-region: ap-southeast-2
+          role-to-assume: ${{ secrets.ROLE }}
+          role-session-name: GithubActions-${{ inputs.ecr_repository }}-ci
+
       ## no point making the gitops repo triggers async, they will fight each other
       ## and usually only 1 if statement is called anyway
       - name: Update GitOps Repo to trigger deploys
         if: inputs.production_environments != '' && (needs.init.outputs.IS_DEFAULT_BRANCH_PUSH == 'true' || needs.init.outputs.IS_MONTHLY_BUILD == 'true')
         run: |
           printenv > .envs
-           docker run --env-file .envs \
-           -e PROJECTS="${{ needs.init.outputs.PROJECTS }}" \
-           -e IMAGE_TAG=${{ needs.init.outputs.IMAGE_TAG }} \
-           -e ENVIRONMENTS="${{ inputs.production_environments }}" \
-           -e ECR_REPOSITORY="${{ inputs.ecr_repository }}" \
-           ${{ needs.init.outputs.PUBLISH_APP_IMAGE_ID_TAG }}
+          docker run --env-file .envs \
+          -e PROJECTS="${{ needs.init.outputs.PROJECTS }}" \
+          -e IMAGE_TAG=${{ needs.init.outputs.IMAGE_TAG }} \
+          -e ENVIRONMENTS="${{ inputs.production_environments }}" \
+          -e ECR_REPOSITORY="${{ inputs.ecr_repository }}" \
+          ${{ needs.init.outputs.PUBLISH_APP_IMAGE_ID_TAG }}
 
       - name: Update GitOps Repo to trigger deploys for test
         if: inputs.test_environments != '' && needs.init.outputs.IS_DEFAULT_DEVELOPMENT_BRANCH_PUSH == 'true'
         run: |
           printenv > .envs
-           docker run --env-file .envs \
-           -e PROJECTS="${{ needs.init.outputs.PROJECTS }}" \
-           -e IMAGE_TAG=${{ needs.init.outputs.IMAGE_TAG }} \
-           -e ENVIRONMENTS="${{ inputs.test_environments }}" \
-           -e ECR_REPOSITORY="${{ inputs.ecr_repository }}" \
-           ${{ needs.init.outputs.PUBLISH_APP_IMAGE_ID_TAG }}
+          docker run --env-file .envs \
+          -e PROJECTS="${{ needs.init.outputs.PROJECTS }}" \
+          -e IMAGE_TAG=${{ needs.init.outputs.IMAGE_TAG }} \
+          -e ENVIRONMENTS="${{ inputs.test_environments }}" \
+          -e ECR_REPOSITORY="${{ inputs.ecr_repository }}" \
+          ${{ needs.init.outputs.PUBLISH_APP_IMAGE_ID_TAG }}
 
       - name: Update GitOps Repo to trigger deploys for development
         if: inputs.development_environments != '' && needs.init.outputs.IS_SLASH_DEPLOY == 'true'
         run: |
           printenv > .envs
-           docker run --env-file .envs \
-           -e PROJECTS="${{ needs.init.outputs.PROJECTS }}" \
-           -e IMAGE_TAG=${{ needs.init.outputs.IMAGE_TAG }} \
-           -e ENVIRONMENTS="${{ inputs.development_environments }}" \
-           -e ECR_REPOSITORY="${{ inputs.ecr_repository }}" \
-           ${{ needs.init.outputs.PUBLISH_APP_IMAGE_ID_TAG }}
+          docker run --env-file .envs \
+          -e PROJECTS="${{ needs.init.outputs.PROJECTS }}" \
+          -e IMAGE_TAG=${{ needs.init.outputs.IMAGE_TAG }} \
+          -e ENVIRONMENTS="${{ inputs.development_environments }}" \
+          -e ECR_REPOSITORY="${{ inputs.ecr_repository }}" \
+          ${{ needs.init.outputs.PUBLISH_APP_IMAGE_ID_TAG }}
 
   finish:
-    needs: [run, init, handleImageDecorations]
+    needs: [run, init, updateEcrManifests, updateTerraformManifests]
     name: 'finish'
     runs-on: ubuntu-latest
+    if: needs.init.outputs.IS_SLASH_DEPLOY == 'true' && always()
     steps:
       - name: Set final commit status
-        if: needs.init.outputs.IS_SLASH_DEPLOY == 'true' && always()
         uses: myrotvorets/set-commit-status-action@3730c0a348a2ace3c110851bed53331bc6406e9f # v2.0.1
         with:
           sha: ${{ needs.init.outputs.HEAD_SHA }}
