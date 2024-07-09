@@ -600,7 +600,7 @@ jobs:
         run: |
           PLATFORMS_STRING=$(echo "${{ inputs.platforms }}" | tr -d "[]'" | tr / _ | awk -v ORS=' ' 'BEGIN{RS=","}{print "${{ needs.init.outputs.IMAGE_TAG }}-"$0}')
           docker buildx imagetools create
-           --tag ${{ needs.init.outputs.IMAGE_TAG }} $PLATFORMS_STRING ${{ needs.init.outputs.LATEST_IMAGE_ID_TAG }}
+           --tag ${{ needs.init.outputs.PRODUCTION_IMAGE_ID_TAG }} $PLATFORMS_STRING ${{ needs.init.outputs.LATEST_IMAGE_ID_TAG }}
 
       ## no point making the gitops repo triggers async, they will fight each other
       ## and usually only 1 if statement is called anyway
