@@ -580,7 +580,7 @@ jobs:
 
   updateEcrManifests:
     needs: [run, init]
-    name: 'Handle Image Decorations'
+    name: 'Update ecr manifests'
     runs-on: ubuntu-latest
     if: needs.init.outputs.SHOULD_PUSH_IMAGE_TO_ECR == 'true'
     steps:
@@ -609,7 +609,7 @@ jobs:
 
   updateTerraformManifests:
     needs: [run, init]
-    name: 'Handle Image Decorations'
+    name: 'Update terraform manifests'
     runs-on: ubuntu-latest
     if: needs.init.outputs.SHOULD_PUSH_IMAGE_TO_ECR == 'true'
     steps:
