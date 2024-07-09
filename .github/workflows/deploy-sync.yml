@@ -578,10 +578,11 @@ jobs:
               /repos/ausaccessfed/${{ inputs.ecr_repository }}/issues/comments/${{ inputs.event_comment_id }}
           fi
 
-  finish:
+  handleImageDecorations:
     needs: [run, init]
-    name: 'finish'
+    name: 'Handle Image Decorations'
     runs-on: ubuntu-latest
+    if: needs.init.outputs.SHOULD_PUSH_IMAGE_TO_ECR == 'true'
     steps:
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502 # v4.0.2
@@ -600,7 +601,11 @@ jobs:
         run: |
           PLATFORMS_STRING=$(echo "${{ inputs.platforms }}" | tr -d "[]'" | tr / _ | awk -v ORS=' ' 'BEGIN{RS=","}{print "${{ needs.init.outputs.PRODUCTION_IMAGE_ID_TAG }}-"$0}')
           docker buildx imagetools create --tag ${{ needs.init.outputs.PRODUCTION_IMAGE_ID_TAG }} $PLATFORMS_STRING ${{ needs.init.outputs.LATEST_IMAGE_ID_TAG }}
-          docker buildx imagetools create --tag ${{ needs.init.outputs.LATEST_IMAGE_ID_TAG }} $PLATFORMS_STRING ${{ needs.init.outputs.PRODUCTION_IMAGE_ID_TAG }}
+
+          # dont update latest tag if /deploy
+          if [ "${{ needs.init.outputs.IS_SLASH_DEPLOY }}" != "true" ]; then
+            docker buildx imagetools create --tag ${{ needs.init.outputs.LATEST_IMAGE_ID_TAG }} $PLATFORMS_STRING ${{ needs.init.outputs.PRODUCTION_IMAGE_ID_TAG }}
+          fi
 
       ## no point making the gitops repo triggers async, they will fight each other
       ## and usually only 1 if statement is called anyway
@@ -637,6 +642,11 @@ jobs:
            -e ECR_REPOSITORY="${{ inputs.ecr_repository }}" \
            ${{ needs.init.outputs.PUBLISH_APP_IMAGE_ID_TAG }}
 
+  finish:
+    needs: [run, init, handleImageDecorations]
+    name: 'finish'
+    runs-on: ubuntu-latest
+    steps:
       - name: Set final commit status
         if: needs.init.outputs.IS_SLASH_DEPLOY == 'true' && always()
         uses: myrotvorets/set-commit-status-action@3730c0a348a2ace3c110851bed53331bc6406e9f # v2.0.1
