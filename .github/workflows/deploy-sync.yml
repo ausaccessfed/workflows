@@ -200,8 +200,6 @@ jobs:
 
       - name: set more envs
         id: env
-        env:
-          ECR_REGISTRY: ${{ steps.get_secrets.outputs.DOCKER_ECR }}
         run: |
           IS_SLASH_DEPLOY=$([ "${{ inputs.event_name }}" == "issue_comment" ] && echo "true" || echo "false")
           echo "IS_SLASH_DEPLOY=$IS_SLASH_DEPLOY" >> $GITHUB_OUTPUT
@@ -238,17 +236,16 @@ jobs:
           ] && echo "true" || echo "false")
           echo "SHOULD_PUSH_IMAGE_TO_ECR=$SHOULD_PUSH_IMAGE_TO_ECR" >> $GITHUB_OUTPUT
 
-          echo "ECR_REGISTRY=$ECR_REGISTRY" >> $GITHUB_OUTPUT
-          echo "PUBLISH_APP_IMAGE_ID_TAG=$ECR_REGISTRY/publish_app:latest" >> $GITHUB_OUTPUT
-          echo "IMAGE_SCANNER_IMAGE_ID_TAG=$ECR_REGISTRY/image-scanner:latest" >> $GITHUB_OUTPUT
+          echo "PUBLISH_APP_IMAGE_ID_TAG=$DOCKER_ECR/publish_app:latest" >> $GITHUB_OUTPUT
+          echo "IMAGE_SCANNER_IMAGE_ID_TAG=$DOCKER_ECR/image-scanner:latest" >> $GITHUB_OUTPUT
 
           RUBY_VERSION=$(${{ inputs.version_command }})
           echo "RUBY_VERSION=$RUBY_VERSION" >> $GITHUB_OUTPUT
-          BASE_IMAGE="$ECR_REGISTRY/ruby-base:${RUBY_VERSION}"
+          BASE_IMAGE="$DOCKER_ECR/ruby-base:${RUBY_VERSION}"
           echo "BASE_IMAGE=$BASE_IMAGE" >> $GITHUB_OUTPUT
 
           # Strip git ref prefix from version
-          IMAGE_ID=$(echo "$ECR_REGISTRY/${{ inputs.ecr_repository }}" | tr '[A-Z]' '[a-z]')
+          IMAGE_ID=$(echo "$DOCKER_ECR/${{ inputs.ecr_repository }}" | tr '[A-Z]' '[a-z]')
 
           echo "IMAGE_ID=$IMAGE_ID" >> $GITHUB_OUTPUT
 
