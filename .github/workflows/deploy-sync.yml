@@ -88,6 +88,9 @@ jobs:
       IMAGE_SCANNER_IMAGE_ID_TAG: ${{ steps.env.outputs.IMAGE_SCANNER_IMAGE_ID_TAG }}
       SHOULD_PUSH_IMAGE_TO_ECR: ${{ steps.env.outputs.SHOULD_PUSH_IMAGE_TO_ECR }}
       IMAGE_SCANNER_COMMON: ${{ steps.env.outputs.IMAGE_SCANNER_COMMON }}
+      GITHUB_REGISTRY_REF: ${{ steps.env.outputs.GITHUB_REGISTRY_REF }}
+      GITHUB_CACHE_IMAGE_ID_TAG: ${{ steps.env.outputs.GITHUB_CACHE_IMAGE_ID_TAG }}
+      GITHUB_LATEST_IMAGE_ID_TAG: ${{ steps.env.outputs.GITHUB_LATEST_IMAGE_ID_TAG }}
     name: init
     runs-on: ubuntu-latest
     if: inputs.event_name != 'issue_comment' || (contains(inputs.event_comment_body, '/deploy')  && contains(fromJSON(vars.ALLOWED_ACTORS), github.event.comment.user.login))
@@ -185,6 +188,13 @@ jobs:
 
           echo "LATEST_IMAGE_ID_TAG=$IMAGE_ID:${{ inputs.latest_image_tag }}" >> $GITHUB_OUTPUT
 
+          GITHUB_REGISTRY_REF="ghcr.io/ausaccessfed/${{ inputs.ecr_repository }}"
+          echo "GITHUB_REGISTRY_REF=$GITHUB_REGISTRY_REF" >> $GITHUB_OUTPUT
+          echo "GITHUB_CACHE_IMAGE_ID_TAG=$GITHUB_REGISTRY_REF:cache" >> $GITHUB_OUTPUT
+
+          GITHUB_LATEST_IMAGE_ID_TAG="$GITHUB_REGISTRY_REF:latest"
+          echo "GITHUB_LATEST_IMAGE_ID_TAG=$GITHUB_LATEST_IMAGE_ID_TAG" >> $GITHUB_OUTPUT
+
           PROJECTS="${{ inputs.ecr_repository }}"
           if [ "${{ inputs.projects }}" != "" ]; then
             PROJECTS="${{ inputs.projects }}"
@@ -202,7 +212,7 @@ jobs:
             IMAGE_SCANNER_EXTRAS="-v ${PWD}/.hadolint.yaml:/app/.hadolint.yaml ${IMAGE_SCANNER_EXTRAS}"
           fi
 
-          IMAGE_SCANNER_COMMON="docker run ${IMAGE_SCANNER_EXTRAS} ghcr.io/ausaccessfed/${{ inputs.ecr_repository }}:latest"
+          IMAGE_SCANNER_COMMON="docker run ${IMAGE_SCANNER_EXTRAS} $GITHUB_LATEST_IMAGE_ID_TAG"
           echo "IMAGE_SCANNER_COMMON=$IMAGE_SCANNER_COMMON" >> $GITHUB_OUTPUT
 
   build-test:
@@ -254,9 +264,9 @@ jobs:
         with:
           context: .
           push: true
-          tags: ghcr.io/ausaccessfed/${{ inputs.ecr_repository }}:cache
-          cache-from: type=registry,ref=ghcr.io/ausaccessfed/${{ inputs.ecr_repository }}:cache
-          cache-to: type=registry,ref=ghcr.io/ausaccessfed/${{ inputs.ecr_repository }}:cache,mode=max
+          tags: ${{ needs.init.outputs.GITHUB_CACHE_IMAGE_ID_TAG }}
+          cache-from: type=registry,ref=${{ needs.init.outputs.GITHUB_CACHE_IMAGE_ID_TAG }}
+          cache-to: type=registry,ref=${{ needs.init.outputs.GITHUB_CACHE_IMAGE_ID_TAG }},mode=max
           target: development
           build-args: |
             RUBY_VERSION=${{ needs.init.outputs.RUBY_VERSION }}
@@ -306,11 +316,11 @@ jobs:
         with:
           context: .
           push: true
-          tags: ausaccessfed/${{ inputs.ecr_repository }}:latest
+          tags: ${{ needs.init.outputs.GITHUB_LATEST_IMAGE_ID_TAG }}
           cache-from: |
-            type=registry,ref=ausaccessfed/${{ inputs.ecr_repository }}:cache
-            type=registry,ref=ausaccessfed/${{ inputs.ecr_repository }}:latest
-          cache-to: type=registry,ref=ausaccessfed/${{ inputs.ecr_repository }}:latest,mode=max
+            type=registry,ref=${{ needs.init.outputs.GITHUB_CACHE_IMAGE_ID_TAG }}
+            type=registry,ref=${{ needs.init.outputs.GITHUB_LATEST_IMAGE_ID_TAG }}
+          cache-to: type=registry,ref=${{ needs.init.outputs.GITHUB_LATEST_IMAGE_ID_TAG }},mode=max
           target: production
           build-args: |
             RUBY_VERSION=${{ needs.init.outputs.RUBY_VERSION }}
@@ -347,7 +357,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Run
-        run: format('${{ matrix.command}}', 'ghcr.io/ausaccessfed/${{ inputs.ecr_repository }}:cache')
+        run: ${{ format(matrix.command, needs.init.outputs.GITHUB_CACHE_IMAGE_ID_TAG) }}
 
   image-lint:
     needs: [init, build-production]
@@ -435,7 +445,7 @@ jobs:
         run: |
           ${{ needs.init.outputs.IMAGE_SCANNER_COMMON }} \
             ./scripts/scan \
-            ghcr.io/ausaccessfed/${{ inputs.ecr_repository }}:latest \
+            ${{ needs.init.outputs.GITHUB_LATEST_IMAGE_ID_TAG }} \
             $IMAGE_SHA \
             /app/Dockerfile \
             ${{ secrets.SNYK_TOKEN }} \
@@ -482,7 +492,7 @@ jobs:
             ${{ needs.init.outputs.PRODUCTION_IMAGE_ID_TAG }}
             ${{ needs.init.outputs.LATEST_IMAGE_ID_TAG }}
             ${{ needs.init.outputs.PRODUCTION_IMAGE_ID_TAG }}-${ARCH//\//_}
-          cache-from: type=registry,ref=ausaccessfed/${{ inputs.ecr_repository }}:latest
+          cache-from: type=registry,ref=${{ needs.init.outputs.GITHUB_LATEST_IMAGE_ID_TAG }}
           provenance: false
 
   # TODO: is there a way to get the logic below as part of the above?
