@@ -241,6 +241,7 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+          logout: false
 
       - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
         with:
@@ -302,6 +303,7 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+          logout: false
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@4fd812986e6c8c2a69e18311145f9371337f27d4 # v3.4.0
@@ -355,6 +357,7 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+          logout: false
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@4fd812986e6c8c2a69e18311145f9371337f27d4 # v3.4.0
@@ -387,6 +390,7 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+          logout: false
 
       - name: Run
         id: run
@@ -443,6 +447,7 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+          logout: false
 
       - name: Run Image scan on production image for cves
         run: |
@@ -480,6 +485,7 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+          logout: false
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@4fd812986e6c8c2a69e18311145f9371337f27d4 # v3.4.0
