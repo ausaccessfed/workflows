@@ -357,7 +357,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Load
-        run: docker pull ${{ format(matrix.command, needs.init.outputs.GITHUB_CACHE_IMAGE_ID_TAG) }}
+        run: docker pull ${{  needs.init.outputs.GITHUB_CACHE_IMAGE_ID_TAG }}
 
       - name: Run
         run: ${{ format(matrix.command, needs.init.outputs.GITHUB_CACHE_IMAGE_ID_TAG) }}
