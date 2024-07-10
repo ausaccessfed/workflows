@@ -326,7 +326,7 @@ jobs:
         arch: ${{ fromJSON(inputs.platforms) }}
         command: ${{ fromJSON(inputs.commands) }}
     runs-on: ${{ (matrix.arch == 'linux/amd64' && inputs.runner) || (matrix.arch == 'linux/arm64' && 'arm64-4core') }}
-    name: Running "${{ matrix.command }}" on ${{ matrix.arch }}
+    name: Running "${{ matrix.command }}" (${{ matrix.arch }})
     services:
       mysql:
         image: ${{ ( inputs.mysql_image_tag_version != '' ) && format('mysql:{0}', inputs.mysql_image_tag_version) || '' }}
@@ -347,7 +347,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Run
-        run: ${{ matrix.command}}
+        run: format('${{ matrix.command}}', 'ghcr.io/ausaccessfed/${{ inputs.ecr_repository }}:cache')
 
   image-lint:
     needs: [init, build-production]
