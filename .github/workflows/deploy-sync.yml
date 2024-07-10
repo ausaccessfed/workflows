@@ -578,7 +578,7 @@ jobs:
               /repos/ausaccessfed/${{ inputs.ecr_repository }}/issues/comments/${{ inputs.event_comment_id }}
           fi
 
-  updateEcrManifests:
+  update-ecr-manifests:
     needs: [run, init]
     name: 'Update ecr manifests'
     runs-on: ubuntu-latest
@@ -607,7 +607,7 @@ jobs:
             docker buildx imagetools create --tag ${{ needs.init.outputs.LATEST_IMAGE_ID_TAG }} $PLATFORMS_STRING ${{ needs.init.outputs.PRODUCTION_IMAGE_ID_TAG }}
           fi
 
-  updateTerraformManifests:
+  update-terraform-manifests:
     needs: [run, init]
     name: 'Update terraform manifests'
     runs-on: ubuntu-latest
@@ -619,6 +619,9 @@ jobs:
           aws-region: ap-southeast-2
           role-to-assume: ${{ secrets.ROLE }}
           role-session-name: GithubActions-${{ inputs.ecr_repository }}-ci
+
+      - name: Log in to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v1
 
       ## no point making the gitops repo triggers async, they will fight each other
       ## and usually only 1 if statement is called anyway
@@ -656,7 +659,7 @@ jobs:
           ${{ needs.init.outputs.PUBLISH_APP_IMAGE_ID_TAG }}
 
   finish:
-    needs: [run, init, updateEcrManifests, updateTerraformManifests]
+    needs: [run, init, update-ecr-manifests, update-terraform-manifests]
     name: 'finish'
     runs-on: ubuntu-latest
     if: needs.init.outputs.IS_SLASH_DEPLOY == 'true' && always()
