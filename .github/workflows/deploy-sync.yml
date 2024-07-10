@@ -275,6 +275,17 @@ jobs:
         with:
           ref: ${{ needs.init.outputs.BRANCH_NAME }}
 
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502 # v4.0.2
+        with:
+          aws-region: ap-southeast-2
+          role-to-assume: ${{ secrets.ROLE }}
+          role-session-name: GithubActions-${{ inputs.ecr_repository }}-ci
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@062b18b96a7aff071d4dc91bc00c4c1a7945b076 # v2.0.1
+
       - name: Login to GitHub Container Registry
         uses: docker/login-action@0d4c9c5ea7693da7b068278f7b52bda2a190a446 # v3.2.0
         with:
@@ -310,11 +321,12 @@ jobs:
   commands:
     needs: [init, build-test]
     strategy:
+      fail-fast: false
       matrix:
         arch: ${{ fromJSON(inputs.platforms) }}
         command: ${{ fromJSON(inputs.commands) }}
     runs-on: ${{ (matrix.arch == 'linux/amd64' && inputs.runner) || (matrix.arch == 'linux/arm64' && 'arm64-4core') }}
-    name: Running ${{ matrix.command }} on ${{ matrix.arch }}
+    name: Running "${{ matrix.command }}" on ${{ matrix.arch }}
     services:
       mysql:
         image: ${{ ( inputs.mysql_image_tag_version != '' ) && format('mysql:{0}', inputs.mysql_image_tag_version) || '' }}
