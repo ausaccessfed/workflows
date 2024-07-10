@@ -87,6 +87,7 @@ jobs:
       LATEST_IMAGE_ID_TAG: ${{ steps.env.outputs.LATEST_IMAGE_ID_TAG }}
       IMAGE_SCANNER_IMAGE_ID_TAG: ${{ steps.env.outputs.IMAGE_SCANNER_IMAGE_ID_TAG }}
       SHOULD_PUSH_IMAGE_TO_ECR: ${{ steps.env.outputs.SHOULD_PUSH_IMAGE_TO_ECR }}
+      IMAGE_SCANNER_COMMON: ${{ steps.env.outputs.IMAGE_SCANNER_COMMON }}
     name: init
     runs-on: ubuntu-latest
     if: inputs.event_name != 'issue_comment' || (contains(inputs.event_comment_body, '/deploy')  && contains(fromJSON(vars.ALLOWED_ACTORS), github.event.comment.user.login))
@@ -189,6 +190,20 @@ jobs:
             PROJECTS="${{ inputs.projects }}"
           fi
           echo "PROJECTS=$PROJECTS" >> $GITHUB_OUTPUT
+
+          IMAGE_SCANNER_EXTRAS=""
+          if [ -f "${PWD}/Dockerfile" ]; then
+            IMAGE_SCANNER_EXTRAS="-v ${PWD}/Dockerfile:/app/Dockerfile ${IMAGE_SCANNER_EXTRAS}"
+          fi
+          if [ -f "${PWD}/.dockleignore" ]; then
+            IMAGE_SCANNER_EXTRAS="-v ${PWD}/.dockleignore:/app/.dockleignore ${IMAGE_SCANNER_EXTRAS}"
+          fi
+          if [ -f "${PWD}/.hadolint.yaml" ]; then
+            IMAGE_SCANNER_EXTRAS="-v ${PWD}/.hadolint.yaml:/app/.hadolint.yaml ${IMAGE_SCANNER_EXTRAS}"
+          fi
+
+          IMAGE_SCANNER_COMMON="docker run ${IMAGE_SCANNER_EXTRAS} ghcr.io/ausaccessfed/${{ inputs.ecr_repository }}:latest"
+          echo "IMAGE_SCANNER_COMMON=$IMAGE_SCANNER_COMMON" >> $GITHUB_OUTPUT
 
   build-test:
     needs: [init]
@@ -293,19 +308,8 @@ jobs:
     name: Running Image lint on ${{ matrix.arch }}
     steps:
       - name: Run
-        run: |
-          IMAGE_SCANNER_EXTRAS=""
-          if [ -f "${PWD}/Dockerfile" ]; then
-            IMAGE_SCANNER_EXTRAS="-v ${PWD}/Dockerfile:/app/Dockerfile ${IMAGE_SCANNER_EXTRAS}"
-          fi
-          if [ -f "${PWD}/.dockleignore" ]; then
-            IMAGE_SCANNER_EXTRAS="-v ${PWD}/.dockleignore:/app/.dockleignore ${IMAGE_SCANNER_EXTRAS}"
-          fi
-          if [ -f "${PWD}/.hadolint.yaml" ]; then
-            IMAGE_SCANNER_EXTRAS="-v ${PWD}/.hadolint.yaml:/app/.hadolint.yaml ${IMAGE_SCANNER_EXTRAS}"
-          fi
-
-          docker run ${IMAGE_SCANNER_EXTRAS} ghcr.io/ausaccessfed/${{ inputs.ecr_repository }}:latest
+        id: run
+        run: ${{needs.init.outputs.IMAGE_SCANNER_COMMON}}
 
       #  TODO: need to think about how this slots in now there is multi arch multi commands async
 
@@ -343,7 +347,7 @@ jobs:
 
       - name: Run Image scan on production image for cves
         run: |
-          ${{ steps.build-production.outputs.IMAGE_SCANNER_COMMON }} \
+          ${{ needs.init.outputs.IMAGE_SCANNER_COMMON }} \
             ./scripts/scan \
             ghcr.io/ausaccessfed/${{ inputs.ecr_repository }}:latest \
             $IMAGE_SHA \
@@ -371,18 +375,21 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@062b18b96a7aff071d4dc91bc00c4c1a7945b076 # v2.0.1
 
-      - name: Push to ECR
-        run: |
-          export PRODUCTION_PUSH_COMMAND="${{ steps.build-production.outputs.BUILD_PUSH_PRODUCTION_COMMAND }}"
+      - name: Build and push
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          target: production
+          tags: |
+            ${{ needs.init.outputs.PRODUCTION_IMAGE_ID_TAG }}
+            ${{ needs.init.outputs.LATEST_IMAGE_ID_TAG }}
+            ${{ needs.init.outputs.PRODUCTION_IMAGE_ID_TAG }}-${ARCH//\//_}
+          cache-from: type=registry,ref=ausaccessfed/${{ inputs.ecr_repository }}:latest
+          provenance: false
 
-          ./.github/reusable_workflow/scripts/push_images.sh
-
-          cat push_production.txt || echo "no output"
-          if [ -f push_production_error.txt ]; then
-            cat push_production_error.txt
-            exit 1
-          fi
-
+  # TODO: is there a way to get the logic below as part of the above?
   update-ecr-manifests:
     needs: [push-to-ecr, init]
     name: 'Update ecr manifests'
@@ -490,12 +497,16 @@ jobs:
           STATUS="failure"
           URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 
-          if [ "${{ steps.build-test.outcome }}" == "failure" ]; then
+          if [ "${{ needs.build-test.result }}" == "failure" ]; then
             OUTPUT="${OUTPUT}Building the Test image has failed! "
           fi
 
-          if [ "${{ steps.build-production-result.outcome }}" == "failure" ]; then
+          if [ "${{ needs.build-production.result }}" == "failure" ]; then
             OUTPUT="${OUTPUT}Building the Production image has failed!"
+          fi
+
+          if [ "${{ needs.commands.result }}" == "failure" ]; then
+            OUTPUT="${OUTPUT}Some of the commands have failed!"
           fi
 
           if [ "$OUTPUT" == "" ]; then
@@ -519,7 +530,7 @@ jobs:
         with:
           sha: ${{ needs.init.outputs.HEAD_SHA }}
           token: ${{ secrets.GITHUB_TOKEN }}
-          status: ${{ needs.run.outputs.ADHOC_STATUS }}
-          targetUrl: ${{ needs.run.outputs.ADHOC_URL }}
-          description: ${{ needs.run.outputs.ADHOC_OUTPUT }}
+          status: ${{ steps.failure-check.outputs.ADHOC_STATUS }}
+          targetUrl: ${{ steps.failure-check.outputs.ADHOC_URL }}
+          description: ${{ steps.failure-check.outputs.ADHOC_OUTPUT }}
           context: 'Dev federation deploy'
