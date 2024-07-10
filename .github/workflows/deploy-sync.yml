@@ -247,9 +247,9 @@ jobs:
         with:
           context: .
           push: true
-          tags: ausaccessfed/${{ inputs.ecr_repository }}:cache
-          cache-from: type=registry,ref=ausaccessfed/${{ inputs.ecr_repository }}:cache
-          cache-to: type=registry,ref=ausaccessfed/${{ inputs.ecr_repository }}:cache,mode=max
+          tags: ghcr.io/ausaccessfed/${{ inputs.ecr_repository }}:cache
+          cache-from: type=registry,ref=ghcr.io/ausaccessfed/${{ inputs.ecr_repository }}:cache
+          cache-to: type=registry,ref=ghcr.io/ausaccessfed/${{ inputs.ecr_repository }}:cache,mode=max
           target: development
           build-args: |
             RUBY_VERSION=${{ needs.init.outputs.RUBY_VERSION }}
