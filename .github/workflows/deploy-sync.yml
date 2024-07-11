@@ -373,7 +373,7 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@4fd812986e6c8c2a69e18311145f9371337f27d4 # v3.4.0
 
-      - name: Load image
+      - name: Build Test OCI Image
         uses: docker/build-push-action@1a162644f9a7e87d8f4b053101d1d9a712edc18c # v6.3.0
         with:
           context: .
@@ -385,6 +385,7 @@ jobs:
           build-args: |
             RUBY_VERSION=${{ needs.init.outputs.RUBY_VERSION }}
             BASE_IMAGE=${{ needs.init.outputs.BASE_IMAGE }}
+          platforms: ${{ matrix.arch }}
 
       - name: Run
         run: ${{ format(matrix.command, needs.init.outputs.GITHUB_CACHE_IMAGE_ID_TAG) }}
@@ -414,6 +415,23 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build Production OCI Image
+        id: build-production
+        uses: docker/build-push-action@1a162644f9a7e87d8f4b053101d1d9a712edc18c # v6.3.0
+        with:
+          context: .
+          load: true
+          tags: ${{ needs.init.outputs.GITHUB_LATEST_IMAGE_ID_TAG }}
+          cache-from: |
+            type=registry,ref=${{ needs.init.outputs.GITHUB_CACHE_IMAGE_ID_TAG }}
+            type=registry,ref=${{ needs.init.outputs.GITHUB_LATEST_IMAGE_ID_TAG }}
+          target: production
+          build-args: |
+            RUBY_VERSION=${{ needs.init.outputs.RUBY_VERSION }}
+            BASE_IMAGE=${{ needs.init.outputs.BASE_IMAGE }}
+            RELEASE_VERSION=${{ needs.init.outputs.IMAGE_TAG }}
+          platforms: ${{ matrix.arch }}
 
       - name: Run
         id: run
@@ -471,6 +489,23 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Build Production OCI Image
+        id: build-production
+        uses: docker/build-push-action@1a162644f9a7e87d8f4b053101d1d9a712edc18c # v6.3.0
+        with:
+          context: .
+          load: true
+          tags: ${{ needs.init.outputs.GITHUB_LATEST_IMAGE_ID_TAG }}
+          cache-from: |
+            type=registry,ref=${{ needs.init.outputs.GITHUB_CACHE_IMAGE_ID_TAG }}
+            type=registry,ref=${{ needs.init.outputs.GITHUB_LATEST_IMAGE_ID_TAG }}
+          target: production
+          build-args: |
+            RUBY_VERSION=${{ needs.init.outputs.RUBY_VERSION }}
+            BASE_IMAGE=${{ needs.init.outputs.BASE_IMAGE }}
+            RELEASE_VERSION=${{ needs.init.outputs.IMAGE_TAG }}
+          platforms: ${{ matrix.arch }}
+
       - name: Run Image scan on production image for cves
         run: |
           ${{ needs.init.outputs.IMAGE_SCANNER_COMMON }} \
@@ -515,7 +550,6 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           context: .
-          file: ./Dockerfile
           push: true
           target: production
           tags: |
@@ -523,7 +557,6 @@ jobs:
             ${{ needs.init.outputs.LATEST_IMAGE_ID_TAG }}
             ${{ needs.init.outputs.PRODUCTION_IMAGE_ID_TAG }}-${ARCH//\//_}
           cache-from: type=registry,ref=${{ needs.init.outputs.GITHUB_LATEST_IMAGE_ID_TAG }}
-          provenance: false
 
   # TODO: is there a way to get the logic below as part of the above?
   # https://github.com/docker/build-push-action/issues/906
