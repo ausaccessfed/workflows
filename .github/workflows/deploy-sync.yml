@@ -379,6 +379,7 @@ jobs:
           context: .
           load: true
           tags: ${{ needs.init.outputs.GITHUB_CACHE_IMAGE_ID_TAG }}
+          target: development
           cache-from: |
             type=registry,ref=${{ needs.init.outputs.GITHUB_CACHE_IMAGE_ID_TAG }}
           build-args: |
