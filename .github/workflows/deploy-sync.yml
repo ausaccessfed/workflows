@@ -658,9 +658,9 @@ jobs:
           -e ECR_REPOSITORY="${{ inputs.ecr_repository }}" \
           ${{ needs.init.outputs.PUBLISH_APP_IMAGE_ID_TAG }}
 
-  finish:
+  update-comments:
     needs: [run, init, update-ecr-manifests, update-terraform-manifests]
-    name: 'finish'
+    name: 'update comments'
     runs-on: ubuntu-latest
     if: needs.init.outputs.IS_SLASH_DEPLOY == 'true' && always()
     steps:
@@ -673,3 +673,12 @@ jobs:
           targetUrl: ${{ needs.run.outputs.ADHOC_URL }}
           description: ${{ needs.run.outputs.ADHOC_OUTPUT }}
           context: 'Dev federation deploy'
+
+  finish:
+    needs: [run, init, update-ecr-manifests, update-terraform-manifests]
+    name: 'finish'
+    runs-on: ubuntu-latest
+    steps:
+      - name: check for failures
+        run: |
+          echo "finished"
