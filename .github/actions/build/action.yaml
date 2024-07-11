@@ -68,9 +68,9 @@ runs:
       shell: bash
       id: vars
       run: |
-        echo "IMAGE_CACHE_FROM=$(echo "${{ inputs.IMAGE_CACHE_FROM }}" | tr / _ )" >> $GITHUB_OUTPUT
-        echo "IMAGE_CACHE_TO=$(echo "${{ inputs.IMAGE_CACHE_TO }}" | tr / _ )" >> $GITHUB_OUTPUT
-        echo "IMAGE_TAGS=$(echo "${{ inputs.IMAGE_TAGS }}" | tr / _ )" >> $GITHUB_OUTPUT
+        echo "IMAGE_CACHE_FROM=$(echo "${{ inputs.IMAGE_CACHE_FROM }}" | sed 's|linux/|linux_|g' )" >> $GITHUB_OUTPUT
+        echo "IMAGE_CACHE_TO=$(echo "${{ inputs.IMAGE_CACHE_TO }}" | sed 's|linux/|linux_|g' )" >> $GITHUB_OUTPUT
+        echo "IMAGE_TAGS=$(echo "${{ inputs.IMAGE_TAGS }}" | sed 's|linux/|linux_|g' )" >> $GITHUB_OUTPUT
 
     - name: Build OCI Image
       id: build
