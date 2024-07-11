@@ -361,8 +361,17 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Load
-        run: docker pull ${{  needs.init.outputs.GITHUB_CACHE_IMAGE_ID_TAG }}
+      - name: Load image
+        uses: docker/build-push-action@1a162644f9a7e87d8f4b053101d1d9a712edc18c # v6.3.0
+        with:
+          context: .
+          load: true
+          tags: needs.init.outputs.GITHUB_CACHE_IMAGE_ID_TAG
+          cache-from: |
+            type=registry,ref=${{ needs.init.outputs.GITHUB_CACHE_IMAGE_ID_TAG }}
+          build-args: |
+            RUBY_VERSION=${{ needs.init.outputs.RUBY_VERSION }}
+            BASE_IMAGE=${{ needs.init.outputs.BASE_IMAGE }}
 
       - name: Run
         run: ${{ format(matrix.command, needs.init.outputs.GITHUB_CACHE_IMAGE_ID_TAG) }}
@@ -504,6 +513,7 @@ jobs:
           provenance: false
 
   # TODO: is there a way to get the logic below as part of the above?
+  # https://github.com/docker/build-push-action/issues/906
   update-ecr-manifests:
     needs: [push-to-ecr, init]
     name: 'Update ecr manifests'
