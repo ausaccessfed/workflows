@@ -45,7 +45,3 @@ runs:
         registry: ghcr.io
         username: ${{ inputs.GITHUB_ACTOR }}
         password: ${{ inputs.GITHUB_TOKEN }}
-
-    - name: Set up Docker Buildx
-      if: inputs.ROLE != '' || inputs.GITHUB_ACTOR != ''
-      uses: docker/setup-buildx-action@4fd812986e6c8c2a69e18311145f9371337f27d4 # v3.4.0

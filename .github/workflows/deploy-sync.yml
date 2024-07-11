@@ -219,37 +219,29 @@ jobs:
     runs-on: ${{ (matrix.arch == 'linux/amd64' && inputs.runner) || (matrix.arch == 'linux/arm64' && 'arm64-4core') }}
     name: Build Test Image
     steps:
-      - uses: ausaccessfed/workflows/.github/actions/init@feature/moving-ro-more-async
+      - uses: ausaccessfed/workflows/.github/actions/build@feature/moving-ro-more-async
         with:
           BRANCH_NAME: ${{ needs.init.outputs.BRANCH_NAME }}
           ROLE: ${{ secrets.ROLE }}
           ECR_REPOSITORY: ${{ inputs.ecr_repository }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_ACTOR: ${{ github.actor }}
-
-      - name: Force docker image to be rebuilt from scratch
-        if: inputs.event_name == 'schedule'
-        run: |
-          echo "`date "+%Y-%m-%d %H:%M:%S"` REBUILD" >> .FORCE_NEW_DOCKER_BUILD
-
-        # TODO: we might need to add arch to tags
-        #  TODO: i dont htink "cache" will work, it might need to be "cache" if master
-        # Otherwise we will need to add a new cache for each branch also
-        # We will also need to make sure these are culled once merged to reduce used space
-      - name: Build Test OCI Image
-        id: build-test
-        uses: docker/build-push-action@1a162644f9a7e87d8f4b053101d1d9a712edc18c # v6.3.0
-        with:
-          context: .
-          push: true
-          tags: ${{ needs.init.outputs.GITHUB_CACHE_IMAGE_ID_TAG }}
-          cache-from: type=registry,ref=${{ needs.init.outputs.GITHUB_CACHE_IMAGE_ID_TAG }}
-          cache-to: type=registry,ref=${{ needs.init.outputs.GITHUB_CACHE_IMAGE_ID_TAG }},mode=max
-          target: development
-          build-args: |
+          IMAGE_PLATFORMS: ${{ matrix.arch }}
+          IMAGE_BUILD_ARGS: |
             RUBY_VERSION=${{ needs.init.outputs.RUBY_VERSION }}
             BASE_IMAGE=${{ needs.init.outputs.BASE_IMAGE }}
-          platforms: ${{ matrix.arch }}
+          IMAGE_TARGET: development
+          IMAGE_CACHE_TO: type=registry,ref=${{ needs.init.outputs.GITHUB_CACHE_IMAGE_ID_TAG }},mode=max
+          IMAGE_CACHE_FROM: |
+            type=registry,ref=${{ needs.init.outputs.GITHUB_CACHE_IMAGE_ID_TAG }}
+          # TODO: we might need to add arch to tags
+          #  TODO: i dont htink "cache" will work, it might need to be "cache" if master
+          # Otherwise we will need to add a new cache for each branch also
+          # We will also need to make sure these are culled once merged to reduce used space
+          IMAGE_TAGS: ${{ needs.init.outputs.GITHUB_CACHE_IMAGE_ID_TAG }}
+          IMAGE_LOAD: false
+          IMAGE_PUSH: true
+          IMAGE_FORCE_REBUILD: inputs.event_name == 'schedule'
 
   build-production:
     needs: [init, build-test]
@@ -259,38 +251,29 @@ jobs:
     runs-on: ${{ (matrix.arch == 'linux/amd64' && inputs.runner) || (matrix.arch == 'linux/arm64' && 'arm64-4core') }}
     name: Build Production Image
     steps:
-      - uses: ausaccessfed/workflows/.github/actions/init@feature/moving-ro-more-async
+      - uses: ausaccessfed/workflows/.github/actions/build@feature/moving-ro-more-async
         with:
           BRANCH_NAME: ${{ needs.init.outputs.BRANCH_NAME }}
           ROLE: ${{ secrets.ROLE }}
           ECR_REPOSITORY: ${{ inputs.ecr_repository }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_ACTOR: ${{ github.actor }}
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@4fd812986e6c8c2a69e18311145f9371337f27d4 # v3.4.0
-
-        #  TODO: we might not want to use latest, as thats what we will use for the iamges that never need to come fomr aws
-        # i.e image scanner, and if we push every build that would result in the branch prs being used for prod checkups
-        # i.e fm's run would use an image  for image scanner build in a pr not master
-
-      - name: Build Production OCI Image
-        id: build-production
-        uses: docker/build-push-action@1a162644f9a7e87d8f4b053101d1d9a712edc18c # v6.3.0
-        with:
-          context: .
-          push: true
-          tags: ${{ needs.init.outputs.GITHUB_LATEST_IMAGE_ID_TAG }}
-          cache-from: |
-            type=registry,ref=${{ needs.init.outputs.GITHUB_CACHE_IMAGE_ID_TAG }}
-            type=registry,ref=${{ needs.init.outputs.GITHUB_LATEST_IMAGE_ID_TAG }}
-          cache-to: type=registry,ref=${{ needs.init.outputs.GITHUB_LATEST_IMAGE_ID_TAG }},mode=max
-          target: production
-          build-args: |
+          IMAGE_PLATFORMS: ${{ matrix.arch }}
+          IMAGE_BUILD_ARGS: |
             RUBY_VERSION=${{ needs.init.outputs.RUBY_VERSION }}
             BASE_IMAGE=${{ needs.init.outputs.BASE_IMAGE }}
             RELEASE_VERSION=${{ needs.init.outputs.IMAGE_TAG }}
-          platforms: ${{ matrix.arch }}
+          IMAGE_TARGET: production
+          IMAGE_CACHE_TO: type=registry,ref=${{ needs.init.outputs.GITHUB_LATEST_IMAGE_ID_TAG }},mode=max
+          IMAGE_CACHE_FROM: |
+            type=registry,ref=${{ needs.init.outputs.GITHUB_CACHE_IMAGE_ID_TAG }}
+            type=registry,ref=${{ needs.init.outputs.GITHUB_LATEST_IMAGE_ID_TAG }}
+          #  TODO: we might not want to use latest, as thats what we will use for the iamges that never need to come fomr aws
+          # i.e image scanner, and if we push every build that would result in the branch prs being used for prod checkups
+          # i.e fm's run would use an image  for image scanner build in a pr not master
+          IMAGE_TAGS: ${{ needs.init.outputs.GITHUB_LATEST_IMAGE_ID_TAG }}
+          IMAGE_LOAD: false
+          IMAGE_PUSH: true
 
   commands:
     needs: [init, build-test]
@@ -309,27 +292,23 @@ jobs:
         ports:
           - '3306:3306'
     steps:
-      - uses: ausaccessfed/workflows/.github/actions/init@feature/moving-ro-more-async
+      - uses: ausaccessfed/workflows/.github/actions/build@feature/moving-ro-more-async
         with:
           BRANCH_NAME: ${{ needs.init.outputs.BRANCH_NAME }}
           ROLE: ${{ secrets.ROLE }}
           ECR_REPOSITORY: ${{ inputs.ecr_repository }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_ACTOR: ${{ github.actor }}
-
-      - name: Build Test OCI Image
-        uses: docker/build-push-action@1a162644f9a7e87d8f4b053101d1d9a712edc18c # v6.3.0
-        with:
-          context: .
-          load: true
-          tags: ${{ needs.init.outputs.GITHUB_CACHE_IMAGE_ID_TAG }}
-          target: development
-          cache-from: |
-            type=registry,ref=${{ needs.init.outputs.GITHUB_CACHE_IMAGE_ID_TAG }}
-          build-args: |
+          IMAGE_PLATFORMS: ${{ matrix.arch }}
+          IMAGE_BUILD_ARGS: |
             RUBY_VERSION=${{ needs.init.outputs.RUBY_VERSION }}
             BASE_IMAGE=${{ needs.init.outputs.BASE_IMAGE }}
-          platforms: ${{ matrix.arch }}
+          IMAGE_TARGET: development
+          IMAGE_CACHE_FROM: |
+            type=registry,ref=${{ needs.init.outputs.GITHUB_CACHE_IMAGE_ID_TAG }}
+          IMAGE_TAGS: ${{ needs.init.outputs.GITHUB_CACHE_IMAGE_ID_TAG }}
+          IMAGE_LOAD: true
+          IMAGE_PUSH: false
 
       - name: Run
         run: ${{ format(matrix.command, needs.init.outputs.GITHUB_CACHE_IMAGE_ID_TAG) }}
@@ -342,30 +321,26 @@ jobs:
     runs-on: ${{ (matrix.arch == 'linux/amd64' && inputs.runner) || (matrix.arch == 'linux/arm64' && 'arm64-4core') }}
     name: Running Image lint on ${{ matrix.arch }}
     steps:
-      - uses: ausaccessfed/workflows/.github/actions/init@feature/moving-ro-more-async
+      - uses: ausaccessfed/workflows/.github/actions/build@feature/moving-ro-more-async
         with:
           BRANCH_NAME: ${{ needs.init.outputs.BRANCH_NAME }}
           ROLE: ${{ secrets.ROLE }}
           ECR_REPOSITORY: ${{ inputs.ecr_repository }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_ACTOR: ${{ github.actor }}
-
-      - name: Build Production OCI Image
-        id: build-production
-        uses: docker/build-push-action@1a162644f9a7e87d8f4b053101d1d9a712edc18c # v6.3.0
-        with:
-          context: .
-          load: true
-          tags: ${{ needs.init.outputs.GITHUB_LATEST_IMAGE_ID_TAG }}
-          cache-from: |
-            type=registry,ref=${{ needs.init.outputs.GITHUB_CACHE_IMAGE_ID_TAG }}
-            type=registry,ref=${{ needs.init.outputs.GITHUB_LATEST_IMAGE_ID_TAG }}
-          target: production
-          build-args: |
+          IMAGE_PLATFORMS: ${{ matrix.arch }}
+          IMAGE_BUILD_ARGS: |
             RUBY_VERSION=${{ needs.init.outputs.RUBY_VERSION }}
             BASE_IMAGE=${{ needs.init.outputs.BASE_IMAGE }}
             RELEASE_VERSION=${{ needs.init.outputs.IMAGE_TAG }}
-          platforms: ${{ matrix.arch }}
+          IMAGE_TARGET: production
+          IMAGE_CACHE_TO: type=registry,ref=${{ needs.init.outputs.GITHUB_LATEST_IMAGE_ID_TAG }},mode=max
+          IMAGE_CACHE_FROM: |
+            type=registry,ref=${{ needs.init.outputs.GITHUB_CACHE_IMAGE_ID_TAG }}
+            type=registry,ref=${{ needs.init.outputs.GITHUB_LATEST_IMAGE_ID_TAG }}
+          IMAGE_TAGS: ${{ needs.init.outputs.GITHUB_LATEST_IMAGE_ID_TAG }}
+          IMAGE_LOAD: true
+          IMAGE_PUSH: false
 
       - name: Run
         id: run
@@ -401,30 +376,26 @@ jobs:
     runs-on: ${{ (matrix.arch == 'linux/amd64' && inputs.runner) || (matrix.arch == 'linux/arm64' && 'arm64-4core') }}
     name: Running Image scan on ${{ matrix.arch }}
     steps:
-      - uses: ausaccessfed/workflows/.github/actions/init@feature/moving-ro-more-async
+      - uses: ausaccessfed/workflows/.github/actions/build@feature/moving-ro-more-async
         with:
           BRANCH_NAME: ${{ needs.init.outputs.BRANCH_NAME }}
           ROLE: ${{ secrets.ROLE }}
           ECR_REPOSITORY: ${{ inputs.ecr_repository }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_ACTOR: ${{ github.actor }}
-
-      - name: Build Production OCI Image
-        id: build-production
-        uses: docker/build-push-action@1a162644f9a7e87d8f4b053101d1d9a712edc18c # v6.3.0
-        with:
-          context: .
-          load: true
-          tags: ${{ needs.init.outputs.GITHUB_LATEST_IMAGE_ID_TAG }}
-          cache-from: |
-            type=registry,ref=${{ needs.init.outputs.GITHUB_CACHE_IMAGE_ID_TAG }}
-            type=registry,ref=${{ needs.init.outputs.GITHUB_LATEST_IMAGE_ID_TAG }}
-          target: production
-          build-args: |
+          IMAGE_PLATFORMS: ${{ matrix.arch }}
+          IMAGE_BUILD_ARGS: |
             RUBY_VERSION=${{ needs.init.outputs.RUBY_VERSION }}
             BASE_IMAGE=${{ needs.init.outputs.BASE_IMAGE }}
             RELEASE_VERSION=${{ needs.init.outputs.IMAGE_TAG }}
-          platforms: ${{ matrix.arch }}
+          IMAGE_TARGET: production
+          IMAGE_CACHE_TO: type=registry,ref=${{ needs.init.outputs.GITHUB_LATEST_IMAGE_ID_TAG }},mode=max
+          IMAGE_CACHE_FROM: |
+            type=registry,ref=${{ needs.init.outputs.GITHUB_CACHE_IMAGE_ID_TAG }}
+            type=registry,ref=${{ needs.init.outputs.GITHUB_LATEST_IMAGE_ID_TAG }}
+          IMAGE_TAGS: ${{ needs.init.outputs.GITHUB_LATEST_IMAGE_ID_TAG }}
+          IMAGE_LOAD: true
+          IMAGE_PUSH: false
 
       - name: Run Image scan on production image for cves
         run: |
@@ -445,24 +416,28 @@ jobs:
     runs-on: ${{ (matrix.arch == 'linux/amd64' && inputs.runner) || (matrix.arch == 'linux/arm64' && 'arm64-4core') }}
     name: Pushing images to ecr
     steps:
-      - uses: ausaccessfed/workflows/.github/actions/init@feature/moving-ro-more-async
+      - uses: ausaccessfed/workflows/.github/actions/build@feature/moving-ro-more-async
         with:
+          BRANCH_NAME: ${{ needs.init.outputs.BRANCH_NAME }}
           ROLE: ${{ secrets.ROLE }}
           ECR_REPOSITORY: ${{ inputs.ecr_repository }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_ACTOR: ${{ github.actor }}
-
-      - name: Build and push
-        uses: docker/build-push-action@1a162644f9a7e87d8f4b053101d1d9a712edc18c # v6.3.0
-        with:
-          context: .
-          push: true
-          target: production
-          tags: |
+          IMAGE_PLATFORMS: ${{ matrix.arch }}
+          IMAGE_BUILD_ARGS: |
+            RUBY_VERSION=${{ needs.init.outputs.RUBY_VERSION }}
+            BASE_IMAGE=${{ needs.init.outputs.BASE_IMAGE }}
+            RELEASE_VERSION=${{ needs.init.outputs.IMAGE_TAG }}
+          IMAGE_TARGET: production
+          IMAGE_CACHE_FROM: |
+            type=registry,ref=${{ needs.init.outputs.GITHUB_CACHE_IMAGE_ID_TAG }}
+            type=registry,ref=${{ needs.init.outputs.GITHUB_LATEST_IMAGE_ID_TAG }}
+          IMAGE_TAGS: |
             ${{ needs.init.outputs.PRODUCTION_IMAGE_ID_TAG }}
             ${{ needs.init.outputs.LATEST_IMAGE_ID_TAG }}
             ${{ needs.init.outputs.PRODUCTION_IMAGE_ID_TAG }}-${ARCH//\//_}
-          cache-from: type=registry,ref=${{ needs.init.outputs.GITHUB_LATEST_IMAGE_ID_TAG }}
+          IMAGE_LOAD: false
+          IMAGE_PUSH: true
 
   # TODO: is there a way to get the logic below as part of the above?
   # https://github.com/docker/build-push-action/issues/906
