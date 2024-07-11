@@ -1,0 +1,51 @@
+name: 'Init'
+description: 'Checkout branch, login to aws, ecr and ghcr'
+inputs:
+  BRANCH_NAME:
+    description: 'branch to checkout'
+    default: ''
+  ROLE:
+    description: 'aws role to be used'
+    default: ''
+
+  ECR_REPOSITORY:
+    description: 'ecr repository to login to'
+    default: ''
+  GITHUB_TOKEN:
+    description: 'github token used to auth to ghcr'
+    default: ''
+  GITHUB_ACTOR:
+    description: 'github actor used to auth to ghcr'
+    default: ''
+runs:
+  using: 'composite'
+  steps:
+    - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+      if: inputs.BRANCH_NAME != ""
+      with:
+        ref: ${{ inputs.BRANCH_NAME }}
+
+    - name: Configure AWS Credentials
+      if: inputs.ROLE != ""
+      uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502 # v4.0.2
+      with:
+        aws-region: ap-southeast-2
+        role-to-assume: ${{ inputs.ROLE }}
+        role-session-name: GithubActions-${{ inputs.ECR_REPOSITORY }}-ci
+
+    - name: Login to Amazon ECR
+      if: inputs.ROLE != ""
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@062b18b96a7aff071d4dc91bc00c4c1a7945b076 # v2.0.1
+
+    - name: Login to GitHub Container Registry
+      if: inputs.GITHUB_ACTOR != ""
+      uses: docker/login-action@0d4c9c5ea7693da7b068278f7b52bda2a190a446 # v3.2.0
+      with:
+        registry: ghcr.io
+        username: ${{ inputs.GITHUB_ACTOR }}
+        password: ${{ inputs.GITHUB_TOKEN }}
+
+    - name: Set up Docker Buildx
+      if: inputs.ROLE != "" || inputs.GITHUB_ACTOR != ""
+      uses: docker/setup-buildx-action@4fd812986e6c8c2a69e18311145f9371337f27d4 # v3.4.0
