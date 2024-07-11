@@ -310,8 +310,21 @@ jobs:
           IMAGE_PUSH: false
 
       - name: Run
-        run: ${{ format(matrix.command, needs.init.outputs.GITHUB_CACHE_IMAGE_ID_TAG) }}
+        run: |
+          ${{ format(matrix.command, needs.init.outputs.GITHUB_CACHE_IMAGE_ID_TAG) }}
 
+    #  TODO: need to think about how this slots in now there is multi arch multi commands async
+    # - name: zip artifacts
+    #   if: always() && needs.init.outputs.IS_DEFAULT_BRANCH_PUSH != 'true' && inputs.save_test_artifacts
+    #   #  TODO: adjust this to support more than 1 folder at some point (getting capybara/puppeteer results for now)
+    #   # TODO: for now it assumes the test run will mount /tmp/screenshots (see puppeteer for example)
+    #   run: |
+    #     zip -r screenshots.zip /tmp/screenshots
+    # - uses: actions/upload-artifact@0b2256b8c012f0828dc542b3febcab082c67f72b # v4.3.4
+    #   if: always() && needs.init.outputs.IS_DEFAULT_BRANCH_PUSH != 'true' && inputs.save_test_artifacts
+    #   with:
+    #     name: failed_images
+    #     path: screenshots.zip
   image-lint:
     needs: [init, build-production]
     strategy:
@@ -343,29 +356,11 @@ jobs:
 
       - name: Run
         id: run
-        run: ${{needs.init.outputs.IMAGE_SCANNER_COMMON}}
-
-      #  TODO: need to think about how this slots in now there is multi arch multi commands async
-
-      # - name: zip artifacts
-      #   if: always() && needs.init.outputs.IS_DEFAULT_BRANCH_PUSH != 'true' && inputs.save_test_artifacts
-      #   #  TODO: adjust this to support more than 1 folder at some point (getting capybara/puppeteer results for now)
-      #   # TODO: for now it assumes the test run will mount /tmp/screenshots (see puppeteer for example)
-      #   run: |
-      #     zip -r screenshots.zip /tmp/screenshots
-      # - uses: actions/upload-artifact@0b2256b8c012f0828dc542b3febcab082c67f72b # v4.3.4
-      #   if: always() && needs.init.outputs.IS_DEFAULT_BRANCH_PUSH != 'true' && inputs.save_test_artifacts
-      #   with:
-      #     name: failed_images
-      #     path: screenshots.zip
-
-      #  TODO: this is breaking due to docker updates and it never looking localy for images???
-      # - name: Run Image lint on production image
-      #   run: |
-      #     ${{ steps.build-production.outputs.IMAGE_SCANNER_COMMON }} \
-      #       ./scripts/lint \
-      #       ${{ needs.init.outputs.SIMPLE_PRODUCTION_IMAGE_ID_TAG }} \
-      #       /app/Dockerfile
+        run: |
+          ${{needs.init.outputs.IMAGE_SCANNER_COMMON}} \
+            ./scripts/lint \
+            ${{ needs.init.outputs.GITHUB_LATEST_IMAGE_ID_TAG }} \
+            /app/Dockerfile
 
   image-scan:
     needs: [init, build-production]
