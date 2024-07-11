@@ -64,6 +64,14 @@ runs:
       run: |
         echo "`date "+%Y-%m-%d %H:%M:%S"` REBUILD" >> .FORCE_NEW_DOCKER_BUILD
 
+    - name: clean platform
+      shell: bash
+      id: vars
+      run: |
+        echo "IMAGE_CACHE_FROM=$(echo "${{ inputs.IMAGE_CACHE_FROM }}" | tr / _ )" >> $GITHUB_OUTPUT
+        echo "IMAGE_CACHE_TO=$(echo "${{ inputs.IMAGE_CACHE_TO }}" | tr / _ )" >> $GITHUB_OUTPUT
+        echo "IMAGE_TAGS=$(echo "${{ inputs.IMAGE_TAGS }}" | tr / _ )" >> $GITHUB_OUTPUT
+
     - name: Build OCI Image
       id: build
       uses: docker/build-push-action@1a162644f9a7e87d8f4b053101d1d9a712edc18c # v6.3.0
@@ -72,11 +80,11 @@ runs:
         push: ${{ inputs.IMAGE_PUSH }}
         load: ${{ inputs.IMAGE_LOAD }}
         tags: |
-          ${{ inputs.IMAGE_TAGS }}
+          ${{ steps.vars.outputs.IMAGE_TAGS }}
         cache-from: |
-          ${{ inputs.IMAGE_CACHE_FROM }}
+          ${{ steps.vars.outputsIMAGE_CACHE_FROM }}
         cache-to: |
-          ${{ inputs.IMAGE_CACHE_TO }}
+          ${{ steps.vars.outputsIMAGE_CACHE_TO }}
         target: ${{ inputs.IMAGE_TARGET }}
         build-args: |
           ${{ inputs.IMAGE_BUILD_ARGS }}
