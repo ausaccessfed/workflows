@@ -65,9 +65,6 @@ on:
         default: '[]'
         type: string
     secrets:
-      #  TODO: regenerate as readonly, add to tf
-      GHCR_TOKEN:
-        required: true
       ROLE:
         required: true
       SNYK_TOKEN:
