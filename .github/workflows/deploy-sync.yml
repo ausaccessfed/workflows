@@ -219,7 +219,7 @@ jobs:
     runs-on: ${{ (matrix.arch == 'linux/amd64' && inputs.runner) || (matrix.arch == 'linux/arm64' && 'arm64-4core') }}
     name: Build Test Image
     steps:
-      - uses: ausaccessfed/workflows/.github/workflows/actions/init@feature/moving-ro-more-async
+      - uses: ausaccessfed/workflows/.github/actions/init@feature/moving-ro-more-async
         with:
           BRANCH_NAME: ${{ needs.init.outputs.BRANCH_NAME }}
           ROLE: ${{ secrets.ROLE }}
