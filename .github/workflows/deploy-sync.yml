@@ -65,6 +65,7 @@ on:
         default: '[]'
         type: string
     secrets:
+      #  TODO: regenerate as readonly, add to tf
       GHCR_TOKEN:
         required: true
       ROLE:
@@ -274,6 +275,7 @@ jobs:
             RUBY_VERSION=${{ needs.init.outputs.RUBY_VERSION }}
             BASE_IMAGE=${{ needs.init.outputs.BASE_IMAGE }}
           platforms: ${{ matrix.arch }}
+          provenance: false
 
   build-production:
     needs: [init, build-test]
@@ -329,6 +331,7 @@ jobs:
             BASE_IMAGE=${{ needs.init.outputs.BASE_IMAGE }}
             RELEASE_VERSION=${{ needs.init.outputs.IMAGE_TAG }}
           platforms: ${{ matrix.arch }}
+          provenance: false
 
   commands:
     needs: [init, build-test]
