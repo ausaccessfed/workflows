@@ -339,7 +339,7 @@ jobs:
         arch: ${{ fromJSON(inputs.platforms) }}
         command: ${{ fromJSON(inputs.commands) }}
     runs-on: ${{ (matrix.arch == 'linux/amd64' && inputs.runner) || (matrix.arch == 'linux/arm64' && 'arm64-4core') }}
-    name: Running "${{ format(matrix.command, '') }}" (${{ matrix.arch }})
+    name: ${{ format(matrix.command, '') }} (${{ matrix.arch }})
     services:
       mysql:
         image: ${{ ( inputs.mysql_image_tag_version != '' ) && format('mysql:{0}', inputs.mysql_image_tag_version) || '' }}
@@ -640,7 +640,7 @@ jobs:
           -e ECR_REPOSITORY="${{ inputs.ecr_repository }}" \
           ${{ needs.init.outputs.PUBLISH_APP_IMAGE_ID_TAG }}
 
-  finish:
+  update-comments:
     needs:
       [
         init,
@@ -653,13 +653,12 @@ jobs:
         update-ecr-manifests,
         update-terraform-manifests
       ]
-    name: 'finish'
+    name: 'update-comments'
     runs-on: ubuntu-latest
     if: needs.init.outputs.IS_SLASH_DEPLOY == 'true' && always()
     steps:
       - name: check for failures
         id: failure-check
-        if: needs.init.outputs.IS_SLASH_DEPLOY == 'true' && always()
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -704,3 +703,23 @@ jobs:
           targetUrl: ${{ steps.failure-check.outputs.ADHOC_URL }}
           description: ${{ steps.failure-check.outputs.ADHOC_OUTPUT }}
           context: 'Dev federation deploy'
+
+  finish:
+    needs:
+      [
+        init,
+        build-test,
+        build-production,
+        commands,
+        image-lint,
+        image-scan,
+        push-to-ecr,
+        update-ecr-manifests,
+        update-terraform-manifests
+      ]
+    name: 'finish'
+    runs-on: ubuntu-latest
+    steps:
+      - name: check for failures
+        run: |
+          echo "finished"
