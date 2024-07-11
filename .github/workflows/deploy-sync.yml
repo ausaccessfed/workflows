@@ -90,6 +90,8 @@ jobs:
       GITHUB_REGISTRY_REF: ${{ steps.env.outputs.GITHUB_REGISTRY_REF }}
       GITHUB_CACHE_IMAGE_ID_TAG: ${{ steps.env.outputs.GITHUB_CACHE_IMAGE_ID_TAG }}
       GITHUB_LATEST_IMAGE_ID_TAG: ${{ steps.env.outputs.GITHUB_LATEST_IMAGE_ID_TAG }}
+      GITHUB_BRANCH_CACHE_IMAGE_ID_TAG: ${{ steps.env.outputs.GITHUB_BRANCH_CACHE_IMAGE_ID_TAG }}
+      GITHUB_BRANCH_LATEST_IMAGE_ID_TAG: ${{ steps.env.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}
     name: init
     runs-on: ubuntu-latest
     if: inputs.event_name != 'issue_comment' || (contains(inputs.event_comment_body, '/deploy')  && contains(fromJSON(vars.ALLOWED_ACTORS), github.event.comment.user.login))
@@ -183,10 +185,24 @@ jobs:
 
           GITHUB_REGISTRY_REF="ghcr.io/ausaccessfed/${{ inputs.ecr_repository }}"
           echo "GITHUB_REGISTRY_REF=$GITHUB_REGISTRY_REF" >> $GITHUB_OUTPUT
-          echo "GITHUB_CACHE_IMAGE_ID_TAG=$GITHUB_REGISTRY_REF:cache" >> $GITHUB_OUTPUT
+
+          GITHUB_CACHE_IMAGE_ID_TAG="$GITHUB_REGISTRY_REF:cache"
+          echo "GITHUB_CACHE_IMAGE_ID_TAG=$GITHUB_CACHE_IMAGE_ID_TAG" >> $GITHUB_OUTPUT
+
+          if [ "$IS_DEFAULT_BRANCH_PUSH" == "true" ]; then
+            echo "GITHUB_BRANCH_CACHE_IMAGE_ID_TAG=$GITHUB_CACHE_IMAGE_ID_TAG" >> $GITHUB_OUTPUT
+          else
+            echo "GITHUB_BRANCH_CACHE_IMAGE_ID_TAG=$GITHUB_REGISTRY_REF:cache-$DEFAULT_BRANCH_FOR_CACHING" >> $GITHUB_OUTPUT
+          fi
 
           GITHUB_LATEST_IMAGE_ID_TAG="$GITHUB_REGISTRY_REF:latest"
           echo "GITHUB_LATEST_IMAGE_ID_TAG=$GITHUB_LATEST_IMAGE_ID_TAG" >> $GITHUB_OUTPUT
+
+          if [ "$IS_DEFAULT_BRANCH_PUSH" == "true" ]; then
+            echo "GITHUB_BRANCH_LATEST_IMAGE_ID_TAG=$GITHUB_LATEST_IMAGE_ID_TAG" >> $GITHUB_OUTPUT
+          else
+            echo "GITHUB_BRANCH_LATEST_IMAGE_ID_TAG=$GITHUB_REGISTRY_REF:latest-$DEFAULT_BRANCH_FOR_CACHING" >> $GITHUB_OUTPUT
+          fi
 
           PROJECTS="${{ inputs.ecr_repository }}"
           if [ "${{ inputs.projects }}" != "" ]; then
@@ -230,14 +246,12 @@ jobs:
             RUBY_VERSION=${{ needs.init.outputs.RUBY_VERSION }}
             BASE_IMAGE=${{ needs.init.outputs.BASE_IMAGE }}
           IMAGE_TARGET: development
-          IMAGE_CACHE_TO: type=registry,ref=${{ needs.init.outputs.GITHUB_CACHE_IMAGE_ID_TAG }},mode=max
+          IMAGE_CACHE_TO: type=registry,ref=${{ needs.init.outputs.GITHUB_BRANCH_CACHE_IMAGE_ID_TAG }}-${{ matrix.arch }},mode=max
           IMAGE_CACHE_FROM: |
-            type=registry,ref=${{ needs.init.outputs.GITHUB_CACHE_IMAGE_ID_TAG }}
-          # TODO: we might need to add arch to tags
-          #  TODO: i dont htink "cache" will work, it might need to be "cache" if master
-          # Otherwise we will need to add a new cache for each branch also
-          # We will also need to make sure these are culled once merged to reduce used space
-          IMAGE_TAGS: ${{ needs.init.outputs.GITHUB_CACHE_IMAGE_ID_TAG }}
+            type=registry,ref=${{ needs.init.outputs.GITHUB_CACHE_IMAGE_ID_TAG }}-${{ matrix.arch }}
+            type=registry,ref=${{ needs.init.outputs.GITHUB_BRANCH_CACHE_IMAGE_ID_TAG }}-${{ matrix.arch }}
+          IMAGE_TAGS: |
+            ${{ needs.init.outputs.GITHUB_BRANCH_CACHE_IMAGE_ID_TAG }}-${{ matrix.arch }}
           IMAGE_LOAD: false
           IMAGE_PUSH: true
           IMAGE_FORCE_REBUILD: inputs.event_name == 'schedule'
@@ -263,14 +277,14 @@ jobs:
             BASE_IMAGE=${{ needs.init.outputs.BASE_IMAGE }}
             RELEASE_VERSION=${{ needs.init.outputs.IMAGE_TAG }}
           IMAGE_TARGET: production
-          IMAGE_CACHE_TO: type=registry,ref=${{ needs.init.outputs.GITHUB_LATEST_IMAGE_ID_TAG }},mode=max
+          IMAGE_CACHE_TO: type=registry,ref=${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}-${{ matrix.arch }},mode=max
           IMAGE_CACHE_FROM: |
-            type=registry,ref=${{ needs.init.outputs.GITHUB_CACHE_IMAGE_ID_TAG }}
-            type=registry,ref=${{ needs.init.outputs.GITHUB_LATEST_IMAGE_ID_TAG }}
-          #  TODO: we might not want to use latest, as thats what we will use for the iamges that never need to come fomr aws
-          # i.e image scanner, and if we push every build that would result in the branch prs being used for prod checkups
-          # i.e fm's run would use an image  for image scanner build in a pr not master
-          IMAGE_TAGS: ${{ needs.init.outputs.GITHUB_LATEST_IMAGE_ID_TAG }}
+            type=registry,ref=${{ needs.init.outputs.GITHUB_BRANCH_CACHE_IMAGE_ID_TAG }}-${{ matrix.arch }}
+            type=registry,ref=${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}-${{ matrix.arch }}
+          # TODO: once we start trying to use gchr images we need to make the line below only happen on the default build, how does multi arch come to to play then?
+          # ${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}
+          IMAGE_TAGS: |
+            ${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}-${{ matrix.arch }}
           IMAGE_LOAD: false
           IMAGE_PUSH: true
 
@@ -346,11 +360,12 @@ jobs:
             BASE_IMAGE=${{ needs.init.outputs.BASE_IMAGE }}
             RELEASE_VERSION=${{ needs.init.outputs.IMAGE_TAG }}
           IMAGE_TARGET: production
-          IMAGE_CACHE_TO: type=registry,ref=${{ needs.init.outputs.GITHUB_LATEST_IMAGE_ID_TAG }},mode=max
+          IMAGE_CACHE_TO: type=registry,ref=${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}-${{ matrix.arch }},mode=max
           IMAGE_CACHE_FROM: |
-            type=registry,ref=${{ needs.init.outputs.GITHUB_CACHE_IMAGE_ID_TAG }}
-            type=registry,ref=${{ needs.init.outputs.GITHUB_LATEST_IMAGE_ID_TAG }}
-          IMAGE_TAGS: ${{ needs.init.outputs.GITHUB_LATEST_IMAGE_ID_TAG }}
+            type=registry,ref=${{ needs.init.outputs.GITHUB_BRANCH_CACHE_IMAGE_ID_TAG }}-${{ matrix.arch }}
+            type=registry,ref=${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}-${{ matrix.arch }}
+          IMAGE_TAGS: |
+            ${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}-${{ matrix.arch }}
           IMAGE_LOAD: true
           IMAGE_PUSH: false
 
@@ -383,11 +398,12 @@ jobs:
             BASE_IMAGE=${{ needs.init.outputs.BASE_IMAGE }}
             RELEASE_VERSION=${{ needs.init.outputs.IMAGE_TAG }}
           IMAGE_TARGET: production
-          IMAGE_CACHE_TO: type=registry,ref=${{ needs.init.outputs.GITHUB_LATEST_IMAGE_ID_TAG }},mode=max
+          IMAGE_CACHE_TO: type=registry,ref=${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}-${{ matrix.arch }},mode=max
           IMAGE_CACHE_FROM: |
-            type=registry,ref=${{ needs.init.outputs.GITHUB_CACHE_IMAGE_ID_TAG }}
-            type=registry,ref=${{ needs.init.outputs.GITHUB_LATEST_IMAGE_ID_TAG }}
-          IMAGE_TAGS: ${{ needs.init.outputs.GITHUB_LATEST_IMAGE_ID_TAG }}
+            type=registry,ref=${{ needs.init.outputs.GITHUB_BRANCH_CACHE_IMAGE_ID_TAG }}-${{ matrix.arch }}
+            type=registry,ref=${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}-${{ matrix.arch }}
+          IMAGE_TAGS: |
+            ${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}-${{ matrix.arch }}
           IMAGE_LOAD: true
           IMAGE_PUSH: false
 
@@ -424,12 +440,12 @@ jobs:
             RELEASE_VERSION=${{ needs.init.outputs.IMAGE_TAG }}
           IMAGE_TARGET: production
           IMAGE_CACHE_FROM: |
-            type=registry,ref=${{ needs.init.outputs.GITHUB_CACHE_IMAGE_ID_TAG }}
-            type=registry,ref=${{ needs.init.outputs.GITHUB_LATEST_IMAGE_ID_TAG }}
+            type=registry,ref=${{ needs.init.outputs.GITHUB_BRANCH_CACHE_IMAGE_ID_TAG }}-${{ matrix.arch }}
+            type=registry,ref=${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}-${{ matrix.arch }}
           IMAGE_TAGS: |
             ${{ needs.init.outputs.PRODUCTION_IMAGE_ID_TAG }}
             ${{ needs.init.outputs.LATEST_IMAGE_ID_TAG }}
-            ${{ needs.init.outputs.PRODUCTION_IMAGE_ID_TAG }}-${ARCH//\//_}
+            ${{ needs.init.outputs.PRODUCTION_IMAGE_ID_TAG }}-${{ matrix.arch }}
           IMAGE_LOAD: false
           IMAGE_PUSH: true
 
@@ -448,7 +464,8 @@ jobs:
 
       - name: Create and Push Docker Manifest
         run: |
-          PLATFORMS_STRING=$(echo "${{ inputs.platforms }}" | tr -d "[]'" | tr / _ | awk -v ORS=' ' 'BEGIN{RS=","}{print "${{ needs.init.outputs.PRODUCTION_IMAGE_ID_TAG }}-"$0}')
+          # | tr / _
+          PLATFORMS_STRING=$(echo "${{ inputs.platforms }}" | tr -d "[]'" | awk -v ORS=' ' 'BEGIN{RS=","}{print "${{ needs.init.outputs.PRODUCTION_IMAGE_ID_TAG }}-"$0}')
           docker buildx imagetools create --tag ${{ needs.init.outputs.PRODUCTION_IMAGE_ID_TAG }} $PLATFORMS_STRING ${{ needs.init.outputs.LATEST_IMAGE_ID_TAG }}
 
           # dont update latest tag if /deploy
