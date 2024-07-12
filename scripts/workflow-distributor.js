@@ -343,7 +343,7 @@ const createPR = async ({ repo, tree, baseBranch }) => {
   }
 }
 
-export const run = async ({ github, signature, context, repositories, fs, gpgPrivateKey, gpgPrivateKeyPassword }) => {
+const run = async ({ github, signature, context, repositories, fs, gpgPrivateKey, gpgPrivateKeyPassword }) => {
   setGlobals({ context, github, signature, fs, gpgPrivateKey, gpgPrivateKeyPassword })
   const files = getFiles()
   console.log("Procesing the following templates")
@@ -384,3 +384,4 @@ export const run = async ({ github, signature, context, repositories, fs, gpgPri
   }
 }
 
+module.exports = run
