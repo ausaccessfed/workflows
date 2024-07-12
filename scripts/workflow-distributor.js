@@ -1,8 +1,3 @@
-/* eslint-disable no-restricted-syntax */
-/* eslint-disable no-await-in-loop */
-/* eslint-disable no-console */
-/* eslint-disable no-return-await */
-
 const CONSTANTS = {
   regex: {
     once: /#ONCE#(\n)*/,
@@ -94,7 +89,15 @@ const createCommit = async ({ repo, baseSha, tree, message }) => {
     owner: GLOBALS.owner,
     repo,
     ...commit,
-    signature: await GLOBALS.signature.createSignature(commit, GLOBALS.gpgPrivateKey, GLOBALS.gpgPrivateKeyPassword)
+    ...(signature
+      ? {}
+      : {
+        signature: await GLOBALS.signature.createSignature(
+          commit,
+          GLOBALS.gpgPrivateKey,
+          GLOBALS.gpgPrivateKeyPassword
+        )
+      })
   })
 
   return { newCommitSha, isDiff: baseSha !== treeSha }
@@ -253,8 +256,7 @@ const getFileRemovals = async ({ repo, parsedFiles, baseBranch }) => {
 }
 
 const getFiles = async () => {
-  const globber = await GLOBALS.glob.create('**/**/distributions/**/**.*', { followSymbolicLinks: false })
-  return await globber.glob()
+  return await GLOBALS.glob('**/**/distributions/**/**.*', { followSymbolicLinks: false })
 }
 
 const createPR = async ({ repo, tree, baseBranch }) => {
@@ -286,7 +288,7 @@ const createPR = async ({ repo, tree, baseBranch }) => {
   }
 }
 
-const run = async ({ github, signature, context, repositories, fs, glob, gpgPrivateKey, gpgPrivateKeyPassword }) => {
+export const run = async ({ github, signature, context, repositories, fs, glob, gpgPrivateKey, gpgPrivateKeyPassword }) => {
   setGlobals({ context, github, signature, fs, glob, gpgPrivateKey, gpgPrivateKeyPassword })
   const files = await getFiles()
   // parses files and then extracts the bootstrap file as its a special one
@@ -328,4 +330,3 @@ const run = async ({ github, signature, context, repositories, fs, glob, gpgPriv
   }
 }
 
-module.exports = run
