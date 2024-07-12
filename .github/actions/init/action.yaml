@@ -45,3 +45,4 @@ runs:
         registry: ghcr.io
         username: ${{ inputs.GITHUB_ACTOR }}
         password: ${{ inputs.GITHUB_TOKEN }}
+        logout: false
