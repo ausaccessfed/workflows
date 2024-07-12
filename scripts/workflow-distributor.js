@@ -1,8 +1,3 @@
-/* eslint-disable no-restricted-syntax */
-/* eslint-disable no-await-in-loop */
-/* eslint-disable no-console */
-/* eslint-disable no-return-await */
-
 const CONSTANTS = {
   regex: {
     once: /#ONCE#(\n)*/,
@@ -15,7 +10,7 @@ const CONSTANTS = {
 }
 
 let GLOBALS = {}
-const setGlobals = ({ context, github, fs, glob, signature, gpgPrivateKey, gpgPrivateKeyPassword }) => {
+const setGlobals = ({ context, github, fs, signature, gpgPrivateKey, gpgPrivateKeyPassword }) => {
   const contextPayload = context.payload
   GLOBALS = {
     gpgPrivateKey,
@@ -23,7 +18,6 @@ const setGlobals = ({ context, github, fs, glob, signature, gpgPrivateKey, gpgPr
     signature,
     github,
     fs,
-    glob,
     owner: contextPayload.organization.login,
     committer: {
       email: 'fishwhack9000+terraform@gmail.com',
@@ -68,6 +62,26 @@ const getFile = async ({ repo, path, ref }) => {
   return result
 }
 
+const deleteFile = async ({ repo, file, prBranch, baseBranch }) => {
+  const {
+    data: { sha }
+  } = await getFile({ repo, path: file.prFilePath, ref: baseBranch })
+  if (sha) {
+    return await GLOBALS.github.request(`DELETE /repos/${GLOBALS.owner}/${repo}/contents/${file.prFilePath}`, {
+      owner: GLOBALS.owner,
+      repo,
+      file: file.prFilePath,
+      branch: prBranch,
+      message: file.message,
+      committer: GLOBALS.committer,
+      sha,
+      headers: {
+        'X-GitHub-Api-Version': '2022-11-28'
+      }
+    })
+  }
+}
+
 const createCommit = async ({ repo, baseSha, tree, message }) => {
   const {
     data: { sha: treeSha }
@@ -94,7 +108,16 @@ const createCommit = async ({ repo, baseSha, tree, message }) => {
     owner: GLOBALS.owner,
     repo,
     ...commit,
-    signature: await GLOBALS.signature.createSignature(commit, GLOBALS.gpgPrivateKey, GLOBALS.gpgPrivateKeyPassword)
+    ...(GLOBALS.signature
+      ? {
+        signature: await GLOBALS.signature.createSignature(
+          commit,
+          GLOBALS.gpgPrivateKey,
+          GLOBALS.gpgPrivateKeyPassword
+        )
+      }
+      : {}
+    )
   })
 
   return { newCommitSha, isDiff: baseSha !== treeSha }
@@ -168,7 +191,22 @@ const parseFiles = (files) => {
       .shift()
     // i.e /workflows/distributions/.github/.dockerignore -> .github/.dockerignore
     const prFilePath = distributionsFilePath.split('distributions/').pop()
-    if (GLOBALS.fs.lstatSync(fileName).isFile()) {
+    let lstat
+    try {
+      lstat = GLOBALS.fs.lstatSync(fileName)
+    } catch (_e) {
+      // This was prob a file removal so it doesn't exist
+    }
+    if (!lstat) {
+      parsedFiles.push({
+        distributionsFilePath,
+        message: `Remove ${fileNameRaw}`,
+        prFilePath,
+        newContent: null
+      })
+      continue
+    }
+    if (lstat.isFile()) {
       const newContent = GLOBALS.fs.readFileSync(fileName).toString('utf8')
       // NOTE: due to issues with comments causing issues i.e json does not support
       // we have decided to suspend the commentRefString
@@ -180,6 +218,7 @@ const parseFiles = (files) => {
         prFilePath,
         newContent: `${commentRefString}${newContent}`
       })
+      continue
     }
   }
   return parsedFiles
@@ -200,6 +239,7 @@ const updateFileTreeObject = async ({ baseBranch, repo, parsedFile }) => {
     const shouldBeAdded = repoSplits.includes(repo)
     if (!shouldBeAdded) {
       //  If repo isnt in list then we dont care
+      console.log(`Not updating ${prFilePath} due to REPOSITORY_MATCH`)
       return null
     }
     newContent = newContent.replace(CONSTANTS.regex.repositoryMatch, '')
@@ -213,6 +253,7 @@ const updateFileTreeObject = async ({ baseBranch, repo, parsedFile }) => {
     const shouldntBeAdded = repoSplits.includes(repo)
     if (shouldntBeAdded) {
       //  If repo is in list then we dont care
+      console.log(`Not updating ${prFilePath} due to REPOSITORY_EXCLUSION_MATCH`)
       return null
     }
     newContent = newContent.replace(CONSTANTS.regex.repositoryExclusion, '')
@@ -222,6 +263,7 @@ const updateFileTreeObject = async ({ baseBranch, repo, parsedFile }) => {
   if (isOnceFile) {
     if (currentContentBase64) {
       //  If file exists then skip
+      console.log(`Not updating ${prFilePath} due to IS_ONCE_FILE`)
       return null
     }
     newContent = newContent.replace(CONSTANTS.regex.once, '')
@@ -242,22 +284,37 @@ const getFileRemovals = async ({ repo, parsedFiles, baseBranch }) => {
     data: { sha: distributionsRefFileSHA, content: distributionsRefBase64Content }
   } = await getFile({ repo, path: CONSTANTS.cacheFilePath, ref: baseBranch })
   let distributionsRefContent = ''
-  let filesToBeRemoved = []
   if (distributionsRefFileSHA) {
     distributionsRefContent = base64TextToUtf8(distributionsRefBase64Content)
     const bootstrappedFiles = distributionsRefContent.split('\n')
-    const bootstrappableFiles = parsedFiles.map((parsedFile) => parsedFile.distributionsFilePath)
-    filesToBeRemoved = bootstrappedFiles.filter((bootstrappedFile) => !bootstrappableFiles.includes(bootstrappedFile))
+    const removalFiles = bootstrappedFiles.filter((file) => !parsedFiles.find(parsedFile => file == parsedFile.distributionsFilePath))
+
+    return parseFiles(removalFiles)
   }
-  return filesToBeRemoved
+  return []
 }
 
-const getFiles = async () => {
-  const globber = await GLOBALS.glob.create('**/**/distributions/**/**.*', { followSymbolicLinks: false })
-  return await globber.glob()
+const getFiles = (dirPath = ".github/workflows/distributions") => {
+  let files = [];
+  const entries = GLOBALS.fs.readdirSync(dirPath, { withFileTypes: true });
+
+  for (let entry of entries) {
+    const fullPath = `${dirPath}/${entry.name}`;
+    if (entry.isDirectory()) {
+      files = files.concat(getFiles(fullPath));
+    } else {
+      files.push(fullPath);
+    }
+  }
+
+  return files;
 }
 
 const createPR = async ({ repo, tree, baseBranch }) => {
+  tree = tree.filter(Boolean)
+  if (!tree.length) {
+    return
+  }
   const {
     data: {
       commit: { sha: baseSha }
@@ -265,7 +322,7 @@ const createPR = async ({ repo, tree, baseBranch }) => {
   } = await getBranch({ repo, branch: baseBranch })
 
   const message = 'Updating distribution files'
-  const { newCommitSha, isDiff } = await createCommit({ repo, tree: tree.filter((x) => x), baseSha, message })
+  const { newCommitSha, isDiff } = await createCommit({ repo, tree, baseSha, message })
 
   if (isDiff) {
     await GLOBALS.github.rest.git.createRef({
@@ -286,9 +343,11 @@ const createPR = async ({ repo, tree, baseBranch }) => {
   }
 }
 
-const run = async ({ github, signature, context, repositories, fs, glob, gpgPrivateKey, gpgPrivateKeyPassword }) => {
-  setGlobals({ context, github, signature, fs, glob, gpgPrivateKey, gpgPrivateKeyPassword })
-  const files = await getFiles()
+export const run = async ({ github, signature, context, repositories, fs, gpgPrivateKey, gpgPrivateKeyPassword }) => {
+  setGlobals({ context, github, signature, fs, gpgPrivateKey, gpgPrivateKeyPassword })
+  const files = getFiles()
+  console.log("Procesing the following templates")
+  console.log(files)
   // parses files and then extracts the bootstrap file as its a special one
   let parsedFiles = parseFiles(files)
   const cacheFileContents = parsedFiles.map((file) => file.distributionsFilePath).join('\n')
@@ -313,19 +372,15 @@ const run = async ({ github, signature, context, repositories, fs, glob, gpgPriv
       tree.push(await updateFileTreeObject({ baseBranch, repo, parsedFile }))
     }
 
+    await createPR({ repo, tree, baseBranch })
+
     const filesToBeRemoved = await getFileRemovals({ repo, parsedFiles, baseBranch })
-    for (const prFilePath of filesToBeRemoved) {
-      tree.push({
-        path: prFilePath,
-        mode: '100644',
-        type: 'blob',
-        sha: null
-      })
+
+    for (const file of filesToBeRemoved) {
+      await deleteFile({ repo, file, prBranch: CONSTANTS.prBranchName, baseBranch })
     }
 
-    await createPR({ repo, tree, baseBranch })
     console.log(`finished ${repository}`)
   }
 }
 
-module.exports = run
