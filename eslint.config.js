@@ -77,10 +77,15 @@ const common = [
 
 //EOF_DISTRIBUTION
 module.exports = [
+  ...common,
+  {
+    rules: {
+      'yml/quotes': [
+        'error',
+        {
           prefer: 'double'
-  // {
-  //   files: ["*.yaml", "*.yml"],
-  //   languageOptions: {
-  //     parser: eslintPluginYml
-  //   }
-  // }
+        }
+      ],
+    }
+  }
+]

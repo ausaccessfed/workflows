@@ -1,4 +1,5 @@
 #PARTIAL#
+/* eslint-disable no-undef */
 const eslintPluginPrettierRecommended = require('eslint-plugin-prettier/recommended')
 const eslintPluginYml = require('eslint-plugin-yml')
 const eslint = require('@eslint/js')
