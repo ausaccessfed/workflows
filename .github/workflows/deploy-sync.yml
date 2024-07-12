@@ -302,6 +302,7 @@ jobs:
 
   commands:
     needs: [init, build-test]
+    if: ${{ inputs.commands }} != '[]'
     strategy:
       fail-fast: false
       matrix:
