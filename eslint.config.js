@@ -2,9 +2,9 @@ const eslintPluginPrettierRecommended = require('eslint-plugin-prettier/recommen
 const eslintPluginYml = require('eslint-plugin-yml')
 const eslint = require('@eslint/js')
 
-module.exports = [
-  eslint.configs.recommended,
+const common = [
   eslintPluginPrettierRecommended,
+  eslint.configs.recommended,
   ...eslintPluginYml.configs['flat/recommended'],
   {
     languageOptions: {
@@ -32,7 +32,7 @@ module.exports = [
       'yml/quotes': [
         'error',
         {
-          prefer: 'double'
+          prefer: 'single'
         }
       ],
       'yml/indent': 'off',
@@ -73,10 +73,14 @@ module.exports = [
       '.github/'
     ]
   }
+]
+
+//EOF_DISTRIBUTION
+module.exports = [
+          prefer: 'double'
   // {
   //   files: ["*.yaml", "*.yml"],
   //   languageOptions: {
   //     parser: eslintPluginYml
   //   }
   // }
-]
