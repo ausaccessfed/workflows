@@ -633,9 +633,13 @@ jobs:
         update-ecr-manifests,
         update-terraform-manifests
       ]
+    if: always()
     name: 'finish'
     runs-on: ubuntu-latest
     steps:
       - name: check for failures
         run: |
-          echo "finished"
+          STRING="${{ needs.init.result }}${{ needs.build-test.result }}${{ needs.build-production.result }}${{ needs.commands.result }}${{ needs.image-lint.result }}${{ needs.image-scan.result }}${{ needs.push-to-ecr.result }}${{ needs.update-ecr-manifests.result }}${{ needs.update-terraform-manifests.result }}"
+          if [ "$(echo "$STRING" | grep "failure" || echo "")" != "" ]; then
+            exit 1
+          fi
