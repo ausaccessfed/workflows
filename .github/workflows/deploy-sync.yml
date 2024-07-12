@@ -302,7 +302,7 @@ jobs:
 
   commands:
     needs: [init, build-test]
-    if: ${{ inputs.commands }} != '[]'
+    if: ${{ fromJSON(inputs.commands).length > 0 }}
     strategy:
       fail-fast: false
       matrix:
