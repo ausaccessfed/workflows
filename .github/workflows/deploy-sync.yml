@@ -621,18 +621,8 @@ jobs:
           context: 'Dev federation deploy'
 
   finish:
-    needs:
-      [
-        init,
-        build-test,
-        build-production,
-        commands,
-        image-lint,
-        image-scan,
-        push-to-ecr,
-        update-ecr-manifests,
-        update-terraform-manifests
-      ]
+    needs: [init, build-test, build-production, commands, image-lint, image-scan]
+    if: always()
     name: 'finish'
     runs-on: ubuntu-latest
     steps:
