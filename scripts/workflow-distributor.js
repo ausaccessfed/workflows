@@ -62,6 +62,26 @@ const getFile = async ({ repo, path, ref }) => {
   return result
 }
 
+const deleteFile = async ({ repo, file, prBranch, baseBranch }) => {
+  const {
+    data: { sha }
+  } = await getFile({ repo, path: file.prFilePath, ref: baseBranch })
+  if (sha) {
+    return await GLOBALS.github.request(`DELETE /repos/${GLOBALS.owner}/${repo}/contents/${file.prFilePath}`, {
+      owner: GLOBALS.owner,
+      repo,
+      file: file.prFilePath,
+      branch: prBranch,
+      message: file.message,
+      committer: GLOBALS.committer,
+      sha,
+      headers: {
+        'X-GitHub-Api-Version': '2022-11-28'
+      }
+    })
+  }
+}
+
 const createCommit = async ({ repo, baseSha, tree, message }) => {
   const {
     data: { sha: treeSha }
@@ -171,7 +191,22 @@ const parseFiles = (files) => {
       .shift()
     // i.e /workflows/distributions/.github/.dockerignore -> .github/.dockerignore
     const prFilePath = distributionsFilePath.split('distributions/').pop()
-    if (GLOBALS.fs.lstatSync(fileName).isFile()) {
+    let lstat
+    try {
+      lstat = GLOBALS.fs.lstatSync(fileName)
+    } catch (_e) {
+      // This was prob a file removal so it doesn't exist
+    }
+    if (!lstat) {
+      parsedFiles.push({
+        distributionsFilePath,
+        message: `Remove ${fileNameRaw}`,
+        prFilePath,
+        newContent: null
+      })
+      continue
+    }
+    if (lstat.isFile()) {
       const newContent = GLOBALS.fs.readFileSync(fileName).toString('utf8')
       // NOTE: due to issues with comments causing issues i.e json does not support
       // we have decided to suspend the commentRefString
@@ -183,6 +218,7 @@ const parseFiles = (files) => {
         prFilePath,
         newContent: `${commentRefString}${newContent}`
       })
+      continue
     }
   }
   return parsedFiles
@@ -248,14 +284,14 @@ const getFileRemovals = async ({ repo, parsedFiles, baseBranch }) => {
     data: { sha: distributionsRefFileSHA, content: distributionsRefBase64Content }
   } = await getFile({ repo, path: CONSTANTS.cacheFilePath, ref: baseBranch })
   let distributionsRefContent = ''
-  let filesToBeRemoved = []
   if (distributionsRefFileSHA) {
     distributionsRefContent = base64TextToUtf8(distributionsRefBase64Content)
     const bootstrappedFiles = distributionsRefContent.split('\n')
-    const bootstrappableFiles = parsedFiles.map((parsedFile) => parsedFile.distributionsFilePath)
-    filesToBeRemoved = bootstrappedFiles.filter((bootstrappedFile) => !bootstrappableFiles.includes(bootstrappedFile))
+    const removalFiles = bootstrappedFiles.filter((file) => !parsedFiles.find(parsedFile => file == parsedFile.distributionsFilePath))
+
+    return parseFiles(removalFiles)
   }
-  return filesToBeRemoved
+  return []
 }
 
 const getFiles = (dirPath = ".github/workflows/distributions") => {
@@ -264,7 +300,6 @@ const getFiles = (dirPath = ".github/workflows/distributions") => {
 
   for (let entry of entries) {
     const fullPath = `${dirPath}/${entry.name}`;
-    console.log(fullPath)
     if (entry.isDirectory()) {
       files = files.concat(getFiles(fullPath));
     } else {
@@ -311,6 +346,7 @@ const createPR = async ({ repo, tree, baseBranch }) => {
 export const run = async ({ github, signature, context, repositories, fs, gpgPrivateKey, gpgPrivateKeyPassword }) => {
   setGlobals({ context, github, signature, fs, gpgPrivateKey, gpgPrivateKeyPassword })
   const files = getFiles()
+  console.log("Procesing the following templates")
   console.log(files)
   // parses files and then extracts the bootstrap file as its a special one
   let parsedFiles = parseFiles(files)
@@ -336,18 +372,13 @@ export const run = async ({ github, signature, context, repositories, fs, gpgPri
       tree.push(await updateFileTreeObject({ baseBranch, repo, parsedFile }))
     }
 
+    await createPR({ repo, tree, baseBranch })
+
     const filesToBeRemoved = await getFileRemovals({ repo, parsedFiles, baseBranch })
 
-    for (const prFilePath of filesToBeRemoved) {
-      // tree.push({
-      //   path: prFilePath,
-      //   mode: '100644',
-      //   type: 'blob',
-      //   sha: null
-      // })
+    for (const file of filesToBeRemoved) {
+      await deleteFile({ repo, file, prBranch: CONSTANTS.prBranchName, baseBranch })
     }
-
-    await createPR({ repo, tree, baseBranch })
 
     console.log(`finished ${repository}`)
   }
