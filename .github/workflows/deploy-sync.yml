@@ -399,7 +399,7 @@ jobs:
         run: |
           ${{needs.init.outputs.IMAGE_SCANNER_COMMON}} \
             ./scripts/lint \
-            ${{ steps.env.outputs.GITHUB_LATEST_IMAGE_ID_TAG }} \
+            ${{ steps.env.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }} \
             /app/Dockerfile
 
   image-scan:
