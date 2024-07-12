@@ -345,6 +345,8 @@ jobs:
       matrix:
         arch: ${{ fromJSON(inputs.platforms) }}
     runs-on: ${{ (matrix.arch == 'linux/amd64' && inputs.runner) || (matrix.arch == 'linux/arm64' && 'arm64-4core') }}
+    env:
+      DOCKLE_HOST: 'unix:///var/run/docker.sock'
     name: Running Image lint on ${{ matrix.arch }}
     steps:
       - uses: ausaccessfed/workflows/.github/actions/build@feature/moving-ro-more-async
