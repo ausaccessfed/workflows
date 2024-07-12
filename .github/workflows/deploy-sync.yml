@@ -62,7 +62,7 @@ on:
         default: false
         type: boolean
       commands:
-        default: '[]'
+        default: 'skip'
         type: string
     secrets:
       ROLE:
@@ -302,7 +302,7 @@ jobs:
 
   commands:
     needs: [init, build-test]
-    if: ${{ fromJSON(inputs.commands).length > 0 }}
+    if: inputs.commands != 'skip'
     strategy:
       fail-fast: false
       matrix:
