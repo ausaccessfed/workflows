@@ -234,6 +234,12 @@ jobs:
     runs-on: ${{ (matrix.arch == 'linux/amd64' && inputs.runner) || (matrix.arch == 'linux/arm64' && 'arm64-4core') }}
     name: Build Test Image
     steps:
+      - id: env
+        run: |
+          MATRIX_CLEANED="$(echo "${{ matrix.arch }}" | tr / _)"
+          echo "GITHUB_CACHE_IMAGE_ID_TAG=${{ needs.init.outputs.GITHUB_CACHE_IMAGE_ID_TAG }}-$MATRIX_CLEANED" >> $GITHUB_OUTPUT
+          echo "GITHUB_BRANCH_CACHE_IMAGE_ID_TAG=${{ needs.init.outputs.GITHUB_BRANCH_CACHE_IMAGE_ID_TAG }}-$MATRIX_CLEANED" >> $GITHUB_OUTPUT
+
       - uses: ausaccessfed/workflows/.github/actions/build@feature/moving-ro-more-async
         with:
           BRANCH_NAME: ${{ needs.init.outputs.BRANCH_NAME }}
@@ -246,12 +252,12 @@ jobs:
             RUBY_VERSION=${{ needs.init.outputs.RUBY_VERSION }}
             BASE_IMAGE=${{ needs.init.outputs.BASE_IMAGE }}
           IMAGE_TARGET: development
-          IMAGE_CACHE_TO: type=registry,ref=${{ needs.init.outputs.GITHUB_BRANCH_CACHE_IMAGE_ID_TAG }}-${{ matrix.arch }},mode=max
+          IMAGE_CACHE_TO: type=registry,ref=${{ steps.env.outputs.GITHUB_BRANCH_CACHE_IMAGE_ID_TAG }},mode=max
           IMAGE_CACHE_FROM: |
-            type=registry,ref=${{ needs.init.outputs.GITHUB_CACHE_IMAGE_ID_TAG }}-${{ matrix.arch }}
-            type=registry,ref=${{ needs.init.outputs.GITHUB_BRANCH_CACHE_IMAGE_ID_TAG }}-${{ matrix.arch }}
+            type=registry,ref=${{ steps.env.outputs.GITHUB_CACHE_IMAGE_ID_TAG }}
+            type=registry,ref=${{ steps.env.outputs.GITHUB_BRANCH_CACHE_IMAGE_ID_TAG }}
           IMAGE_TAGS: |
-            ${{ needs.init.outputs.GITHUB_BRANCH_CACHE_IMAGE_ID_TAG }}-${{ matrix.arch }}
+            ${{ steps.env.outputs.GITHUB_BRANCH_CACHE_IMAGE_ID_TAG }}
           IMAGE_LOAD: false
           IMAGE_PUSH: true
           IMAGE_FORCE_REBUILD: inputs.event_name == 'schedule'
@@ -264,6 +270,12 @@ jobs:
     runs-on: ${{ (matrix.arch == 'linux/amd64' && inputs.runner) || (matrix.arch == 'linux/arm64' && 'arm64-4core') }}
     name: Build Production Image
     steps:
+      - id: env
+        run: |
+          MATRIX_CLEANED="$(echo "${{ matrix.arch }}" | tr / _)"
+          echo "GITHUB_BRANCH_LATEST_IMAGE_ID_TAG=${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}-$MATRIX_CLEANED" >> $GITHUB_OUTPUT
+          echo "GITHUB_BRANCH_CACHE_IMAGE_ID_TAG=${{ needs.init.outputs.GITHUB_BRANCH_CACHE_IMAGE_ID_TAG }}-$MATRIX_CLEANED" >> $GITHUB_OUTPUT
+
       - uses: ausaccessfed/workflows/.github/actions/build@feature/moving-ro-more-async
         with:
           BRANCH_NAME: ${{ needs.init.outputs.BRANCH_NAME }}
@@ -277,14 +289,14 @@ jobs:
             BASE_IMAGE=${{ needs.init.outputs.BASE_IMAGE }}
             RELEASE_VERSION=${{ needs.init.outputs.IMAGE_TAG }}
           IMAGE_TARGET: production
-          IMAGE_CACHE_TO: type=registry,ref=${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}-${{ matrix.arch }},mode=max
+          IMAGE_CACHE_TO: type=registry,ref=${{ steps.env.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }},mode=max
           IMAGE_CACHE_FROM: |
-            type=registry,ref=${{ needs.init.outputs.GITHUB_BRANCH_CACHE_IMAGE_ID_TAG }}-${{ matrix.arch }}
-            type=registry,ref=${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}-${{ matrix.arch }}
+            type=registry,ref=${{ steps.env.outputs.GITHUB_BRANCH_CACHE_IMAGE_ID_TAG }}
+            type=registry,ref=${{ steps.env.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}
           # TODO: once we start trying to use gchr images we need to make the line below only happen on the default build, how does multi arch come to to play then?
-          # ${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}
+          # ${{  steps.env.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}
           IMAGE_TAGS: |
-            ${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}-${{ matrix.arch }}
+            ${{  steps.env.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}
           IMAGE_LOAD: false
           IMAGE_PUSH: true
 
@@ -305,6 +317,11 @@ jobs:
         ports:
           - '3306:3306'
     steps:
+      - id: env
+        run: |
+          MATRIX_CLEANED="$(echo "${{ matrix.arch }}" | tr / _)"
+          echo "GITHUB_CACHE_IMAGE_ID_TAG=${{ needs.init.outputs.GITHUB_CACHE_IMAGE_ID_TAG }}-$MATRIX_CLEANED" >> $GITHUB_OUTPUT
+
       - uses: ausaccessfed/workflows/.github/actions/build@feature/moving-ro-more-async
         with:
           BRANCH_NAME: ${{ needs.init.outputs.BRANCH_NAME }}
@@ -318,14 +335,14 @@ jobs:
             BASE_IMAGE=${{ needs.init.outputs.BASE_IMAGE }}
           IMAGE_TARGET: development
           IMAGE_CACHE_FROM: |
-            type=registry,ref=${{ needs.init.outputs.GITHUB_CACHE_IMAGE_ID_TAG }}
-          IMAGE_TAGS: ${{ needs.init.outputs.GITHUB_CACHE_IMAGE_ID_TAG }}
+            type=registry,ref=${{ steps.env.outputs.GITHUB_CACHE_IMAGE_ID_TAG }}
+          IMAGE_TAGS: ${{ steps.env.outputs.GITHUB_CACHE_IMAGE_ID_TAG }}
           IMAGE_LOAD: true
           IMAGE_PUSH: false
 
       - name: Run
         run: |
-          ${{ format(matrix.command, needs.init.outputs.GITHUB_CACHE_IMAGE_ID_TAG) }}
+          ${{ format(matrix.command, steps.env.outputs.GITHUB_CACHE_IMAGE_ID_TAG) }}
 
     #  TODO: need to think about how this slots in now there is multi arch multi commands async
     # - name: zip artifacts
@@ -349,6 +366,12 @@ jobs:
       DOCKLE_HOST: 'unix:///var/run/docker.sock'
     name: Running Image lint on ${{ matrix.arch }}
     steps:
+      - id: env
+        run: |
+          MATRIX_CLEANED="$(echo "${{ matrix.arch }}" | tr / _)"
+          echo "GITHUB_BRANCH_LATEST_IMAGE_ID_TAG=${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}-$MATRIX_CLEANED" >> $GITHUB_OUTPUT
+          echo "GITHUB_BRANCH_CACHE_IMAGE_ID_TAG=${{ needs.init.outputs.GITHUB_BRANCH_CACHE_IMAGE_ID_TAG }}-$MATRIX_CLEANED" >> $GITHUB_OUTPUT
+
       - uses: ausaccessfed/workflows/.github/actions/build@feature/moving-ro-more-async
         with:
           BRANCH_NAME: ${{ needs.init.outputs.BRANCH_NAME }}
@@ -362,12 +385,12 @@ jobs:
             BASE_IMAGE=${{ needs.init.outputs.BASE_IMAGE }}
             RELEASE_VERSION=${{ needs.init.outputs.IMAGE_TAG }}
           IMAGE_TARGET: production
-          IMAGE_CACHE_TO: type=registry,ref=${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}-${{ matrix.arch }},mode=max
+          IMAGE_CACHE_TO: type=registry,ref=${{ steps.env.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }},mode=max
           IMAGE_CACHE_FROM: |
-            type=registry,ref=${{ needs.init.outputs.GITHUB_BRANCH_CACHE_IMAGE_ID_TAG }}-${{ matrix.arch }}
-            type=registry,ref=${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}-${{ matrix.arch }}
+            type=registry,ref=${{ steps.env.outputs.GITHUB_BRANCH_CACHE_IMAGE_ID_TAG }}
+            type=registry,ref=${{ steps.env.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}
           IMAGE_TAGS: |
-            ${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}-${{ matrix.arch }}
+            ${{ steps.env.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}
           IMAGE_LOAD: true
           IMAGE_PUSH: false
 
@@ -376,7 +399,7 @@ jobs:
         run: |
           ${{needs.init.outputs.IMAGE_SCANNER_COMMON}} \
             ./scripts/lint \
-            ${{ needs.init.outputs.GITHUB_LATEST_IMAGE_ID_TAG }} \
+            ${{ steps.env.outputs.GITHUB_LATEST_IMAGE_ID_TAG }} \
             /app/Dockerfile
 
   image-scan:
@@ -387,6 +410,12 @@ jobs:
     runs-on: ${{ (matrix.arch == 'linux/amd64' && inputs.runner) || (matrix.arch == 'linux/arm64' && 'arm64-4core') }}
     name: Running Image scan on ${{ matrix.arch }}
     steps:
+      - id: env
+        run: |
+          MATRIX_CLEANED="$(echo "${{ matrix.arch }}" | tr / _)"
+          echo "GITHUB_BRANCH_LATEST_IMAGE_ID_TAG=${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}-$MATRIX_CLEANED" >> $GITHUB_OUTPUT
+          echo "GITHUB_BRANCH_CACHE_IMAGE_ID_TAG=${{ needs.init.outputs.GITHUB_BRANCH_CACHE_IMAGE_ID_TAG }}-$MATRIX_CLEANED" >> $GITHUB_OUTPUT
+
       - uses: ausaccessfed/workflows/.github/actions/build@feature/moving-ro-more-async
         with:
           BRANCH_NAME: ${{ needs.init.outputs.BRANCH_NAME }}
@@ -400,12 +429,12 @@ jobs:
             BASE_IMAGE=${{ needs.init.outputs.BASE_IMAGE }}
             RELEASE_VERSION=${{ needs.init.outputs.IMAGE_TAG }}
           IMAGE_TARGET: production
-          IMAGE_CACHE_TO: type=registry,ref=${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}-${{ matrix.arch }},mode=max
+          IMAGE_CACHE_TO: type=registry,ref=${{ steps.env.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }},mode=max
           IMAGE_CACHE_FROM: |
-            type=registry,ref=${{ needs.init.outputs.GITHUB_BRANCH_CACHE_IMAGE_ID_TAG }}-${{ matrix.arch }}
-            type=registry,ref=${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}-${{ matrix.arch }}
+            type=registry,ref=${{ steps.env.outputs.GITHUB_BRANCH_CACHE_IMAGE_ID_TAG }}
+            type=registry,ref=${{ steps.env.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}
           IMAGE_TAGS: |
-            ${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}-${{ matrix.arch }}
+            ${{ steps.env.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}
           IMAGE_LOAD: true
           IMAGE_PUSH: false
 
@@ -413,7 +442,7 @@ jobs:
         run: |
           ${{ needs.init.outputs.IMAGE_SCANNER_COMMON }} \
             ./scripts/scan \
-            ${{ needs.init.outputs.GITHUB_LATEST_IMAGE_ID_TAG }} \
+            ${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }} \
             $IMAGE_SHA \
             /app/Dockerfile \
             ${{ secrets.SNYK_TOKEN }} \
@@ -428,6 +457,13 @@ jobs:
     runs-on: ${{ (matrix.arch == 'linux/amd64' && inputs.runner) || (matrix.arch == 'linux/arm64' && 'arm64-4core') }}
     name: Pushing images to ecr
     steps:
+      - id: env
+        run: |
+          MATRIX_CLEANED="$(echo "${{ matrix.arch }}" | tr / _)"
+          echo "MATRIX_CLEANED=$MATRIX_CLEANED" >> $GITHUB_OUTPUT
+          echo "GITHUB_BRANCH_LATEST_IMAGE_ID_TAG=${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}-$MATRIX_CLEANED" >> $GITHUB_OUTPUT
+          echo "GITHUB_BRANCH_CACHE_IMAGE_ID_TAG=${{ needs.init.outputs.GITHUB_BRANCH_CACHE_IMAGE_ID_TAG }}-$MATRIX_CLEANED" >> $GITHUB_OUTPUT
+
       - uses: ausaccessfed/workflows/.github/actions/build@feature/moving-ro-more-async
         with:
           BRANCH_NAME: ${{ needs.init.outputs.BRANCH_NAME }}
@@ -442,12 +478,12 @@ jobs:
             RELEASE_VERSION=${{ needs.init.outputs.IMAGE_TAG }}
           IMAGE_TARGET: production
           IMAGE_CACHE_FROM: |
-            type=registry,ref=${{ needs.init.outputs.GITHUB_BRANCH_CACHE_IMAGE_ID_TAG }}-${{ matrix.arch }}
-            type=registry,ref=${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}-${{ matrix.arch }}
+            type=registry,ref=${{ steps.env.outputs.GITHUB_BRANCH_CACHE_IMAGE_ID_TAG }}
+            type=registry,ref=${{ steps.env.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}
           IMAGE_TAGS: |
             ${{ needs.init.outputs.PRODUCTION_IMAGE_ID_TAG }}
             ${{ needs.init.outputs.LATEST_IMAGE_ID_TAG }}
-            ${{ needs.init.outputs.PRODUCTION_IMAGE_ID_TAG }}-${{ matrix.arch }}
+            ${{ needs.init.outputs.PRODUCTION_IMAGE_ID_TAG }}-${{ steps.env.outputs.MATRIX_CLEANED }}
           IMAGE_LOAD: false
           IMAGE_PUSH: true
 
