@@ -123,7 +123,7 @@ jobs:
           fi
           echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_OUTPUT
 
-      - uses: ausaccessfed/workflows/.github/actions/init@feature/moving-ro-more-async
+      - uses: ausaccessfed/workflows/.github/actions/init@main
         with:
           BRANCH_NAME: ${{ steps.branch.outputs.BRANCH_NAME }}
           ROLE: ${{ secrets.ROLE }}
@@ -240,7 +240,7 @@ jobs:
           echo "GITHUB_CACHE_IMAGE_ID_TAG=${{ needs.init.outputs.GITHUB_CACHE_IMAGE_ID_TAG }}-$MATRIX_CLEANED" >> $GITHUB_OUTPUT
           echo "GITHUB_BRANCH_CACHE_IMAGE_ID_TAG=${{ needs.init.outputs.GITHUB_BRANCH_CACHE_IMAGE_ID_TAG }}-$MATRIX_CLEANED" >> $GITHUB_OUTPUT
 
-      - uses: ausaccessfed/workflows/.github/actions/build@feature/moving-ro-more-async
+      - uses: ausaccessfed/workflows/.github/actions/build@main
         with:
           BRANCH_NAME: ${{ needs.init.outputs.BRANCH_NAME }}
           ROLE: ${{ secrets.ROLE }}
@@ -276,7 +276,7 @@ jobs:
           echo "GITHUB_BRANCH_LATEST_IMAGE_ID_TAG=${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}-$MATRIX_CLEANED" >> $GITHUB_OUTPUT
           echo "GITHUB_BRANCH_CACHE_IMAGE_ID_TAG=${{ needs.init.outputs.GITHUB_BRANCH_CACHE_IMAGE_ID_TAG }}-$MATRIX_CLEANED" >> $GITHUB_OUTPUT
 
-      - uses: ausaccessfed/workflows/.github/actions/build@feature/moving-ro-more-async
+      - uses: ausaccessfed/workflows/.github/actions/build@main
         with:
           BRANCH_NAME: ${{ needs.init.outputs.BRANCH_NAME }}
           ROLE: ${{ secrets.ROLE }}
@@ -322,7 +322,7 @@ jobs:
           MATRIX_CLEANED="$(echo "${{ matrix.arch }}" | tr / _)"
           echo "GITHUB_BRANCH_CACHE_IMAGE_ID_TAG=${{ needs.init.outputs.GITHUB_BRANCH_CACHE_IMAGE_ID_TAG }}-$MATRIX_CLEANED" >> $GITHUB_OUTPUT
 
-      - uses: ausaccessfed/workflows/.github/actions/build@feature/moving-ro-more-async
+      - uses: ausaccessfed/workflows/.github/actions/build@main
         with:
           BRANCH_NAME: ${{ needs.init.outputs.BRANCH_NAME }}
           ROLE: ${{ secrets.ROLE }}
@@ -372,7 +372,7 @@ jobs:
           echo "GITHUB_BRANCH_LATEST_IMAGE_ID_TAG=${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}-$MATRIX_CLEANED" >> $GITHUB_OUTPUT
           echo "GITHUB_BRANCH_CACHE_IMAGE_ID_TAG=${{ needs.init.outputs.GITHUB_BRANCH_CACHE_IMAGE_ID_TAG }}-$MATRIX_CLEANED" >> $GITHUB_OUTPUT
 
-      - uses: ausaccessfed/workflows/.github/actions/build@feature/moving-ro-more-async
+      - uses: ausaccessfed/workflows/.github/actions/build@main
         with:
           BRANCH_NAME: ${{ needs.init.outputs.BRANCH_NAME }}
           ROLE: ${{ secrets.ROLE }}
@@ -416,7 +416,7 @@ jobs:
           echo "GITHUB_BRANCH_LATEST_IMAGE_ID_TAG=${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}-$MATRIX_CLEANED" >> $GITHUB_OUTPUT
           echo "GITHUB_BRANCH_CACHE_IMAGE_ID_TAG=${{ needs.init.outputs.GITHUB_BRANCH_CACHE_IMAGE_ID_TAG }}-$MATRIX_CLEANED" >> $GITHUB_OUTPUT
 
-      - uses: ausaccessfed/workflows/.github/actions/build@feature/moving-ro-more-async
+      - uses: ausaccessfed/workflows/.github/actions/build@main
         with:
           BRANCH_NAME: ${{ needs.init.outputs.BRANCH_NAME }}
           ROLE: ${{ secrets.ROLE }}
@@ -464,7 +464,7 @@ jobs:
           echo "GITHUB_BRANCH_LATEST_IMAGE_ID_TAG=${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}-$MATRIX_CLEANED" >> $GITHUB_OUTPUT
           echo "GITHUB_BRANCH_CACHE_IMAGE_ID_TAG=${{ needs.init.outputs.GITHUB_BRANCH_CACHE_IMAGE_ID_TAG }}-$MATRIX_CLEANED" >> $GITHUB_OUTPUT
 
-      - uses: ausaccessfed/workflows/.github/actions/build@feature/moving-ro-more-async
+      - uses: ausaccessfed/workflows/.github/actions/build@main
         with:
           BRANCH_NAME: ${{ needs.init.outputs.BRANCH_NAME }}
           ROLE: ${{ secrets.ROLE }}
@@ -495,7 +495,7 @@ jobs:
     runs-on: ubuntu-latest
     if: needs.init.outputs.SHOULD_PUSH_IMAGE_TO_ECR == 'true'
     steps:
-      - uses: ausaccessfed/workflows/.github/actions/init@feature/moving-ro-more-async
+      - uses: ausaccessfed/workflows/.github/actions/init@main
         with:
           ROLE: ${{ secrets.ROLE }}
           ECR_REPOSITORY: ${{ inputs.ecr_repository }}
@@ -516,7 +516,7 @@ jobs:
     runs-on: ubuntu-latest
     if: needs.init.outputs.SHOULD_PUSH_IMAGE_TO_ECR == 'true'
     steps:
-      - uses: ausaccessfed/workflows/.github/actions/init@feature/moving-ro-more-async
+      - uses: ausaccessfed/workflows/.github/actions/init@main
         with:
           ROLE: ${{ secrets.ROLE }}
           ECR_REPOSITORY: ${{ inputs.ecr_repository }}
