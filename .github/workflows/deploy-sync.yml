@@ -61,65 +61,8 @@ on:
       save_test_artifacts:
         default: false
         type: boolean
-      extra_task_1_name:
-        default: 'N/A'
-        type: string
-      extra_task_1:
-        default: ''
-        type: string
-      extra_task_2_name:
-        default: 'N/A'
-        type: string
-      extra_task_2:
-        default: ''
-        type: string
-      extra_task_3_name:
-        default: 'N/A'
-        type: string
-      extra_task_3:
-        default: ''
-        type: string
-      extra_task_4_name:
-        default: 'N/A'
-        type: string
-      extra_task_4:
-        default: ''
-        type: string
-      extra_task_5_name:
-        default: 'N/A'
-        type: string
-      extra_task_5:
-        default: ''
-        type: string
-      extra_task_6_name:
-        default: 'N/A'
-        type: string
-      extra_task_6:
-        default: ''
-        type: string
-      extra_task_7_name:
-        default: 'N/A'
-        type: string
-      extra_task_7:
-        default: ''
-        type: string
-      extra_task_8_name:
-        default: 'N/A'
-        type: string
-      extra_task_8:
-        default: ''
-        type: string
-      extra_task_9_name:
-        default: 'N/A'
-        type: string
-      extra_task_9:
-        default: ''
-        type: string
-      extra_task_10_name:
-        default: 'N/A'
-        type: string
-      extra_task_10:
-        default: ''
+      commands:
+        default: '[]'
         type: string
     secrets:
       ROLE:
@@ -138,15 +81,17 @@ jobs:
       IS_MONTHLY_BUILD: ${{ steps.env.outputs.IS_MONTHLY_BUILD }}
       IS_DEFAULT_BRANCH_PUSH: ${{ steps.env.outputs.IS_DEFAULT_BRANCH_PUSH }}
       BRANCH_NAME: ${{ steps.branch.outputs.BRANCH_NAME }}
-      CACHE_IMAGE_ID_TAG: ${{ steps.env.outputs.CACHE_IMAGE_ID_TAG }}
       RUBY_VERSION: ${{ steps.env.outputs.RUBY_VERSION }}
-      LOCAL_CACHE_IMAGE_ID_TAG: ${{ steps.env.outputs.LOCAL_CACHE_IMAGE_ID_TAG }}
       BASE_IMAGE: ${{ steps.env.outputs.BASE_IMAGE }}
       PRODUCTION_IMAGE_ID_TAG: ${{ steps.env.outputs.PRODUCTION_IMAGE_ID_TAG }}
       LATEST_IMAGE_ID_TAG: ${{ steps.env.outputs.LATEST_IMAGE_ID_TAG }}
-      IMAGE_SCANNER_IMAGE_ID_TAG: ${{ steps.env.outputs.IMAGE_SCANNER_IMAGE_ID_TAG }}
       SHOULD_PUSH_IMAGE_TO_ECR: ${{ steps.env.outputs.SHOULD_PUSH_IMAGE_TO_ECR }}
-      IS_DEFAULT_CACHE_BRANCH_PUSH: ${{ steps.env.outputs.IS_DEFAULT_CACHE_BRANCH_PUSH }}
+      IMAGE_SCANNER_COMMON: ${{ steps.env.outputs.IMAGE_SCANNER_COMMON }}
+      GITHUB_REGISTRY_REF: ${{ steps.env.outputs.GITHUB_REGISTRY_REF }}
+      GITHUB_CACHE_IMAGE_ID_TAG: ${{ steps.env.outputs.GITHUB_CACHE_IMAGE_ID_TAG }}
+      GITHUB_LATEST_IMAGE_ID_TAG: ${{ steps.env.outputs.GITHUB_LATEST_IMAGE_ID_TAG }}
+      GITHUB_BRANCH_CACHE_IMAGE_ID_TAG: ${{ steps.env.outputs.GITHUB_BRANCH_CACHE_IMAGE_ID_TAG }}
+      GITHUB_BRANCH_LATEST_IMAGE_ID_TAG: ${{ steps.env.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}
     name: init
     runs-on: ubuntu-latest
     if: inputs.event_name != 'issue_comment' || (contains(inputs.event_comment_body, '/deploy')  && contains(fromJSON(vars.ALLOWED_ACTORS), github.event.comment.user.login))
@@ -178,16 +123,11 @@ jobs:
           fi
           echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_OUTPUT
 
-      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+      - uses: ausaccessfed/workflows/.github/actions/init@main
         with:
-          ref: ${{ steps.branch.outputs.BRANCH_NAME }}
-
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502 # v4.0.2
-        with:
-          aws-region: ap-southeast-2
-          role-to-assume: ${{ secrets.ROLE }}
-          role-session-name: GithubActions-${{ inputs.ecr_repository }}-ci
+          BRANCH_NAME: ${{ steps.branch.outputs.BRANCH_NAME }}
+          ROLE: ${{ secrets.ROLE }}
+          ECR_REPOSITORY: ${{ inputs.ecr_repository }}
 
       - name: set more envs
         id: env
@@ -205,8 +145,6 @@ jobs:
           echo "IS_DEFAULT_DEVELOPMENT_BRANCH_PUSH=$IS_DEFAULT_DEVELOPMENT_BRANCH_PUSH" >> $GITHUB_OUTPUT
 
           DEFAULT_BRANCH_FOR_CACHING=$([ "${{ inputs.default_branch_for_caching }}" == "" ] && echo "${{ inputs.default_branch }}" || echo "${{ inputs.default_branch_for_caching }}")
-          IS_DEFAULT_CACHE_BRANCH_PUSH=$(([ "${{ inputs.event_name }}" == "push" ] && [ "${{steps.branch.outputs.BRANCH_NAME}}" == "$DEFAULT_BRANCH_FOR_CACHING" ]) && echo "true" || echo "false")
-          echo "IS_DEFAULT_CACHE_BRANCH_PUSH=$IS_DEFAULT_CACHE_BRANCH_PUSH" >> $GITHUB_OUTPUT
 
           if [ "$IS_SLASH_DEPLOY" == "true" ]; then
             IMAGE_TAG=adhoc-${{steps.comment-branch.outputs.head_ref}}-${{steps.comment-branch.outputs.HEAD_SHA}}
@@ -230,7 +168,6 @@ jobs:
           DOCKER_ECR=$(aws secretsmanager get-secret-value --secret-id "aaf-terraform-DOCKER_ECR" --query 'SecretString' --output text | sed 's:/*$::')
 
           echo "PUBLISH_APP_IMAGE_ID_TAG=$DOCKER_ECR/publish_app:latest" >> $GITHUB_OUTPUT
-          echo "IMAGE_SCANNER_IMAGE_ID_TAG=$DOCKER_ECR/image-scanner:latest" >> $GITHUB_OUTPUT
 
           RUBY_VERSION=$(${{ inputs.version_command }})
           echo "RUBY_VERSION=$RUBY_VERSION" >> $GITHUB_OUTPUT
@@ -246,110 +183,32 @@ jobs:
 
           echo "LATEST_IMAGE_ID_TAG=$IMAGE_ID:${{ inputs.latest_image_tag }}" >> $GITHUB_OUTPUT
 
-          echo "CACHE_IMAGE_ID_TAG=$IMAGE_ID:cache" >> $GITHUB_OUTPUT
+          GITHUB_REGISTRY_REF="ghcr.io/ausaccessfed/${{ inputs.ecr_repository }}"
+          echo "GITHUB_REGISTRY_REF=$GITHUB_REGISTRY_REF" >> $GITHUB_OUTPUT
 
-          # This is just a image tag without ecr to avoid ever grabbing from ecr
-          echo "LOCAL_CACHE_IMAGE_ID_TAG=app:cache" >> $GITHUB_OUTPUT
+          GITHUB_CACHE_IMAGE_ID_TAG="$GITHUB_REGISTRY_REF:cache"
+          echo "GITHUB_CACHE_IMAGE_ID_TAG=$GITHUB_CACHE_IMAGE_ID_TAG" >> $GITHUB_OUTPUT
+
+          if [ "$IS_DEFAULT_BRANCH_PUSH" == "true" ]; then
+            echo "GITHUB_BRANCH_CACHE_IMAGE_ID_TAG=$GITHUB_CACHE_IMAGE_ID_TAG" >> $GITHUB_OUTPUT
+          else
+            echo "GITHUB_BRANCH_CACHE_IMAGE_ID_TAG=$GITHUB_REGISTRY_REF:cache-$DEFAULT_BRANCH_FOR_CACHING" >> $GITHUB_OUTPUT
+          fi
+
+          GITHUB_LATEST_IMAGE_ID_TAG="$GITHUB_REGISTRY_REF:latest"
+          echo "GITHUB_LATEST_IMAGE_ID_TAG=$GITHUB_LATEST_IMAGE_ID_TAG" >> $GITHUB_OUTPUT
+
+          if [ "$IS_DEFAULT_BRANCH_PUSH" == "true" ]; then
+            echo "GITHUB_BRANCH_LATEST_IMAGE_ID_TAG=$GITHUB_LATEST_IMAGE_ID_TAG" >> $GITHUB_OUTPUT
+          else
+            echo "GITHUB_BRANCH_LATEST_IMAGE_ID_TAG=$GITHUB_REGISTRY_REF:latest-$DEFAULT_BRANCH_FOR_CACHING" >> $GITHUB_OUTPUT
+          fi
 
           PROJECTS="${{ inputs.ecr_repository }}"
           if [ "${{ inputs.projects }}" != "" ]; then
             PROJECTS="${{ inputs.projects }}"
           fi
           echo "PROJECTS=$PROJECTS" >> $GITHUB_OUTPUT
-
-  run:
-    outputs:
-      ADHOC_OUTPUT: ${{ steps.failure-check.outputs.ADHOC_OUTPUT }}
-      ADHOC_URL: ${{ steps.failure-check.outputs.ADHOC_URL }}
-      ADHOC_STATUS: ${{ steps.failure-check.outputs.ADHOC_STATUS }}
-    needs: [init]
-    strategy:
-      matrix:
-        arch: ${{ fromJSON(inputs.platforms) }}
-    # TODO: need to make runner more configurable atm asssumes we only want amd
-    runs-on: ${{ (matrix.arch == 'linux/amd64' && inputs.runner) || (matrix.arch == 'linux/arm64' && 'arm64-4core') }}
-    name: run
-    services:
-      mysql:
-        image: ${{ ( inputs.mysql_image_tag_version != '' ) && format('mysql:{0}', inputs.mysql_image_tag_version) || '' }}
-        env:
-          MYSQL_ROOT_PASSWORD: password
-        ports:
-          - '3306:3306'
-    steps:
-      - name: Delete huge unnecessary tools folder
-        run: rm -rf /opt/hostedtoolcache
-
-      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
-        with:
-          ref: ${{ needs.init.outputs.BRANCH_NAME }}
-
-      - name: Checkout reusable workflow dir
-        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
-        with:
-          repository: ausaccessfed/workflows
-          token: ${{ secrets.GITHUB_TOKEN }}
-          ref: main
-          path: .github/reusable_workflow
-
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502 # v4.0.2
-        with:
-          aws-region: ap-southeast-2
-          role-to-assume: ${{ secrets.ROLE }}
-          role-session-name: GithubActions-${{ inputs.ecr_repository }}-ci
-
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@062b18b96a7aff071d4dc91bc00c4c1a7945b076 # v2.0.1
-
-      - name: Force docker image to be rebuilt from scratch
-        if: inputs.event_name == 'schedule'
-        run: |
-          echo "`date "+%Y-%m-%d %H:%M:%S"` REBUILD" >> .FORCE_NEW_DOCKER_BUILD
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@4fd812986e6c8c2a69e18311145f9371337f27d4 # v3.4.0
-
-      - name: Build Test OCI Image
-        id: build-test
-        run: |
-          COMMON="docker buildx build --platform=${{ matrix.arch }} --target development --build-arg BUILDKIT_INLINE_CACHE=1 --build-arg RUBY_VERSION=${{ needs.init.outputs.RUBY_VERSION }} --build-arg BASE_IMAGE=${{ needs.init.outputs.BASE_IMAGE }}  --cache-from ${{ needs.init.outputs.CACHE_IMAGE_ID_TAG }} "
-
-          BUILD_TEST_COMMAND="$COMMON --load -t ${{ needs.init.outputs.CACHE_IMAGE_ID_TAG }} -t ${{ needs.init.outputs.LOCAL_CACHE_IMAGE_ID_TAG }} ."
-          BUILD_PUSH_TEST_COMMAND="$COMMON --push  -t ${{ needs.init.outputs.CACHE_IMAGE_ID_TAG }} ."
-
-          echo "BUILD_PUSH_TEST_COMMAND=$BUILD_PUSH_TEST_COMMAND" >> $GITHUB_OUTPUT
-
-          DOCKER_BUILDKIT=1 $BUILD_TEST_COMMAND
-
-      - name: Build Production OCI Image and Run additional tasks
-        id: build-production
-        run: |
-          ARCH=${{ matrix.arch }}
-          COMMON="docker buildx build --platform=$ARCH --target production --build-arg BUILDKIT_INLINE_CACHE=1 --build-arg RUBY_VERSION=${{ needs.init.outputs.RUBY_VERSION }} --build-arg RELEASE_VERSION=${{ needs.init.outputs.IMAGE_TAG }} --build-arg BASE_IMAGE=${{ needs.init.outputs.BASE_IMAGE }}  --cache-from ${{ needs.init.outputs.CACHE_IMAGE_ID_TAG }} -t ${{ needs.init.outputs.PRODUCTION_IMAGE_ID_TAG }} -t ${{ needs.init.outputs.LATEST_IMAGE_ID_TAG }}  -t ${{ needs.init.outputs.PRODUCTION_IMAGE_ID_TAG }}-${ARCH//\//_}"
-
-          BUILD_PRODUCTION_COMMAND="$COMMON --load ."
-          BUILD_PUSH_PRODUCTION_COMMAND="$COMMON --push ."
-
-          echo "BUILD_PUSH_PRODUCTION_COMMAND=$BUILD_PUSH_PRODUCTION_COMMAND" >> $GITHUB_OUTPUT
-
-          export BUILD_PRODUCTION_COMMAND="$BUILD_PRODUCTION_COMMAND"
-
-          export EXTRA_TASK_INC=10
-          # Make sure EXTRA_TASK_INC inc is greater than the amount of EXTRA_TASKS
-          if [ "${{needs.init.outputs.IS_SLASH_DEPLOY}}" == "false" ]; then
-            export EXTRA_TASK_1='${{ inputs.extra_task_1 }}'
-            export EXTRA_TASK_2='${{ inputs.extra_task_2 }}'
-            export EXTRA_TASK_3='${{ inputs.extra_task_3 }}'
-            export EXTRA_TASK_4='${{ inputs.extra_task_4 }}'
-            export EXTRA_TASK_5='${{ inputs.extra_task_5 }}'
-            export EXTRA_TASK_6='${{ inputs.extra_task_6 }}'
-            export EXTRA_TASK_7='${{ inputs.extra_task_7 }}'
-            export EXTRA_TASK_8='${{ inputs.extra_task_8 }}'
-            export EXTRA_TASK_9='${{ inputs.extra_task_9 }}'
-            export EXTRA_TASK_10='${{ inputs.extra_task_10 }}'
-          fi
 
           IMAGE_SCANNER_EXTRAS=""
           if [ -f "${PWD}/Dockerfile" ]; then
@@ -361,241 +220,285 @@ jobs:
           if [ -f "${PWD}/.hadolint.yaml" ]; then
             IMAGE_SCANNER_EXTRAS="-v ${PWD}/.hadolint.yaml:/app/.hadolint.yaml ${IMAGE_SCANNER_EXTRAS}"
           fi
+          IMAGE_SCANNER_IMAGE_ID_TAG="$DOCKER_ECR/image-scanner:latest"
 
-          # must run as root to access the docker socket
-          IMAGE_SCANNER_COMMON="docker run -u 0 -v /var/run/docker.sock:/var/run/docker.sock ${IMAGE_SCANNER_EXTRAS} ${{ needs.init.outputs.IMAGE_SCANNER_IMAGE_ID_TAG }}"
+          IMAGE_SCANNER_COMMON="docker run -u 0 -v /var/run/docker.sock:/var/run/docker.sock ${IMAGE_SCANNER_EXTRAS} $IMAGE_SCANNER_IMAGE_ID_TAG"
           echo "IMAGE_SCANNER_COMMON=$IMAGE_SCANNER_COMMON" >> $GITHUB_OUTPUT
 
-          ./.github/reusable_workflow/scripts/additional_tasks.sh
+  build-test:
+    needs: [init]
+    strategy:
+      matrix:
+        arch: ${{ fromJSON(inputs.platforms) }}
+    # TODO: need to make runner more configurable atm asssumes we only want amd
+    runs-on: ${{ (matrix.arch == 'linux/amd64' && inputs.runner) || (matrix.arch == 'linux/arm64' && 'arm64-4core') }}
+    name: Build Test Image
+    steps:
+      - id: env
+        run: |
+          MATRIX_CLEANED="$(echo "${{ matrix.arch }}" | tr / _)"
+          echo "GITHUB_CACHE_IMAGE_ID_TAG=${{ needs.init.outputs.GITHUB_CACHE_IMAGE_ID_TAG }}-$MATRIX_CLEANED" >> $GITHUB_OUTPUT
+          echo "GITHUB_BRANCH_CACHE_IMAGE_ID_TAG=${{ needs.init.outputs.GITHUB_BRANCH_CACHE_IMAGE_ID_TAG }}-$MATRIX_CLEANED" >> $GITHUB_OUTPUT
 
-      - name: Build Production Result
-        id: build-production-result
-        if: always()
-        run: |
-          cat build.txt || echo "no output"
-          if [ -f build_error.txt ]; then
-            cat build_error.txt.txt
-            exit 1
-          fi
-      - name: ${{ inputs.extra_task_1_name }} Result
-        id: extra-task-1
-        if: needs.init.outputs.IS_SLASH_DEPLOY == 'false' && inputs.extra_task_1 != '' && always()
-        env:
-          NUMBER: 1
-        run: |
-          cat task_${NUMBER}.txt || echo "no output"
-          if [ -f task_${NUMBER}_error.txt ]; then
-            cat task_${NUMBER}_error.txt
-            exit 1
-          fi
-      - name: ${{ inputs.extra_task_2_name }} Result
-        id: extra-task-2
-        if: needs.init.outputs.IS_SLASH_DEPLOY == 'false' && inputs.extra_task_2 != '' && always()
-        env:
-          NUMBER: 2
-        run: |
-          cat task_${NUMBER}.txt || echo "no output"
-          if [ -f task_${NUMBER}_error.txt ]; then
-            cat task_${NUMBER}_error.txt
-            exit 1
-          fi
-      - name: ${{ inputs.extra_task_3_name }} Result
-        id: extra-task-3
-        if: needs.init.outputs.IS_SLASH_DEPLOY == 'false' && inputs.extra_task_3 != '' && always()
-        env:
-          NUMBER: 3
-        run: |
-          cat task_${NUMBER}.txt || echo "no output"
-          if [ -f task_${NUMBER}_error.txt ]; then
-            cat task_${NUMBER}_error.txt
-            exit 1
-          fi
-      - name: ${{ inputs.extra_task_4_name }} Result
-        id: extra-task-4
-        if: needs.init.outputs.IS_SLASH_DEPLOY == 'false' && inputs.extra_task_4 != '' && always()
-        env:
-          NUMBER: 4
-        run: |
-          cat task_${NUMBER}.txt || echo "no output"
-          if [ -f task_${NUMBER}_error.txt ]; then
-            cat task_${NUMBER}_error.txt
-            exit 1
-          fi
-      - name: ${{ inputs.extra_task_5_name }} Result
-        id: extra-task-5
-        if: needs.init.outputs.IS_SLASH_DEPLOY == 'false' && inputs.extra_task_5 != '' && always()
-        env:
-          NUMBER: 5
-        run: |
-          cat task_${NUMBER}.txt || echo "no output"
-          if [ -f task_${NUMBER}_error.txt ]; then
-            cat task_${NUMBER}_error.txt
-            exit 1
-          fi
-      - name: ${{ inputs.extra_task_6_name }} Result
-        id: extra-task-6
-        if: needs.init.outputs.IS_SLASH_DEPLOY == 'false' && inputs.extra_task_6 != '' && always()
-        env:
-          NUMBER: 6
-        run: |
-          cat task_${NUMBER}.txt || echo "no output"
-          if [ -f task_${NUMBER}_error.txt ]; then
-            cat task_${NUMBER}_error.txt
-            exit 1
-          fi
-      - name: ${{ inputs.extra_task_7_name }} Result
-        id: extra-task-7
-        if: needs.init.outputs.IS_SLASH_DEPLOY == 'false' && inputs.extra_task_7 != '' && always()
-        env:
-          NUMBER: 7
-        run: |
-          cat task_${NUMBER}.txt || echo "no output"
-          if [ -f task_${NUMBER}_error.txt ]; then
-            cat task_${NUMBER}_error.txt
-            exit 1
-          fi
-      - name: ${{ inputs.extra_task_8_name }} Result
-        id: extra-task-8
-        if: needs.init.outputs.IS_SLASH_DEPLOY == 'false' && inputs.extra_task_8 != '' && always()
-        env:
-          NUMBER: 8
-        run: |
-          cat task_${NUMBER}.txt || echo "no output"
-          if [ -f task_${NUMBER}_error.txt ]; then
-            cat task_${NUMBER}_error.txt
-            exit 1
-          fi
-      - name: ${{ inputs.extra_task_9_name }} Result
-        id: extra-task-9
-        if: needs.init.outputs.IS_SLASH_DEPLOY == 'false' && inputs.extra_task_9 != '' && always()
-        env:
-          NUMBER: 9
-        run: |
-          cat task_${NUMBER}.txt || echo "no output"
-          if [ -f task_${NUMBER}_error.txt ]; then
-            cat task_${NUMBER}_error.txt
-            exit 1
-          fi
-      - name: ${{ inputs.extra_task_10_name }} Result
-        id: extra-task-10
-        if: needs.init.outputs.IS_SLASH_DEPLOY == 'false' && inputs.extra_task_10 != '' && always()
-        env:
-          NUMBER: 10
-        run: |
-          cat task_${NUMBER}.txt || echo "no output"
-          if [ -f task_${NUMBER}_error.txt ]; then
-            cat task_${NUMBER}_error.txt
-            exit 1
-          fi
-
-      - name: zip artifacts
-        if: always() && needs.init.outputs.IS_DEFAULT_BRANCH_PUSH != 'true' && inputs.save_test_artifacts
-        #  TODO: adjust this to support more than 1 folder at some point (getting capybara/puppeteer results for now)
-        # TODO: for now it assumes the test run will mount /tmp/screenshots (see puppeteer for example)
-        run: |
-          zip -r screenshots.zip /tmp/screenshots
-      - uses: actions/upload-artifact@0b2256b8c012f0828dc542b3febcab082c67f72b # v4.3.4
-        if: always() && needs.init.outputs.IS_DEFAULT_BRANCH_PUSH != 'true' && inputs.save_test_artifacts
+      - uses: ausaccessfed/workflows/.github/actions/build@main
         with:
-          name: failed_images
-          path: screenshots.zip
+          BRANCH_NAME: ${{ needs.init.outputs.BRANCH_NAME }}
+          ROLE: ${{ secrets.ROLE }}
+          ECR_REPOSITORY: ${{ inputs.ecr_repository }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_ACTOR: ${{ github.actor }}
+          IMAGE_PLATFORMS: ${{ matrix.arch }}
+          IMAGE_BUILD_ARGS: |
+            RUBY_VERSION=${{ needs.init.outputs.RUBY_VERSION }}
+            BASE_IMAGE=${{ needs.init.outputs.BASE_IMAGE }}
+          IMAGE_TARGET: development
+          IMAGE_CACHE_TO: type=registry,ref=${{ steps.env.outputs.GITHUB_BRANCH_CACHE_IMAGE_ID_TAG }},mode=max
+          IMAGE_CACHE_FROM: |
+            type=registry,ref=${{ steps.env.outputs.GITHUB_CACHE_IMAGE_ID_TAG }}
+            type=registry,ref=${{ steps.env.outputs.GITHUB_BRANCH_CACHE_IMAGE_ID_TAG }}
+          IMAGE_TAGS: |
+            ${{ steps.env.outputs.GITHUB_BRANCH_CACHE_IMAGE_ID_TAG }}
+          IMAGE_LOAD: false
+          IMAGE_PUSH: true
+          IMAGE_FORCE_REBUILD: inputs.event_name == 'schedule'
 
-      #  TODO: this is breaking due to docker updates and it never looking localy for images???
-      # - name: Run Image lint on production image
-      #   run: |
-      #     ${{ steps.build-production.outputs.IMAGE_SCANNER_COMMON }} \
-      #       ./scripts/lint \
-      #       ${{ needs.init.outputs.SIMPLE_PRODUCTION_IMAGE_ID_TAG }} \
-      #       /app/Dockerfile
+  build-production:
+    needs: [init, build-test]
+    strategy:
+      matrix:
+        arch: ${{ fromJSON(inputs.platforms) }}
+    runs-on: ${{ (matrix.arch == 'linux/amd64' && inputs.runner) || (matrix.arch == 'linux/arm64' && 'arm64-4core') }}
+    name: Build Production Image
+    steps:
+      - id: env
+        run: |
+          MATRIX_CLEANED="$(echo "${{ matrix.arch }}" | tr / _)"
+          echo "GITHUB_BRANCH_LATEST_IMAGE_ID_TAG=${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}-$MATRIX_CLEANED" >> $GITHUB_OUTPUT
+          echo "GITHUB_BRANCH_CACHE_IMAGE_ID_TAG=${{ needs.init.outputs.GITHUB_BRANCH_CACHE_IMAGE_ID_TAG }}-$MATRIX_CLEANED" >> $GITHUB_OUTPUT
+
+      - uses: ausaccessfed/workflows/.github/actions/build@main
+        with:
+          BRANCH_NAME: ${{ needs.init.outputs.BRANCH_NAME }}
+          ROLE: ${{ secrets.ROLE }}
+          ECR_REPOSITORY: ${{ inputs.ecr_repository }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_ACTOR: ${{ github.actor }}
+          IMAGE_PLATFORMS: ${{ matrix.arch }}
+          IMAGE_BUILD_ARGS: |
+            RUBY_VERSION=${{ needs.init.outputs.RUBY_VERSION }}
+            BASE_IMAGE=${{ needs.init.outputs.BASE_IMAGE }}
+            RELEASE_VERSION=${{ needs.init.outputs.IMAGE_TAG }}
+          IMAGE_TARGET: production
+          IMAGE_CACHE_TO: type=registry,ref=${{ steps.env.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }},mode=max
+          IMAGE_CACHE_FROM: |
+            type=registry,ref=${{ steps.env.outputs.GITHUB_BRANCH_CACHE_IMAGE_ID_TAG }}
+            type=registry,ref=${{ steps.env.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}
+          # TODO: once we start trying to use gchr images we need to make the line below only happen on the default build, how does multi arch come to to play then?
+          # ${{  steps.env.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}
+          IMAGE_TAGS: |
+            ${{  steps.env.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}
+          IMAGE_LOAD: false
+          IMAGE_PUSH: true
+
+  commands:
+    needs: [init, build-test]
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: ${{ fromJSON(inputs.platforms) }}
+        command: ${{ fromJSON(inputs.commands) }}
+    runs-on: ${{ (matrix.arch == 'linux/amd64' && inputs.runner) || (matrix.arch == 'linux/arm64' && 'arm64-4core') }}
+    name: ${{ format(matrix.command, '') }} (${{ matrix.arch }})
+    services:
+      mysql:
+        image: ${{ ( inputs.mysql_image_tag_version != '' ) && format('mysql:{0}', inputs.mysql_image_tag_version) || '' }}
+        env:
+          MYSQL_ROOT_PASSWORD: password
+        ports:
+          - '3306:3306'
+    steps:
+      - id: env
+        run: |
+          MATRIX_CLEANED="$(echo "${{ matrix.arch }}" | tr / _)"
+          echo "GITHUB_BRANCH_CACHE_IMAGE_ID_TAG=${{ needs.init.outputs.GITHUB_BRANCH_CACHE_IMAGE_ID_TAG }}-$MATRIX_CLEANED" >> $GITHUB_OUTPUT
+
+      - uses: ausaccessfed/workflows/.github/actions/build@main
+        with:
+          BRANCH_NAME: ${{ needs.init.outputs.BRANCH_NAME }}
+          ROLE: ${{ secrets.ROLE }}
+          ECR_REPOSITORY: ${{ inputs.ecr_repository }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_ACTOR: ${{ github.actor }}
+          IMAGE_PLATFORMS: ${{ matrix.arch }}
+          IMAGE_BUILD_ARGS: |
+            RUBY_VERSION=${{ needs.init.outputs.RUBY_VERSION }}
+            BASE_IMAGE=${{ needs.init.outputs.BASE_IMAGE }}
+          IMAGE_TARGET: development
+          IMAGE_CACHE_FROM: |
+            type=registry,ref=${{ steps.env.outputs.GITHUB_BRANCH_CACHE_IMAGE_ID_TAG }}
+          IMAGE_TAGS: ${{ steps.env.outputs.GITHUB_BRANCH_CACHE_IMAGE_ID_TAG }}
+          IMAGE_LOAD: true
+          IMAGE_PUSH: false
+
+      - name: Run
+        run: |
+          ${{ format(matrix.command, steps.env.outputs.GITHUB_BRANCH_CACHE_IMAGE_ID_TAG) }}
+
+    #  TODO: need to think about how this slots in now there is multi arch multi commands async
+    # - name: zip artifacts
+    #   if: always() && needs.init.outputs.IS_DEFAULT_BRANCH_PUSH != 'true' && inputs.save_test_artifacts
+    #   #  TODO: adjust this to support more than 1 folder at some point (getting capybara/puppeteer results for now)
+    #   # TODO: for now it assumes the test run will mount /tmp/screenshots (see puppeteer for example)
+    #   run: |
+    #     zip -r screenshots.zip /tmp/screenshots
+    # - uses: actions/upload-artifact@0b2256b8c012f0828dc542b3febcab082c67f72b # v4.3.4
+    #   if: always() && needs.init.outputs.IS_DEFAULT_BRANCH_PUSH != 'true' && inputs.save_test_artifacts
+    #   with:
+    #     name: failed_images
+    #     path: screenshots.zip
+  image-lint:
+    needs: [init, build-production]
+    strategy:
+      matrix:
+        arch: ${{ fromJSON(inputs.platforms) }}
+    runs-on: ${{ (matrix.arch == 'linux/amd64' && inputs.runner) || (matrix.arch == 'linux/arm64' && 'arm64-4core') }}
+    env:
+      DOCKLE_HOST: 'unix:///var/run/docker.sock'
+    name: Running Image lint on ${{ matrix.arch }}
+    steps:
+      - id: env
+        run: |
+          MATRIX_CLEANED="$(echo "${{ matrix.arch }}" | tr / _)"
+          echo "GITHUB_BRANCH_LATEST_IMAGE_ID_TAG=${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}-$MATRIX_CLEANED" >> $GITHUB_OUTPUT
+          echo "GITHUB_BRANCH_CACHE_IMAGE_ID_TAG=${{ needs.init.outputs.GITHUB_BRANCH_CACHE_IMAGE_ID_TAG }}-$MATRIX_CLEANED" >> $GITHUB_OUTPUT
+
+      - uses: ausaccessfed/workflows/.github/actions/build@main
+        with:
+          BRANCH_NAME: ${{ needs.init.outputs.BRANCH_NAME }}
+          ROLE: ${{ secrets.ROLE }}
+          ECR_REPOSITORY: ${{ inputs.ecr_repository }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_ACTOR: ${{ github.actor }}
+          IMAGE_PLATFORMS: ${{ matrix.arch }}
+          IMAGE_BUILD_ARGS: |
+            RUBY_VERSION=${{ needs.init.outputs.RUBY_VERSION }}
+            BASE_IMAGE=${{ needs.init.outputs.BASE_IMAGE }}
+            RELEASE_VERSION=${{ needs.init.outputs.IMAGE_TAG }}
+          IMAGE_TARGET: production
+          IMAGE_CACHE_TO: type=registry,ref=${{ steps.env.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }},mode=max
+          IMAGE_CACHE_FROM: |
+            type=registry,ref=${{ steps.env.outputs.GITHUB_BRANCH_CACHE_IMAGE_ID_TAG }}
+            type=registry,ref=${{ steps.env.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}
+          IMAGE_TAGS: |
+            ${{ steps.env.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}
+          IMAGE_LOAD: true
+          IMAGE_PUSH: false
+
+      - name: Run
+        id: run
+        run: |
+          ${{needs.init.outputs.IMAGE_SCANNER_COMMON}} \
+            ./scripts/lint \
+            ${{ steps.env.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }} \
+            /app/Dockerfile
+
+  image-scan:
+    needs: [init, build-production]
+    strategy:
+      matrix:
+        arch: ${{ fromJSON(inputs.platforms) }}
+    runs-on: ${{ (matrix.arch == 'linux/amd64' && inputs.runner) || (matrix.arch == 'linux/arm64' && 'arm64-4core') }}
+    name: Running Image scan on ${{ matrix.arch }}
+    steps:
+      - id: env
+        run: |
+          MATRIX_CLEANED="$(echo "${{ matrix.arch }}" | tr / _)"
+          echo "GITHUB_BRANCH_LATEST_IMAGE_ID_TAG=${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}-$MATRIX_CLEANED" >> $GITHUB_OUTPUT
+          echo "GITHUB_BRANCH_CACHE_IMAGE_ID_TAG=${{ needs.init.outputs.GITHUB_BRANCH_CACHE_IMAGE_ID_TAG }}-$MATRIX_CLEANED" >> $GITHUB_OUTPUT
+
+      - uses: ausaccessfed/workflows/.github/actions/build@main
+        with:
+          BRANCH_NAME: ${{ needs.init.outputs.BRANCH_NAME }}
+          ROLE: ${{ secrets.ROLE }}
+          ECR_REPOSITORY: ${{ inputs.ecr_repository }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_ACTOR: ${{ github.actor }}
+          IMAGE_PLATFORMS: ${{ matrix.arch }}
+          IMAGE_BUILD_ARGS: |
+            RUBY_VERSION=${{ needs.init.outputs.RUBY_VERSION }}
+            BASE_IMAGE=${{ needs.init.outputs.BASE_IMAGE }}
+            RELEASE_VERSION=${{ needs.init.outputs.IMAGE_TAG }}
+          IMAGE_TARGET: production
+          IMAGE_CACHE_TO: type=registry,ref=${{ steps.env.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }},mode=max
+          IMAGE_CACHE_FROM: |
+            type=registry,ref=${{ steps.env.outputs.GITHUB_BRANCH_CACHE_IMAGE_ID_TAG }}
+            type=registry,ref=${{ steps.env.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}
+          IMAGE_TAGS: |
+            ${{ steps.env.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}
+          IMAGE_LOAD: true
+          IMAGE_PUSH: false
 
       - name: Run Image scan on production image for cves
         run: |
-          IMAGE_SHA="$(docker images --no-trunc --quiet ${{ needs.init.outputs.PRODUCTION_IMAGE_ID_TAG }})"
-          ${{ steps.build-production.outputs.IMAGE_SCANNER_COMMON }} \
+          ${{ needs.init.outputs.IMAGE_SCANNER_COMMON }} \
             ./scripts/scan \
-            ${{ needs.init.outputs.PRODUCTION_IMAGE_ID_TAG }} \
+            ${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }} \
             $IMAGE_SHA \
             /app/Dockerfile \
             ${{ secrets.SNYK_TOKEN }} \
             true
 
-      - name: Push to ECR
-        if: needs.init.outputs.SHOULD_PUSH_IMAGE_TO_ECR == 'true'
+  push-to-ecr:
+    needs: [init, commands, image-scan, image-lint, build-production]
+    if: needs.init.outputs.SHOULD_PUSH_IMAGE_TO_ECR == 'true'
+    strategy:
+      matrix:
+        arch: ${{ fromJSON(inputs.platforms) }}
+    runs-on: ${{ (matrix.arch == 'linux/amd64' && inputs.runner) || (matrix.arch == 'linux/arm64' && 'arm64-4core') }}
+    name: Pushing images to ecr
+    steps:
+      - id: env
         run: |
-          export PRODUCTION_PUSH_COMMAND="${{ steps.build-production.outputs.BUILD_PUSH_PRODUCTION_COMMAND }}"
+          MATRIX_CLEANED="$(echo "${{ matrix.arch }}" | tr / _)"
+          echo "MATRIX_CLEANED=$MATRIX_CLEANED" >> $GITHUB_OUTPUT
+          echo "GITHUB_BRANCH_LATEST_IMAGE_ID_TAG=${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}-$MATRIX_CLEANED" >> $GITHUB_OUTPUT
+          echo "GITHUB_BRANCH_CACHE_IMAGE_ID_TAG=${{ needs.init.outputs.GITHUB_BRANCH_CACHE_IMAGE_ID_TAG }}-$MATRIX_CLEANED" >> $GITHUB_OUTPUT
 
-          if [ "${{needs.init.outputs.IS_DEFAULT_CACHE_BRANCH_PUSH}}" == "true" ]; then
-            export CACHE_PUSH_COMMAND="${{ steps.build-test.outputs.BUILD_PUSH_TEST_COMMAND }}"
-          fi
+      - uses: ausaccessfed/workflows/.github/actions/build@main
+        with:
+          BRANCH_NAME: ${{ needs.init.outputs.BRANCH_NAME }}
+          ROLE: ${{ secrets.ROLE }}
+          ECR_REPOSITORY: ${{ inputs.ecr_repository }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_ACTOR: ${{ github.actor }}
+          IMAGE_PLATFORMS: ${{ matrix.arch }}
+          IMAGE_BUILD_ARGS: |
+            RUBY_VERSION=${{ needs.init.outputs.RUBY_VERSION }}
+            BASE_IMAGE=${{ needs.init.outputs.BASE_IMAGE }}
+            RELEASE_VERSION=${{ needs.init.outputs.IMAGE_TAG }}
+          IMAGE_TARGET: production
+          IMAGE_CACHE_FROM: |
+            type=registry,ref=${{ steps.env.outputs.GITHUB_BRANCH_CACHE_IMAGE_ID_TAG }}
+            type=registry,ref=${{ steps.env.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}
+          IMAGE_TAGS: |
+            ${{ needs.init.outputs.PRODUCTION_IMAGE_ID_TAG }}
+            ${{ needs.init.outputs.LATEST_IMAGE_ID_TAG }}
+            ${{ needs.init.outputs.PRODUCTION_IMAGE_ID_TAG }}-${{ steps.env.outputs.MATRIX_CLEANED }}
+          IMAGE_LOAD: false
+          IMAGE_PUSH: true
 
-          ./.github/reusable_workflow/scripts/push_images.sh
-
-          cat push_production.txt || echo "no output"
-          if [ -f push_production_error.txt ]; then
-            cat push_production_error.txt
-            exit 1
-          fi
-
-          if [ "${{needs.init.outputs.IS_DEFAULT_CACHE_BRANCH_PUSH}}" == "true" ]; then
-            cat push_cache.txt || echo "no output"
-            if [ -f push_cache_error.txt ]; then
-              cat push_cache_error.txt
-              exit 1
-            fi
-          fi
-
-      - name: check for failures
-        id: failure-check
-        if: needs.init.outputs.IS_SLASH_DEPLOY == 'true' && always()
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          OUTPUT=
-          STATUS="failure"
-          URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-
-          if [ "${{ steps.build-test.outcome }}" == "failure" ]; then
-            OUTPUT="${OUTPUT}Building the Test image has failed! "
-          fi
-
-          if [ "${{ steps.build-production-result.outcome }}" == "failure" ]; then
-            OUTPUT="${OUTPUT}Building the Production image has failed!"
-          fi
-
-          if [ "$OUTPUT" == "" ]; then
-            OUTPUT="Manifest updated, Deploying to ${{ inputs.dev_url }} (may take up to 5 minutes)"
-            STATUS="success"
-            URL="${{ inputs.dev_url }}"
-          fi
-          echo "ADHOC_OUTPUT=$OUTPUT" >> $GITHUB_OUTPUT
-          echo "ADHOC_STATUS=$STATUS" >> $GITHUB_OUTPUT
-          echo "ADHOC_URL=$URL" >> $GITHUB_OUTPUT
-          if [ "${{ inputs.event_comment_id }}" != "" ]; then
-            gh api \
-              --method DELETE \
-              -H "Accept: application/vnd.github+json" \
-              -H "X-GitHub-Api-Version: 2022-11-28" \
-              /repos/ausaccessfed/${{ inputs.ecr_repository }}/issues/comments/${{ inputs.event_comment_id }}
-          fi
-
+  # TODO: is there a way to get the logic below as part of the above?
+  # https://github.com/docker/build-push-action/issues/906
   update-ecr-manifests:
-    needs: [run, init]
+    needs: [push-to-ecr, init]
     name: 'Update ecr manifests'
     runs-on: ubuntu-latest
     if: needs.init.outputs.SHOULD_PUSH_IMAGE_TO_ECR == 'true'
     steps:
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502 # v4.0.2
+      - uses: ausaccessfed/workflows/.github/actions/init@main
         with:
-          aws-region: ap-southeast-2
-          role-to-assume: ${{ secrets.ROLE }}
-          role-session-name: GithubActions-${{ inputs.ecr_repository }}-ci
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
-
-      - name: Log in to Amazon ECR
-        uses: aws-actions/amazon-ecr-login@v1
+          ROLE: ${{ secrets.ROLE }}
+          ECR_REPOSITORY: ${{ inputs.ecr_repository }}
 
       - name: Create and Push Docker Manifest
         run: |
@@ -608,20 +511,15 @@ jobs:
           fi
 
   update-terraform-manifests:
-    needs: [run, init]
+    needs: [push-to-ecr, init]
     name: 'Update terraform manifests'
     runs-on: ubuntu-latest
     if: needs.init.outputs.SHOULD_PUSH_IMAGE_TO_ECR == 'true'
     steps:
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502 # v4.0.2
+      - uses: ausaccessfed/workflows/.github/actions/init@main
         with:
-          aws-region: ap-southeast-2
-          role-to-assume: ${{ secrets.ROLE }}
-          role-session-name: GithubActions-${{ inputs.ecr_repository }}-ci
-
-      - name: Log in to Amazon ECR
-        uses: aws-actions/amazon-ecr-login@v1
+          ROLE: ${{ secrets.ROLE }}
+          ECR_REPOSITORY: ${{ inputs.ecr_repository }}
 
       ## no point making the gitops repo triggers async, they will fight each other
       ## and usually only 1 if statement is called anyway
@@ -659,23 +557,82 @@ jobs:
           ${{ needs.init.outputs.PUBLISH_APP_IMAGE_ID_TAG }}
 
   update-comments:
-    needs: [run, init, update-ecr-manifests, update-terraform-manifests]
-    name: 'update comments'
+    needs:
+      [
+        init,
+        build-test,
+        build-production,
+        commands,
+        image-lint,
+        image-scan,
+        push-to-ecr,
+        update-ecr-manifests,
+        update-terraform-manifests
+      ]
+    name: 'update-comments'
     runs-on: ubuntu-latest
     if: needs.init.outputs.IS_SLASH_DEPLOY == 'true' && always()
     steps:
+      - name: check for failures
+        id: failure-check
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          OUTPUT=
+          STATUS="failure"
+          URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+          if [ "${{ needs.build-test.result }}" == "failure" ]; then
+            OUTPUT="${OUTPUT}Building the Test image has failed! "
+          fi
+
+          if [ "${{ needs.build-production.result }}" == "failure" ]; then
+            OUTPUT="${OUTPUT}Building the Production image has failed!"
+          fi
+
+          if [ "${{ needs.commands.result }}" == "failure" ]; then
+            OUTPUT="${OUTPUT}Some of the commands have failed!"
+          fi
+
+          if [ "$OUTPUT" == "" ]; then
+            OUTPUT="Manifest updated, Deploying to ${{ inputs.dev_url }} (may take up to 5 minutes)"
+            STATUS="success"
+            URL="${{ inputs.dev_url }}"
+          fi
+          echo "ADHOC_OUTPUT=$OUTPUT" >> $GITHUB_OUTPUT
+          echo "ADHOC_STATUS=$STATUS" >> $GITHUB_OUTPUT
+          echo "ADHOC_URL=$URL" >> $GITHUB_OUTPUT
+          if [ "${{ inputs.event_comment_id }}" != "" ]; then
+            gh api \
+              --method DELETE \
+              -H "Accept: application/vnd.github+json" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              /repos/ausaccessfed/${{ inputs.ecr_repository }}/issues/comments/${{ inputs.event_comment_id }}
+          fi
+
       - name: Set final commit status
         uses: myrotvorets/set-commit-status-action@3730c0a348a2ace3c110851bed53331bc6406e9f # v2.0.1
         with:
           sha: ${{ needs.init.outputs.HEAD_SHA }}
           token: ${{ secrets.GITHUB_TOKEN }}
-          status: ${{ needs.run.outputs.ADHOC_STATUS }}
-          targetUrl: ${{ needs.run.outputs.ADHOC_URL }}
-          description: ${{ needs.run.outputs.ADHOC_OUTPUT }}
+          status: ${{ steps.failure-check.outputs.ADHOC_STATUS }}
+          targetUrl: ${{ steps.failure-check.outputs.ADHOC_URL }}
+          description: ${{ steps.failure-check.outputs.ADHOC_OUTPUT }}
           context: 'Dev federation deploy'
 
   finish:
-    needs: [run, init, update-ecr-manifests, update-terraform-manifests]
+    needs:
+      [
+        init,
+        build-test,
+        build-production,
+        commands,
+        image-lint,
+        image-scan,
+        push-to-ecr,
+        update-ecr-manifests,
+        update-terraform-manifests
+      ]
     name: 'finish'
     runs-on: ubuntu-latest
     steps:
