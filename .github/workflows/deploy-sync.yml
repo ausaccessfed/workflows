@@ -150,7 +150,7 @@ jobs:
             if [ "$IS_DEFAULT_BRANCH_PUSH" == "true" ]; then
               IMAGE_TAG="stable-${{ github.sha }}"
              else
-              IMAGE_TAG="${${{github.ref}}#refs/heads/}"
+              IMAGE_TAG="${{ steps.branch.outputs.BRANCH_NAME }}"
             fi
           fi
           IMAGE_TAG=$(echo "$IMAGE_TAG" | tr / _)
