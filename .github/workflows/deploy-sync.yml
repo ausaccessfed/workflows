@@ -92,6 +92,7 @@ jobs:
       GITHUB_LATEST_IMAGE_ID_TAG: ${{ steps.env.outputs.GITHUB_LATEST_IMAGE_ID_TAG }}
       GITHUB_BRANCH_CACHE_IMAGE_ID_TAG: ${{ steps.env.outputs.GITHUB_BRANCH_CACHE_IMAGE_ID_TAG }}
       GITHUB_BRANCH_LATEST_IMAGE_ID_TAG: ${{ steps.env.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}
+      IMAGE_ID: ${{ steps.env.outputs.IMAGE_ID }}
     name: init
     runs-on: ubuntu-latest
     if: inputs.event_name != 'issue_comment' || (contains(inputs.event_comment_body, '/deploy')  && contains(fromJSON(vars.ALLOWED_ACTORS), github.event.comment.user.login))
@@ -248,7 +249,7 @@ jobs:
             RUBY_VERSION=${{ needs.init.outputs.RUBY_VERSION }}
             BASE_IMAGE=${{ needs.init.outputs.BASE_IMAGE }}
           IMAGE_TARGET: development
-          IMAGE_OUTPUTS: type=registry,name=${{ needs.init.outputs.GITHUB_BRANCH_CACHE_IMAGE_ID_TAG }},push-by-digest=true
+          IMAGE_OUTPUTS: type=registry,name=${{ needs.init.outputs.IMAGE_ID }},push-by-digest=true
           IMAGE_CACHE_TO: type=registry,ref=${{ needs.init.outputs.GITHUB_BRANCH_CACHE_IMAGE_ID_TAG }},mode=max
           IMAGE_CACHE_FROM: |
             type=registry,ref=${{ needs.init.outputs.GITHUB_CACHE_IMAGE_ID_TAG }}
