@@ -192,7 +192,7 @@ jobs:
           if [ "$IS_DEFAULT_BRANCH_PUSH" == "true" ]; then
             echo "GITHUB_BRANCH_CACHE_IMAGE_ID_TAG=$GITHUB_CACHE_IMAGE_ID_TAG" >> $GITHUB_OUTPUT
           else
-            echo "GITHUB_BRANCH_CACHE_IMAGE_ID_TAG=$GITHUB_REGISTRY_REF:cache-$DEFAULT_BRANCH_FOR_CACHING" >> $GITHUB_OUTPUT
+            echo "GITHUB_BRANCH_CACHE_IMAGE_ID_TAG=$GITHUB_REGISTRY_REF:cache-$IMAGE_TAG" >> $GITHUB_OUTPUT
           fi
 
           GITHUB_LATEST_IMAGE_ID_TAG="$GITHUB_REGISTRY_REF:latest"
@@ -201,7 +201,7 @@ jobs:
           if [ "$IS_DEFAULT_BRANCH_PUSH" == "true" ]; then
             echo "GITHUB_BRANCH_LATEST_IMAGE_ID_TAG=$GITHUB_LATEST_IMAGE_ID_TAG" >> $GITHUB_OUTPUT
           else
-            echo "GITHUB_BRANCH_LATEST_IMAGE_ID_TAG=$GITHUB_REGISTRY_REF:latest-$DEFAULT_BRANCH_FOR_CACHING" >> $GITHUB_OUTPUT
+            echo "GITHUB_BRANCH_LATEST_IMAGE_ID_TAG=$GITHUB_REGISTRY_REF:latest-$IMAGE_TAG" >> $GITHUB_OUTPUT
           fi
 
           PROJECTS="${{ inputs.ecr_repository }}"
