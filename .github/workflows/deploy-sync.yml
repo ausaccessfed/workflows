@@ -144,8 +144,6 @@ jobs:
           IS_DEFAULT_DEVELOPMENT_BRANCH_PUSH=$(([ "${{ inputs.event_name }}" == "push" ] && [ "${{steps.branch.outputs.BRANCH_NAME}}" == "${{ inputs.default_develop_branch }}" ]) && echo "true" || echo "false")
           echo "IS_DEFAULT_DEVELOPMENT_BRANCH_PUSH=$IS_DEFAULT_DEVELOPMENT_BRANCH_PUSH" >> $GITHUB_OUTPUT
 
-          DEFAULT_BRANCH_FOR_CACHING=$([ "${{ inputs.default_branch_for_caching }}" == "" ] && echo "${{ inputs.default_branch }}" || echo "${{ inputs.default_branch_for_caching }}")
-
           if [ "$IS_SLASH_DEPLOY" == "true" ]; then
             IMAGE_TAG=adhoc-${{steps.comment-branch.outputs.head_ref}}-${{steps.comment-branch.outputs.HEAD_SHA}}
           else
