@@ -50,10 +50,6 @@ runs:
         docker buildx imagetools create \
           ${{ inputs.IMAGE_TAGS }} \
           $(printf '${{ inputs.IMAGE_TAG }}@sha256:%s ' $(ls /tmp/digests)) \
-    - name: Retrieve image
-      shell: bash
-      id: retrieve-image
-      run: echo "value=$(echo "$DOCKER_METADATA_OUTPUT_JSON" | jq -r '.tags[1]')" >> $GITHUB_OUTPUT
     - name: Inspect image
       shell: bash
       run: |
