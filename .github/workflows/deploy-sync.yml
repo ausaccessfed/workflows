@@ -256,7 +256,7 @@ jobs:
           # IMAGE_TAGS: |
           #   ${{ needs.init.outputs.GITHUB_BRANCH_CACHE_IMAGE_ID_TAG }}
           IMAGE_LOAD: false
-          IMAGE_PUSH: true
+          IMAGE_PUSH: false
           IMAGE_FORCE_REBUILD: inputs.event_name == 'schedule'
 
   post-build-test:
@@ -306,7 +306,7 @@ jobs:
           # IMAGE_TAGS: |
           #   ${{  needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}
           IMAGE_LOAD: false
-          IMAGE_PUSH: true
+          IMAGE_PUSH: false
 
   post-build-production:
     needs: [init, build-production]
