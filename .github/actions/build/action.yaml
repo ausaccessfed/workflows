@@ -36,7 +36,6 @@ inputs:
     default: ''
   IMAGE_TAGS:
     description: 'cache from strings'
-    required: true
   IMAGE_LOAD:
     description: 'cache from strings'
     required: true

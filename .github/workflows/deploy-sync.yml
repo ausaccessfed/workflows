@@ -271,7 +271,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_ACTOR: ${{ github.actor }}
           IMAGE_TAGS: |
-            ${{ needs.init.outputs.GITHUB_BRANCH_CACHE_IMAGE_ID_TAG }}
+            -t ${{ needs.init.outputs.GITHUB_BRANCH_CACHE_IMAGE_ID_TAG }}
           IMAGE_TAG: |
             ${{ needs.init.outputs.GITHUB_BRANCH_CACHE_IMAGE_ID_TAG }}
 
@@ -320,7 +320,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_ACTOR: ${{ github.actor }}
           IMAGE_TAGS: |
-            ${{  needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}
+            -t ${{  needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}
           IMAGE_TAG: |
             ${{  needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}
 
