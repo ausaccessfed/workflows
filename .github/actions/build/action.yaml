@@ -31,6 +31,9 @@ inputs:
   IMAGE_CACHE_FROM:
     description: 'cache from strings'
     default: ''
+  IMAGE_OUTPUTS:
+    description: 'cache from strings'
+    default: ''
   IMAGE_TAGS:
     description: 'cache from strings'
     required: true
@@ -82,3 +85,20 @@ runs:
           ${{ inputs.IMAGE_BUILD_ARGS }}
         platforms: |
           ${{ inputs.IMAGE_PLATFORMS }}
+        outputs: |
+          ${{ inputs.IMAGE_OUTPUTS }}
+
+    - name: Export digest
+      shell: bash
+      run: |
+        mkdir -p /tmp/digests
+        digest="${{ steps.build.outputs.digest }}"
+        touch "/tmp/digests/${digest#sha256:}"
+
+    - name: Upload digest
+      uses: actions/upload-artifact@v3
+      with:
+        name: digests
+        path: /tmp/digests/*
+        if-no-files-found: error
+        retention-days: 1

@@ -1,0 +1,60 @@
+name: 'Update manifest'
+description: ''
+inputs:
+  BRANCH_NAME:
+    description: 'branch to checkout'
+    default: ''
+  ROLE:
+    description: 'aws role to be used'
+    default: ''
+  ECR_REPOSITORY:
+    description: 'ecr repository to login to'
+    default: ''
+  GITHUB_TOKEN:
+    description: 'github token used to auth to ghcr'
+    default: ''
+  GITHUB_ACTOR:
+    description: 'github actor used to auth to ghcr'
+    default: ''
+  IMAGE_TAGS:
+    description: 'tags to be merged with -t'
+    required: true
+  IMAGE_TAG:
+    description: 'tags to be merged'
+    required: true
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@4fd812986e6c8c2a69e18311145f9371337f27d4 # v3.4.0
+
+    - uses: ausaccessfed/workflows/.github/actions/init@main
+      with:
+        BRANCH_NAME: ${{ inputs.BRANCH_NAME }}
+        ROLE: ${{ inputs.ROLE }}
+        ECR_REPOSITORY: ${{ inputs.ECR_REPOSITORY }}
+        GITHUB_TOKEN: ${{ inputs.GITHUB_TOKEN }}
+        GITHUB_ACTOR: ${{ inputs.GITHUB_ACTOR }}
+
+    - name: Download digests
+      # TODO: change to pin
+      uses: actions/download-artifact@v3
+      with:
+        name: digests
+        path: /tmp/digests
+
+    - name: Create and push manifest list
+      shell: bash
+      run: |
+        docker buildx imagetools create \
+          ${{ inputs.IMAGE_TAGS }} \
+          $(printf '${{ inputs.IMAGE_TAG }}@sha256:%s ' $(ls /tmp/digests)) \
+    - name: Retrieve image
+      shell: bash
+      id: retrieve-image
+      run: echo "value=$(echo "$DOCKER_METADATA_OUTPUT_JSON" | jq -r '.tags[1]')" >> $GITHUB_OUTPUT
+    - name: Inspect image
+      shell: bash
+      run: |
+        docker buildx imagetools inspect ${{ inputs.IMAGE_TAG }}
