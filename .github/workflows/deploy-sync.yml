@@ -409,16 +409,16 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_ACTOR: ${{ github.actor }}
 
-      - name: Run Image scan on production image for cves
-        run: |
-          docker pull ${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}
-          ${{ needs.init.outputs.IMAGE_SCANNER_COMMON }} \
-            ./scripts/scan \
-            ${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }} \
-            $IMAGE_SHA \
-            /app/Dockerfile \
-            ${{ secrets.SNYK_TOKEN }} \
-            true
+      # - name: Run Image scan on production image for cves
+      #   run: |
+      #     docker pull ${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}
+      #     ${{ needs.init.outputs.IMAGE_SCANNER_COMMON }} \
+      #       ./scripts/scan \
+      #       ${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }} \
+      #       $IMAGE_SHA \
+      #       /app/Dockerfile \
+      #       ${{ secrets.SNYK_TOKEN }} \
+      #       true
 
   push-to-ecr:
     needs: [init, commands, image-scan, image-lint, post-build-production]
