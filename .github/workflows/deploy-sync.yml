@@ -351,6 +351,7 @@ jobs:
 
       - name: Run
         run: |
+          docker pull ${{ needs.init.outputs.GITHUB_BRANCH_TEST_IMAGE_ID_TAG }}
           ${{ format(matrix.command, needs.init.outputs.GITHUB_BRANCH_TEST_IMAGE_ID_TAG) }}
 
     #  TODO: need to think about how this slots in now there is multi arch multi commands async
@@ -386,6 +387,7 @@ jobs:
       - name: Run
         id: run
         run: |
+          docker pull ${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}
           ${{needs.init.outputs.IMAGE_SCANNER_COMMON}} \
             ./scripts/lint \
             ${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }} \
@@ -409,6 +411,7 @@ jobs:
 
       - name: Run Image scan on production image for cves
         run: |
+          docker pull ${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}
           ${{ needs.init.outputs.IMAGE_SCANNER_COMMON }} \
             ./scripts/scan \
             ${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }} \
