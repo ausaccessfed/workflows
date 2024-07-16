@@ -66,6 +66,15 @@ runs:
       run: |
         echo "`date "+%Y-%m-%d %H:%M:%S"` REBUILD" >> .FORCE_NEW_DOCKER_BUILD
 
+    - name: Envs
+      id: envs
+      shell: bash
+      run: |
+        MATRIX_CLEANED="$(echo "${{ inputs.IMAGE_PLATFORMS }}" | tr / _)"
+        echo "IMAGE_CACHE_FROM=$(echo "${{inputs.IMAGE_CACHE_FROM}}-$MATRIX_CLEANED" | sed 's/~/\n/g' | sed -e 's/$/-cache/')" >> $GITHUB_OUTPUT
+        echo "IMAGE_CACHE_TO=$(echo "${{inputs.IMAGE_CACHE_TO}}-$MATRIX_CLEANED" | sed 's/~/\n/g' | sed -e 's/$/-cache/')" >> $GITHUB_OUTPUT
+        echo "IMAGE_TAGS=$(echo "${{inputs.IMAGE_TAGS}}" | sed 's/~/\n/g')" >> $GITHUB_OUTPUT
+
     - name: Build OCI Image
       id: build
       uses: docker/build-push-action@1a162644f9a7e87d8f4b053101d1d9a712edc18c # v6.3.0
@@ -73,21 +82,14 @@ runs:
         context: .
         push: ${{ inputs.IMAGE_PUSH }}
         load: ${{ inputs.IMAGE_LOAD }}
-        tags: |
-          ${{ inputs.IMAGE_TAGS }}
-        cache-from: |
-          ${{ inputs.IMAGE_CACHE_FROM }}
-        cache-to: |
-          ${{ inputs.IMAGE_CACHE_TO }}
+        tags: ${{ inputs.IMAGE_TAGS }}
+        cache-from: ${{ steps.env.outputs.IMAGE_CACHE_FROM }}
+        cache-to: ${{ steps.env.outputs.IMAGE_CACHE_TO }}
         target: ${{ inputs.IMAGE_TARGET }}
-        build-args: |
-          ${{ inputs.IMAGE_BUILD_ARGS }}
-        platforms: |
-          ${{ inputs.IMAGE_PLATFORMS }}
-        outputs: |
-          ${{ inputs.IMAGE_OUTPUTS }}
-        provenance: false
-        sbom: false
+        build-args: ${{ inputs.IMAGE_BUILD_ARGS }}
+        platforms: ${{ inputs.IMAGE_PLATFORMS }}
+        # provenance: false
+        # sbom: false
 
     - name: Export digest
       shell: bash

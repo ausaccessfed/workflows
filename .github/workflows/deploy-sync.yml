@@ -189,6 +189,7 @@ jobs:
           GITHUB_REGISTRY_REF="ghcr.io/ausaccessfed/${{ inputs.ecr_repository }}"
           echo "GITHUB_REGISTRY_REF=$GITHUB_REGISTRY_REF" >> $GITHUB_OUTPUT
 
+          # TODO: change the wording of "cache" to "test/dev"
           GITHUB_CACHE_IMAGE_ID_TAG="$GITHUB_REGISTRY_REF:cache"
           echo "GITHUB_CACHE_IMAGE_ID_TAG=$GITHUB_CACHE_IMAGE_ID_TAG" >> $GITHUB_OUTPUT
 
@@ -237,10 +238,6 @@ jobs:
     runs-on: ${{ (matrix.arch == 'linux/amd64' && inputs.runner) || (matrix.arch == 'linux/arm64' && 'arm64-4core') }}
     name: Build Test Image
     steps:
-      - id: env
-        run: |
-          echo "MATRIX_CLEANED=$(echo "${{ matrix.arch }}" | tr / _)" >> $GITHUB_OUTPUT
-
       - uses: ausaccessfed/workflows/.github/actions/build@feature/fixing-package-access
         with:
           BRANCH_NAME: ${{ needs.init.outputs.BRANCH_NAME }}
@@ -253,13 +250,9 @@ jobs:
             RUBY_VERSION=${{ needs.init.outputs.RUBY_VERSION }}
             BASE_IMAGE=${{ needs.init.outputs.BASE_IMAGE }}
           IMAGE_TARGET: development
-          # IMAGE_OUTPUTS: type=registry,name=${{ needs.init.outputs.IMAGE_ID }},push-by-digest=true
-          IMAGE_CACHE_TO: type=registry,ref=${{ needs.init.outputs.GITHUB_BRANCH_CACHE_IMAGE_ID_TAG }}-${{steps.env.outputs.MATRIX_CLEANED}}-cache,mode=max
-          IMAGE_CACHE_FROM: |
-            type=registry,ref=${{ needs.init.outputs.GITHUB_CACHE_IMAGE_ID_TAG }}
-            type=registry,ref=${{ needs.init.outputs.GITHUB_BRANCH_CACHE_IMAGE_ID_TAG }}
-          IMAGE_TAGS: |
-            ${{ needs.init.outputs.GITHUB_BRANCH_CACHE_IMAGE_ID_TAG }}-${{steps.env.outputs.MATRIX_CLEANED}}
+          IMAGE_CACHE_TO: type=registry,ref=${{ needs.init.outputs.GITHUB_BRANCH_CACHE_IMAGE_ID_TAG }},mode=max
+          IMAGE_CACHE_FROM: type=registry,ref=${{ needs.init.outputs.GITHUB_CACHE_IMAGE_ID_TAG }}~type=registry,ref=${{ needs.init.outputs.GITHUB_BRANCH_CACHE_IMAGE_ID_TAG }}
+          IMAGE_TAGS: ${{ needs.init.outputs.GITHUB_BRANCH_CACHE_IMAGE_ID_TAG }}
           IMAGE_LOAD: false
           IMAGE_PUSH: true
           IMAGE_FORCE_REBUILD: inputs.event_name == 'schedule'
@@ -275,7 +268,7 @@ jobs:
           ECR_REPOSITORY: ${{ inputs.ecr_repository }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_ACTOR: ${{ github.actor }}
-          IMAGE_TAGS: -t ${{ needs.init.outputs.GITHUB_BRANCH_CACHE_IMAGE_ID_TAG }}
+          IMAGE_TAGS: ${{ needs.init.outputs.GITHUB_BRANCH_CACHE_IMAGE_ID_TAG }}
           IMAGE_TAG: ${{ needs.init.outputs.GITHUB_BRANCH_CACHE_IMAGE_ID_TAG }}
 
   build-production:
@@ -299,17 +292,13 @@ jobs:
             BASE_IMAGE=${{ needs.init.outputs.BASE_IMAGE }}
             RELEASE_VERSION=${{ needs.init.outputs.IMAGE_TAG }}
           IMAGE_TARGET: production
-          IMAGE_OUTPUTS: type=registry,name=${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }},push-by-digest=true
           IMAGE_CACHE_TO: type=registry,ref=${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }},mode=max
-          IMAGE_CACHE_FROM: |
-            type=registry,ref=${{ needs.init.outputs.GITHUB_BRANCH_CACHE_IMAGE_ID_TAG }}
-            type=registry,ref=${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}
+          IMAGE_CACHE_FROM: type=registry,ref=${{ needs.init.outputs.GITHUB_BRANCH_CACHE_IMAGE_ID_TAG }}~type=registry,ref=${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}
           # TODO: once we start trying to use gchr images we need to make the line below only happen on the default build, how does multi arch come to to play then?
           # ${{  sneeds.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}
-          # IMAGE_TAGS: |
-          #   ${{  needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}
+          IMAGE_TAGS: ${{  needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}
           IMAGE_LOAD: false
-          IMAGE_PUSH: false
+          IMAGE_PUSH: true
 
   post-build-production:
     needs: [init, build-production]
@@ -322,10 +311,8 @@ jobs:
           ECR_REPOSITORY: ${{ inputs.ecr_repository }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_ACTOR: ${{ github.actor }}
-          IMAGE_TAGS: |
-            -t ${{  needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}
-          IMAGE_TAG: |
-            ${{  needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}
+          IMAGE_TAGS: ${{  needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}
+          IMAGE_TAG: ${{  needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}
 
   commands:
     needs: [init, post-build-test]
@@ -348,28 +335,8 @@ jobs:
       - uses: ausaccessfed/workflows/.github/actions/init@main
         with:
           BRANCH_NAME: ${{ needs.init.outputs.BRANCH_NAME }}
-          ROLE: ${{ secrets.ROLE }}
-          ECR_REPOSITORY: ${{ inputs.ecr_repository }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_ACTOR: ${{ github.actor }}
-
-      # - uses: ausaccessfed/workflows/.github/actions/build@main
-      #   with:
-      #     BRANCH_NAME: ${{ needs.init.outputs.BRANCH_NAME }}
-      #     ROLE: ${{ secrets.ROLE }}
-      #     ECR_REPOSITORY: ${{ inputs.ecr_repository }}
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      #     GITHUB_ACTOR: ${{ github.actor }}
-      #     IMAGE_PLATFORMS: ${{ matrix.arch }}
-      #     IMAGE_BUILD_ARGS: |
-      #       RUBY_VERSION=${{ needs.init.outputs.RUBY_VERSION }}
-      #       BASE_IMAGE=${{ needs.init.outputs.BASE_IMAGE }}
-      #     IMAGE_TARGET: development
-      #     IMAGE_CACHE_FROM: |
-      #       type=registry,ref=${{ needs.init.outputs.GITHUB_BRANCH_CACHE_IMAGE_ID_TAG }}
-      #     IMAGE_TAGS: ${{ needs.init.outputs.GITHUB_BRANCH_CACHE_IMAGE_ID_TAG }}
-      #     IMAGE_LOAD: true
-      #     IMAGE_PUSH: false
 
       - name: Run
         run: |
@@ -404,27 +371,6 @@ jobs:
           ECR_REPOSITORY: ${{ inputs.ecr_repository }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_ACTOR: ${{ github.actor }}
-      # - uses: ausaccessfed/workflows/.github/actions/build@main
-      #   with:
-      #     BRANCH_NAME: ${{ needs.init.outputs.BRANCH_NAME }}
-      #     ROLE: ${{ secrets.ROLE }}
-      #     ECR_REPOSITORY: ${{ inputs.ecr_repository }}
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      #     GITHUB_ACTOR: ${{ github.actor }}
-      #     IMAGE_PLATFORMS: ${{ matrix.arch }}
-      #     IMAGE_BUILD_ARGS: |
-      #       RUBY_VERSION=${{ needs.init.outputs.RUBY_VERSION }}
-      #       BASE_IMAGE=${{ needs.init.outputs.BASE_IMAGE }}
-      #       RELEASE_VERSION=${{ needs.init.outputs.IMAGE_TAG }}
-      #     IMAGE_TARGET: production
-      #     IMAGE_CACHE_TO: type=registry,ref=${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }},mode=max
-      #     IMAGE_CACHE_FROM: |
-      #       type=registry,ref=${{ needs.init.outputs.GITHUB_BRANCH_CACHE_IMAGE_ID_TAG }}
-      #       type=registry,ref=${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}
-      #     IMAGE_TAGS: |
-      #       ${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}
-      #     IMAGE_LOAD: true
-      #     IMAGE_PUSH: false
 
       - name: Run
         id: run
@@ -449,27 +395,6 @@ jobs:
           ECR_REPOSITORY: ${{ inputs.ecr_repository }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_ACTOR: ${{ github.actor }}
-      # - uses: ausaccessfed/workflows/.github/actions/build@main
-      #   with:
-      #     BRANCH_NAME: ${{ needs.init.outputs.BRANCH_NAME }}
-      #     ROLE: ${{ secrets.ROLE }}
-      #     ECR_REPOSITORY: ${{ inputs.ecr_repository }}
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      #     GITHUB_ACTOR: ${{ github.actor }}
-      #     IMAGE_PLATFORMS: ${{ matrix.arch }}
-      #     IMAGE_BUILD_ARGS: |
-      #       RUBY_VERSION=${{ needs.init.outputs.RUBY_VERSION }}
-      #       BASE_IMAGE=${{ needs.init.outputs.BASE_IMAGE }}
-      #       RELEASE_VERSION=${{ needs.init.outputs.IMAGE_TAG }}
-      #     IMAGE_TARGET: production
-      #     IMAGE_CACHE_TO: type=registry,ref=${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }},mode=max
-      #     IMAGE_CACHE_FROM: |
-      #       type=registry,ref=${{ needs.init.outputs.GITHUB_BRANCH_CACHE_IMAGE_ID_TAG }}
-      #       type=registry,ref=${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}
-      #     IMAGE_TAGS: |
-      #       ${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}
-      #     IMAGE_LOAD: true
-      #     IMAGE_PUSH: false
 
       - name: Run Image scan on production image for cves
         run: |
@@ -503,12 +428,8 @@ jobs:
             BASE_IMAGE=${{ needs.init.outputs.BASE_IMAGE }}
             RELEASE_VERSION=${{ needs.init.outputs.IMAGE_TAG }}
           IMAGE_TARGET: production
-          IMAGE_CACHE_FROM: |
-            type=registry,ref=${{ needs.init.outputs.GITHUB_BRANCH_CACHE_IMAGE_ID_TAG }}
-            type=registry,ref=${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}
-          IMAGE_TAGS: |
-            ${{ needs.init.outputs.PRODUCTION_IMAGE_ID_TAG }}
-            ${{ needs.init.outputs.LATEST_IMAGE_ID_TAG }}
+          IMAGE_CACHE_FROM: type=registry,ref=${{ needs.init.outputs.GITHUB_BRANCH_CACHE_IMAGE_ID_TAG }}~type=registry,ref=${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}
+          IMAGE_TAGS: ${{ needs.init.outputs.PRODUCTION_IMAGE_ID_TAG }}~${{ needs.init.outputs.LATEST_IMAGE_ID_TAG }}
           IMAGE_LOAD: false
           IMAGE_PUSH: true
 
