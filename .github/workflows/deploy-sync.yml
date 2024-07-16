@@ -459,6 +459,7 @@ jobs:
           IMAGE_TAGS: ${{ needs.init.outputs.PRODUCTION_IMAGE_ID_TAG }}~${{ needs.init.outputs.LATEST_IMAGE_ID_TAG }}
           IMAGE_TAG_SOURCE: ${{  needs.init.outputs.PRODUCTION_IMAGE_ID_TAG }}
           JOB_ID: ${{inputs.workflow_id}}-push-to-ecr
+
       # - uses: ausaccessfed/workflows/.github/actions/init@main
       #   with:
       #     ROLE: ${{ secrets.ROLE }}
