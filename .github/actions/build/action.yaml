@@ -90,18 +90,11 @@ runs:
         push: ${{ inputs.IMAGE_PUSH }}
         load: ${{ inputs.IMAGE_LOAD }}
         target: ${{ inputs.IMAGE_TARGET }}
-        tags: |
-          ${{ steps.envs.outputs.IMAGE_TAGS }}
-        cache-from: |
-          ${{ steps.envs.outputs.IMAGE_CACHE_FROM }}
-        cache-to: |
-          ${{ steps.envs.outputs.IMAGE_CACHE_TO }}
-        build-args: |
-          ${{ inputs.IMAGE_BUILD_ARGS }}
-        platforms: |
-          ${{ inputs.IMAGE_PLATFORMS }}
-        # provenance: false
-        # sbom: false
+        tags: ${{ steps.envs.outputs.IMAGE_TAGS }}
+        cache-from: ${{ steps.envs.outputs.IMAGE_CACHE_FROM }}
+        cache-to: ${{ steps.envs.outputs.IMAGE_CACHE_TO }}
+        build-args: ${{ inputs.IMAGE_BUILD_ARGS }}
+        platforms: ${{ inputs.IMAGE_PLATFORMS }}
 
     - name: Export digest
       shell: bash
