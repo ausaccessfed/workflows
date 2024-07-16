@@ -62,7 +62,7 @@ on:
         default: false
         type: boolean
       commands:
-        default: '["echo \"Skipping\""]'
+        default: 'skip'
         type: string
       workflow_id:
         description: 'This is an id that is used for things like artifacts, needed when being called in a matrix'
@@ -193,7 +193,11 @@ jobs:
           GITHUB_REGISTRY_REF="ghcr.io/ausaccessfed/${{ inputs.ecr_repository }}"
           echo "GITHUB_REGISTRY_REF=$GITHUB_REGISTRY_REF" >> $GITHUB_OUTPUT
 
-          GITHUB_TEST_IMAGE_ID_TAG="$GITHUB_REGISTRY_REF:test-${{ inputs.workflow_id }}"
+          if [ "${{ inputs.workflow_id }}" != "" ]; then
+            WORKFLOW_ID="-${{ inputs.workflow_id }}"
+          fi
+
+          GITHUB_TEST_IMAGE_ID_TAG="$GITHUB_REGISTRY_REF:test$WORKFLOW_ID"
           echo "GITHUB_TEST_IMAGE_ID_TAG=$GITHUB_TEST_IMAGE_ID_TAG" >> $GITHUB_OUTPUT
 
           GITHUB_BRANCH_TEST_IMAGE_ID_TAG="$GITHUB_TEST_IMAGE_ID_TAG"
@@ -204,8 +208,7 @@ jobs:
 
           echo "GITHUB_BRANCH_TEST_IMAGE_ID_TAG=$GITHUB_BRANCH_TEST_IMAGE_ID_TAG" >> $GITHUB_OUTPUT
 
-
-          GITHUB_LATEST_IMAGE_ID_TAG="$GITHUB_REGISTRY_REF:latest"
+          GITHUB_LATEST_IMAGE_ID_TAG="$GITHUB_REGISTRY_REF:latest$WORKFLOW_ID"
           echo "GITHUB_LATEST_IMAGE_ID_TAG=$GITHUB_LATEST_IMAGE_ID_TAG" >> $GITHUB_OUTPUT
 
           GITHUB_BRANCH_LATEST_IMAGE_ID_TAG="$GITHUB_LATEST_IMAGE_ID_TAG"
@@ -328,6 +331,7 @@ jobs:
 
   commands:
     needs: [init, post-build-test]
+    if: inputs.commands == 'skip'
     strategy:
       fail-fast: false
       matrix:
@@ -421,8 +425,14 @@ jobs:
       #       true
 
   push-to-ecr:
-    needs: [init, commands, image-scan, image-lint, post-build-production]
-    if: needs.init.outputs.SHOULD_PUSH_IMAGE_TO_ECR == 'true'
+    needs: [init, commands, image-scan, image-lint]
+    if: |
+      always() &&
+      needs.init.outputs.SHOULD_PUSH_IMAGE_TO_ECR == 'true' &&
+      needs.init.result == 'success' &&
+      (needs.commands.result == 'success' || needs.commands.result == 'skipped') &&
+      needs.image-scan.result == 'success' &&
+      needs.image-lint.result == 'success'
     strategy:
       matrix:
         arch: ${{ fromJSON(inputs.platforms) }}
