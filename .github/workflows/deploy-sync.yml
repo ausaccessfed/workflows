@@ -265,7 +265,7 @@ jobs:
           IMAGE_PUSH: true
           IMAGE_FORCE_REBUILD: inputs.event_name == 'schedule'
           JOB_INDEX: ${{ strategy.job-index }}
-          JOB_ID: test
+          JOB_ID: ${{inputs.workflow_id}}-test
 
   post-build-test:
     needs: [init, build-test]
@@ -280,7 +280,7 @@ jobs:
           GITHUB_ACTOR: ${{ github.actor }}
           IMAGE_TAGS: ${{ needs.init.outputs.GITHUB_BRANCH_TEST_IMAGE_ID_TAG }}
           IMAGE_TAG_SOURCE: ${{ needs.init.outputs.GITHUB_BRANCH_TEST_IMAGE_ID_TAG }}
-          JOB_ID: test
+          JOB_ID: ${{inputs.workflow_id}}-test
 
   build-production:
     needs: [init, post-build-test]
@@ -309,7 +309,7 @@ jobs:
           IMAGE_LOAD: false
           IMAGE_PUSH: true
           JOB_INDEX: ${{ strategy.job-index }}
-          JOB_ID: production
+          JOB_ID: ${{inputs.workflow_id}}-production
 
   post-build-production:
     needs: [init, build-production]
@@ -322,9 +322,9 @@ jobs:
           ECR_REPOSITORY: ${{ inputs.ecr_repository }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_ACTOR: ${{ github.actor }}
-          IMAGE_TAGS: ${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}
-          IMAGE_TAG_SOURCE: ${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}
-          JOB_ID: production
+          IMAGE_TAGS: ${{  needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}
+          IMAGE_TAG_SOURCE: ${{  needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}
+          JOB_ID: ${{inputs.workflow_id}}-production
 
   commands:
     needs: [init, post-build-test]
@@ -444,7 +444,7 @@ jobs:
           IMAGE_LOAD: false
           IMAGE_PUSH: true
           JOB_INDEX: ${{ strategy.job-index }}
-          JOB_ID: push-to-ecr
+          JOB_ID: ${{inputs.workflow_id}}-push-to-ecr
 
   # TODO: is there a way to get the logic below as part of the above?
   # https://github.com/docker/build-push-action/issues/906
@@ -463,7 +463,7 @@ jobs:
           GITHUB_ACTOR: ${{ github.actor }}
           IMAGE_TAGS: ${{ needs.init.outputs.PRODUCTION_IMAGE_ID_TAG }}~${{ needs.init.outputs.LATEST_IMAGE_ID_TAG }}
           IMAGE_TAG_SOURCE: ${{  needs.init.outputs.PRODUCTION_IMAGE_ID_TAG }}
-          JOB_ID: push-to-ecr
+          JOB_ID: ${{inputs.workflow_id}}-push-to-ecr
 
       # - uses: ausaccessfed/workflows/.github/actions/init@main
       #   with:
