@@ -19,7 +19,7 @@ inputs:
   IMAGE_TAGS:
     description: 'tags to be merged with -t'
     required: true
-  IMAGE_TAG:
+  IMAGE_TAG_SOURCE:
     description: 'tags to be merged'
     required: true
 
