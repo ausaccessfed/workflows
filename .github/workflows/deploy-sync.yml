@@ -331,7 +331,7 @@ jobs:
 
   commands:
     needs: [init, post-build-test]
-    if: inputs.commands == 'skip'
+    if: inputs.commands != 'skip'
     strategy:
       fail-fast: false
       matrix:
