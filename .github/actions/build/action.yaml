@@ -70,11 +70,9 @@ runs:
       shell: bash
       run: |
         MATRIX_CLEANED="$(echo "${{ inputs.IMAGE_PLATFORMS }}" | tr / _)"
-        IMAGE_CACHE_FROM=$(echo "${{inputs.IMAGE_CACHE_FROM}}" | sed 's/~/\n/g' | sed -e 's/^/type=registry,ref=/' | sed -e 's/$/-'$MATRIX_CLEANED'-cache/')
-        echo "IMAGE_CACHE_FROM=$IMAGE_CACHE_FROM" >> $GITHUB_OUTPUT
-        echo "IMAGE_CACHE_TO=\"$(echo "${{inputs.IMAGE_CACHE_TO}}" | sed 's/~/\n/g' | sed -e 's/^/type=registry,ref=/' | sed -e 's/$/-'$MATRIX_CLEANED'-cache,mode=max/')\"" >> $GITHUB_OUTPUT
+        echo "IMAGE_CACHE_FROM=$(echo "${{inputs.IMAGE_CACHE_FROM}}" | sed 's/~/\n/g' | sed -e 's/^/type=registry,ref=/' | sed -e 's/$/-'$MATRIX_CLEANED'-cache/')" >> $GITHUB_OUTPUT
+        echo "IMAGE_CACHE_TO=$(echo "${{inputs.IMAGE_CACHE_TO}}" | sed 's/~/\n/g' | sed -e 's/^/type=registry,ref=/' | sed -e 's/$/-'$MATRIX_CLEANED'-cache,mode=max/')" >> $GITHUB_OUTPUT
         echo "IMAGE_TAGS=$(echo "${{inputs.IMAGE_TAGS}}" | sed 's/~/\n/g')" >> $GITHUB_OUTPUT
-        echo $IMAGE_CACHE_FROM
 
     - name: Build OCI Image
       id: build
@@ -87,9 +85,9 @@ runs:
         tags: |
           ${{ inputs.IMAGE_TAGS }}
         cache-from: |
-          ${{ steps.env.outputs.IMAGE_CACHE_FROM }}
+          ${{ steps.envs.outputs.IMAGE_CACHE_FROM }}
         cache-to: |
-          ${{ steps.env.outputs.IMAGE_CACHE_TO }}
+          ${{ steps.envs.outputs.IMAGE_CACHE_TO }}
         build-args: |
           ${{ inputs.IMAGE_BUILD_ARGS }}
         platforms: |
