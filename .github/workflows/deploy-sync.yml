@@ -62,7 +62,7 @@ on:
         default: false
         type: boolean
       commands:
-        default: 'skip'
+        default: '["echo \"Skipping\""]'
         type: string
     secrets:
       ROLE:
@@ -319,7 +319,6 @@ jobs:
 
   commands:
     needs: [init, post-build-test]
-    if: inputs.commands != 'skip'
     strategy:
       fail-fast: false
       matrix:
