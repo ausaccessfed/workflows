@@ -75,17 +75,24 @@ runs:
       shell: bash
       run: |
         MATRIX_CLEANED="$(echo "${{ inputs.IMAGE_PLATFORMS }}" | tr / _)"
-        echo "IMAGE_CACHE_FROM<<EOF" >> $GITHUB_OUTPUT
-        echo "${{inputs.IMAGE_CACHE_FROM}}" | sed 's/~/\n/g' | sed -e 's/^/type=registry,ref=/' -e 's/$/-'$MATRIX_CLEANED'-cache/' >> $GITHUB_OUTPUT
-        echo "EOF" >> $GITHUB_OUTPUT
 
-        echo "IMAGE_CACHE_TO<<EOF" >> $GITHUB_OUTPUT
-        echo "${{inputs.IMAGE_CACHE_TO}}" | sed 's/~/\n/g' | sed -e 's/^/type=registry,ref=/' -e 's/$/-'$MATRIX_CLEANED'-cache,mode=max/' >> $GITHUB_OUTPUT
-        echo "EOF" >> $GITHUB_OUTPUT
+        if [ "${{inputs.IMAGE_CACHE_FROM}}" != "" ]; then
+          echo "IMAGE_CACHE_FROM<<EOF" >> $GITHUB_OUTPUT
+          echo "${{inputs.IMAGE_CACHE_FROM}}" | sed 's/~/\n/g' | sed -e 's/^/type=registry,ref=/' -e 's/$/-'$MATRIX_CLEANED'-cache/' >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+        fi
 
-        echo "IMAGE_TAGS<<EOF" >> $GITHUB_OUTPUT
-        echo "${{inputs.IMAGE_TAGS}}" | sed 's/~/\n/g' | sed -e 's/$/-'$MATRIX_CLEANED'/' >> $GITHUB_OUTPUT
-        echo "EOF" >> $GITHUB_OUTPUT
+        if [ "${{inputs.IMAGE_CACHE_TO}}" != "" ]; then
+          echo "IMAGE_CACHE_TO<<EOF" >> $GITHUB_OUTPUT
+          echo "${{inputs.IMAGE_CACHE_TO}}" | sed 's/~/\n/g' | sed -e 's/^/type=registry,ref=/' -e 's/$/-'$MATRIX_CLEANED'-cache,mode=max/' >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+        fi
+
+        if [ "${{inputs.IMAGE_TAGS}}" != "" ]; then
+          echo "IMAGE_TAGS<<EOF" >> $GITHUB_OUTPUT
+          echo "${{inputs.IMAGE_TAGS}}" | sed 's/~/\n/g' | sed -e 's/$/-'$MATRIX_CLEANED'/' >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+        fi
 
     - name: Build OCI Image
       id: build

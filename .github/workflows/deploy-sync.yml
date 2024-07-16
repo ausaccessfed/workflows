@@ -322,8 +322,8 @@ jobs:
           ECR_REPOSITORY: ${{ inputs.ecr_repository }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_ACTOR: ${{ github.actor }}
-          IMAGE_TAGS: ${{  needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}
-          IMAGE_TAG_SOURCE: ${{  needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}
+          IMAGE_TAGS: ${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}
+          IMAGE_TAG_SOURCE: ${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}
           JOB_ID: ${{inputs.workflow_id}}-production
 
   commands:
@@ -449,8 +449,6 @@ jobs:
           JOB_INDEX: ${{ strategy.job-index }}
           JOB_ID: ${{inputs.workflow_id}}-push-to-ecr
 
-  # TODO: is there a way to get the logic below as part of the above?
-  # https://github.com/docker/build-push-action/issues/906
   update-ecr-manifests:
     needs: [push-to-ecr, init]
     name: 'Update ecr manifests'
