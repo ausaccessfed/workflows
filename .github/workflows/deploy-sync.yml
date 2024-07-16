@@ -250,8 +250,8 @@ jobs:
             RUBY_VERSION=${{ needs.init.outputs.RUBY_VERSION }}
             BASE_IMAGE=${{ needs.init.outputs.BASE_IMAGE }}
           IMAGE_TARGET: development
-          IMAGE_CACHE_TO: type=registry,ref=${{ needs.init.outputs.GITHUB_BRANCH_CACHE_IMAGE_ID_TAG }},mode=max
-          IMAGE_CACHE_FROM: type=registry,ref=${{ needs.init.outputs.GITHUB_CACHE_IMAGE_ID_TAG }}~type=registry,ref=${{ needs.init.outputs.GITHUB_BRANCH_CACHE_IMAGE_ID_TAG }}
+          IMAGE_CACHE_TO: ${{ needs.init.outputs.GITHUB_BRANCH_CACHE_IMAGE_ID_TAG }}
+          IMAGE_CACHE_FROM: ${{ needs.init.outputs.GITHUB_CACHE_IMAGE_ID_TAG }}~${{ needs.init.outputs.GITHUB_BRANCH_CACHE_IMAGE_ID_TAG }}
           IMAGE_TAGS: ${{ needs.init.outputs.GITHUB_BRANCH_CACHE_IMAGE_ID_TAG }}
           IMAGE_LOAD: false
           IMAGE_PUSH: true
@@ -292,8 +292,8 @@ jobs:
             BASE_IMAGE=${{ needs.init.outputs.BASE_IMAGE }}
             RELEASE_VERSION=${{ needs.init.outputs.IMAGE_TAG }}
           IMAGE_TARGET: production
-          IMAGE_CACHE_TO: type=registry,ref=${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }},mode=max
-          IMAGE_CACHE_FROM: type=registry,ref=${{ needs.init.outputs.GITHUB_BRANCH_CACHE_IMAGE_ID_TAG }}~type=registry,ref=${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}
+          IMAGE_CACHE_TO: ${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}
+          IMAGE_CACHE_FROM: ${{ needs.init.outputs.GITHUB_BRANCH_CACHE_IMAGE_ID_TAG }}~${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}
           # TODO: once we start trying to use gchr images we need to make the line below only happen on the default build, how does multi arch come to to play then?
           # ${{  sneeds.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}
           IMAGE_TAGS: ${{  needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}
