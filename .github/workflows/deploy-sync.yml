@@ -241,7 +241,7 @@ jobs:
     runs-on: ${{ (matrix.arch == 'linux/amd64' && inputs.runner) || (matrix.arch == 'linux/arm64' && 'arm64-4core') }}
     name: Build Test Image
     steps:
-      - uses: ausaccessfed/workflows/.github/actions/build@feature/fixing-package-access
+      - uses: ausaccessfed/workflows/.github/actions/build@main
         with:
           BRANCH_NAME: ${{ needs.init.outputs.BRANCH_NAME }}
           ROLE: ${{ secrets.ROLE }}
@@ -266,7 +266,7 @@ jobs:
     needs: [init, build-test]
     runs-on: 'ubuntu-latest'
     steps:
-      - uses: ausaccessfed/workflows/.github/actions/publish_manifest@feature/fixing-package-access
+      - uses: ausaccessfed/workflows/.github/actions/publish_manifest@main
         with:
           BRANCH_NAME: ${{ needs.init.outputs.BRANCH_NAME }}
           ROLE: ${{ secrets.ROLE }}
@@ -285,7 +285,7 @@ jobs:
     runs-on: ${{ (matrix.arch == 'linux/amd64' && inputs.runner) || (matrix.arch == 'linux/arm64' && 'arm64-4core') }}
     name: Build Production Image
     steps:
-      - uses: ausaccessfed/workflows/.github/actions/build@feature/fixing-package-access
+      - uses: ausaccessfed/workflows/.github/actions/build@main
         with:
           BRANCH_NAME: ${{ needs.init.outputs.BRANCH_NAME }}
           ROLE: ${{ secrets.ROLE }}
@@ -310,7 +310,7 @@ jobs:
     needs: [init, build-production]
     runs-on: 'ubuntu-latest'
     steps:
-      - uses: ausaccessfed/workflows/.github/actions/publish_manifest@feature/fixing-package-access
+      - uses: ausaccessfed/workflows/.github/actions/publish_manifest@main
         with:
           BRANCH_NAME: ${{ needs.init.outputs.BRANCH_NAME }}
           ROLE: ${{ secrets.ROLE }}
@@ -449,7 +449,7 @@ jobs:
     runs-on: ubuntu-latest
     if: needs.init.outputs.SHOULD_PUSH_IMAGE_TO_ECR == 'true'
     steps:
-      - uses: ausaccessfed/workflows/.github/actions/publish_manifest@feature/fixing-package-access
+      - uses: ausaccessfed/workflows/.github/actions/publish_manifest@main
         with:
           BRANCH_NAME: ${{ needs.init.outputs.BRANCH_NAME }}
           ROLE: ${{ secrets.ROLE }}
