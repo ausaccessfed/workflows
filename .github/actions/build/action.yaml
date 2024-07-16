@@ -31,9 +31,11 @@ inputs:
   IMAGE_CACHE_FROM:
     description: 'cache from strings'
     default: ''
+  IMAGE_OUTPUTS:
+    description: 'cache from strings'
+    default: ''
   IMAGE_TAGS:
     description: 'cache from strings'
-    required: true
   IMAGE_LOAD:
     description: 'cache from strings'
     required: true
@@ -43,7 +45,12 @@ inputs:
   IMAGE_FORCE_REBUILD:
     default: 'false'
     description: 'forces a full rebuild'
-
+  JOB_INDEX:
+    description: 'index of job when used with matrix'
+    required: true
+  JOB_ID:
+    description: 'type of job i.e test/build/ecr'
+    required: true
 runs:
   using: 'composite'
   steps:
@@ -61,8 +68,24 @@ runs:
     - name: Force docker image to be rebuilt from scratch
       shell: bash
       if: inputs.IMAGE_FORCE_REBUILD == 'true'
+      run: echo "`date "+%Y-%m-%d %H:%M:%S"` REBUILD" >> .FORCE_NEW_DOCKER_BUILD
+
+    - name: Envs
+      id: envs
+      shell: bash
       run: |
-        echo "`date "+%Y-%m-%d %H:%M:%S"` REBUILD" >> .FORCE_NEW_DOCKER_BUILD
+        MATRIX_CLEANED="$(echo "${{ inputs.IMAGE_PLATFORMS }}" | tr / _)"
+        echo "IMAGE_CACHE_FROM<<EOF" >> $GITHUB_OUTPUT
+        echo "${{inputs.IMAGE_CACHE_FROM}}" | sed 's/~/\n/g' | sed -e 's/^/type=registry,ref=/' -e 's/$/-'$MATRIX_CLEANED'-cache/' >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
+
+        echo "IMAGE_CACHE_TO<<EOF" >> $GITHUB_OUTPUT
+        echo "${{inputs.IMAGE_CACHE_TO}}" | sed 's/~/\n/g' | sed -e 's/^/type=registry,ref=/' -e 's/$/-'$MATRIX_CLEANED'-cache,mode=max/' >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
+
+        echo "IMAGE_TAGS<<EOF" >> $GITHUB_OUTPUT
+        echo "${{inputs.IMAGE_TAGS}}" | sed 's/~/\n/g' | sed -e 's/$/-'$MATRIX_CLEANED'/' >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
 
     - name: Build OCI Image
       id: build
@@ -71,14 +94,26 @@ runs:
         context: .
         push: ${{ inputs.IMAGE_PUSH }}
         load: ${{ inputs.IMAGE_LOAD }}
-        tags: |
-          ${{ inputs.IMAGE_TAGS }}
-        cache-from: |
-          ${{ inputs.IMAGE_CACHE_FROM }}
-        cache-to: |
-          ${{ inputs.IMAGE_CACHE_TO }}
         target: ${{ inputs.IMAGE_TARGET }}
-        build-args: |
-          ${{ inputs.IMAGE_BUILD_ARGS }}
-        platforms: |
-          ${{ inputs.IMAGE_PLATFORMS }}
+        tags: ${{ steps.envs.outputs.IMAGE_TAGS }}
+        cache-from: ${{ steps.envs.outputs.IMAGE_CACHE_FROM }}
+        cache-to: ${{ steps.envs.outputs.IMAGE_CACHE_TO }}
+        build-args: ${{ inputs.IMAGE_BUILD_ARGS }}
+        platforms: ${{ inputs.IMAGE_PLATFORMS }}
+        provenance: false
+        sbom: false
+
+    - name: Export digest
+      shell: bash
+      run: |
+        mkdir -p /tmp/digests
+        digest="${{ steps.build.outputs.digest }}"
+        touch "/tmp/digests/${digest#sha256:}"
+
+    - name: Upload digest
+      uses: actions/upload-artifact@0b2256b8c012f0828dc542b3febcab082c67f72b # v4.3.4
+      with:
+        name: digests-${{inputs.JOB_ID}}-${{inputs.JOB_INDEX}}
+        path: /tmp/digests/*
+        if-no-files-found: error
+        retention-days: 1
