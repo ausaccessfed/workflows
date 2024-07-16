@@ -253,13 +253,13 @@ jobs:
             RUBY_VERSION=${{ needs.init.outputs.RUBY_VERSION }}
             BASE_IMAGE=${{ needs.init.outputs.BASE_IMAGE }}
           IMAGE_TARGET: development
-          IMAGE_OUTPUTS: type=registry,name=${{ needs.init.outputs.IMAGE_ID }},push-by-digest=true
-          IMAGE_CACHE_TO: type=registry,ref=${{ needs.init.outputs.GITHUB_BRANCH_CACHE_IMAGE_ID_TAG }}-${{steps.env.outputs.MATRIX_CLEANED}},mode=max
+          # IMAGE_OUTPUTS: type=registry,name=${{ needs.init.outputs.IMAGE_ID }},push-by-digest=true
+          # IMAGE_CACHE_TO: type=registry,ref=${{ needs.init.outputs.GITHUB_BRANCH_CACHE_IMAGE_ID_TAG }},mode=max
           IMAGE_CACHE_FROM: |
             type=registry,ref=${{ needs.init.outputs.GITHUB_CACHE_IMAGE_ID_TAG }}
             type=registry,ref=${{ needs.init.outputs.GITHUB_BRANCH_CACHE_IMAGE_ID_TAG }}
-          # IMAGE_TAGS: |
-          #   ${{ needs.init.outputs.GITHUB_BRANCH_CACHE_IMAGE_ID_TAG }}
+          IMAGE_TAGS: |
+            ${{ needs.init.outputs.GITHUB_BRANCH_CACHE_IMAGE_ID_TAG }}-${{steps.env.outputs.MATRIX_CLEANED}}
           IMAGE_LOAD: false
           IMAGE_PUSH: false
           IMAGE_FORCE_REBUILD: inputs.event_name == 'schedule'
@@ -300,7 +300,7 @@ jobs:
             RELEASE_VERSION=${{ needs.init.outputs.IMAGE_TAG }}
           IMAGE_TARGET: production
           IMAGE_OUTPUTS: type=registry,name=${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }},push-by-digest=true
-          # IMAGE_CACHE_TO: type=registry,ref=${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }},mode=max
+          IMAGE_CACHE_TO: type=registry,ref=${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }},mode=max
           IMAGE_CACHE_FROM: |
             type=registry,ref=${{ needs.init.outputs.GITHUB_BRANCH_CACHE_IMAGE_ID_TAG }}
             type=registry,ref=${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}

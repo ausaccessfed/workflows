@@ -86,6 +86,8 @@ runs:
           ${{ inputs.IMAGE_PLATFORMS }}
         outputs: |
           ${{ inputs.IMAGE_OUTPUTS }}
+        provenance: false
+        sbom: false
 
     - name: Export digest
       shell: bash
