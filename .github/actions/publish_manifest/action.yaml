@@ -22,7 +22,9 @@ inputs:
   IMAGE_TAG_SOURCE:
     description: 'tags to be merged'
     required: true
-
+  JOB_ID:
+    description: 'type of job i.e test/build/ecr'
+    required: true
 runs:
   using: 'composite'
   steps:
@@ -41,7 +43,7 @@ runs:
       uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
       with:
         path: /tmp/digests
-        pattern: digests-*
+        pattern: digests-${{inputs.JOB_ID}}*
         merge-multiple: true
 
     - name: Create and push manifest list

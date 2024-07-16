@@ -256,6 +256,7 @@ jobs:
           IMAGE_PUSH: true
           IMAGE_FORCE_REBUILD: inputs.event_name == 'schedule'
           JOB_INDEX: ${{ strategy.job-index }}
+          JOB_ID: test
 
   post-build-test:
     needs: [init, build-test]
@@ -270,6 +271,7 @@ jobs:
           GITHUB_ACTOR: ${{ github.actor }}
           IMAGE_TAGS: ${{ needs.init.outputs.GITHUB_BRANCH_TEST_IMAGE_ID_TAG }}
           IMAGE_TAG_SOURCE: ${{ needs.init.outputs.GITHUB_BRANCH_TEST_IMAGE_ID_TAG }}
+          JOB_ID: test
 
   build-production:
     needs: [init, post-build-test]
@@ -298,6 +300,7 @@ jobs:
           IMAGE_LOAD: false
           IMAGE_PUSH: true
           JOB_INDEX: ${{ strategy.job-index }}
+          JOB_ID: production
 
   post-build-production:
     needs: [init, build-production]
@@ -312,6 +315,7 @@ jobs:
           GITHUB_ACTOR: ${{ github.actor }}
           IMAGE_TAGS: ${{  needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}
           IMAGE_TAG_SOURCE: ${{  needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}
+          JOB_ID: production
 
   commands:
     needs: [init, post-build-test]
@@ -432,6 +436,7 @@ jobs:
           IMAGE_LOAD: false
           IMAGE_PUSH: true
           JOB_INDEX: ${{ strategy.job-index }}
+          JOB_ID: push-to-ecr
 
   # TODO: is there a way to get the logic below as part of the above?
   # https://github.com/docker/build-push-action/issues/906
@@ -450,6 +455,7 @@ jobs:
           GITHUB_ACTOR: ${{ github.actor }}
           IMAGE_TAGS: ${{ needs.init.outputs.PRODUCTION_IMAGE_ID_TAG }}~${{ needs.init.outputs.LATEST_IMAGE_ID_TAG }}
           IMAGE_TAG_SOURCE: ${{  needs.init.outputs.PRODUCTION_IMAGE_ID_TAG }}
+          JOB_ID: push-to-ecr
       # - uses: ausaccessfed/workflows/.github/actions/init@main
       #   with:
       #     ROLE: ${{ secrets.ROLE }}
