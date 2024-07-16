@@ -261,7 +261,7 @@ jobs:
           IMAGE_TAGS: |
             ${{ needs.init.outputs.GITHUB_BRANCH_CACHE_IMAGE_ID_TAG }}-${{steps.env.outputs.MATRIX_CLEANED}}
           IMAGE_LOAD: false
-          IMAGE_PUSH: false
+          IMAGE_PUSH: true
           IMAGE_FORCE_REBUILD: inputs.event_name == 'schedule'
 
   post-build-test:
