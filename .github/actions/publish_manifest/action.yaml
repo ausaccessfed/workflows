@@ -42,6 +42,8 @@ runs:
       with:
         name: digests
         path: /tmp/digests
+        pattern: digests-*
+        merge-multiple: true
 
     - name: Create and push manifest list
       shell: bash

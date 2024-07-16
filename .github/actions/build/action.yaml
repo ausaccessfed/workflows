@@ -45,6 +45,9 @@ inputs:
   IMAGE_FORCE_REBUILD:
     default: 'false'
     description: 'forces a full rebuild'
+  JOB_INDEX:
+    description: 'index of job when used with matrix'
+    required: true
 
 runs:
   using: 'composite'
@@ -108,7 +111,7 @@ runs:
     - name: Upload digest
       uses: actions/upload-artifact@0b2256b8c012f0828dc542b3febcab082c67f72b # v4.3.4
       with:
-        name: digests
+        name: digests-{{inputs.JOB_INDEX}}
         path: /tmp/digests/*
         if-no-files-found: error
         retention-days: 1

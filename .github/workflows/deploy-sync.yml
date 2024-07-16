@@ -255,6 +255,7 @@ jobs:
           IMAGE_LOAD: false
           IMAGE_PUSH: true
           IMAGE_FORCE_REBUILD: inputs.event_name == 'schedule'
+          JOB_INDEX: ${{ strategy.job-index }}
 
   post-build-test:
     needs: [init, build-test]
@@ -296,6 +297,7 @@ jobs:
           IMAGE_TAGS: ${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}
           IMAGE_LOAD: false
           IMAGE_PUSH: true
+          JOB_INDEX: ${{ strategy.job-index }}
 
   post-build-production:
     needs: [init, build-production]
@@ -429,6 +431,7 @@ jobs:
           IMAGE_TAGS: ${{ needs.init.outputs.PRODUCTION_IMAGE_ID_TAG }}
           IMAGE_LOAD: false
           IMAGE_PUSH: true
+          JOB_INDEX: ${{ strategy.job-index }}
 
   # TODO: is there a way to get the logic below as part of the above?
   # https://github.com/docker/build-push-action/issues/906
