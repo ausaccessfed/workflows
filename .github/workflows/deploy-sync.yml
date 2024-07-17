@@ -315,9 +315,6 @@ jobs:
           JOB_INDEX: ${{ strategy.job-index }}
           JOB_ID: ${{inputs.workflow_id}}-production
 
-  # TODO: we have a slight issue with this flow as this step will link up the "latest" image tag in gthiub, which will result in the image being used BEFORE
-  # TODO: all the required steps have cleared, not a huge deal as most of the "latest" style images dont really have tests
-  # TODO: But it will bite someone one day who assumes as such...
   post-build-production:
     needs: [init, build-production]
     runs-on: 'ubuntu-latest'
