@@ -174,7 +174,11 @@ jobs:
 
           DOCKER_ECR=$(aws secretsmanager get-secret-value --secret-id "aaf-terraform-DOCKER_ECR" --query 'SecretString' --output text | sed 's:/*$::')
 
-          echo "PUBLISH_APP_IMAGE_ID_TAG=$DOCKER_ECR/publish_app:latest" >> $GITHUB_OUTPUT
+          GITHUB_REGISTRY_ROOT_REF="ghcr.io/ausaccessfed"
+          GITHUB_REGISTRY_REF="$GITHUB_REGISTRY_ROOT_REF/${{ inputs.ecr_repository }}"
+          echo "GITHUB_REGISTRY_REF=$GITHUB_REGISTRY_REF" >> $GITHUB_OUTPUT
+
+          echo "PUBLISH_APP_IMAGE_ID_TAG=$GITHUB_REGISTRY_ROOT_REF/publish_app:latest" >> $GITHUB_OUTPUT
 
           RUBY_VERSION=$(${{ inputs.version_command }})
           echo "RUBY_VERSION=$RUBY_VERSION" >> $GITHUB_OUTPUT
@@ -189,9 +193,6 @@ jobs:
           echo "PRODUCTION_IMAGE_ID_TAG=$IMAGE_ID:$IMAGE_TAG" >> $GITHUB_OUTPUT
 
           echo "LATEST_IMAGE_ID_TAG=$IMAGE_ID:${{ inputs.latest_image_tag }}" >> $GITHUB_OUTPUT
-
-          GITHUB_REGISTRY_REF="ghcr.io/ausaccessfed/${{ inputs.ecr_repository }}"
-          echo "GITHUB_REGISTRY_REF=$GITHUB_REGISTRY_REF" >> $GITHUB_OUTPUT
 
           if [ "${{ inputs.workflow_id }}" != "" ]; then
             WORKFLOW_ID="-${{ inputs.workflow_id }}"
@@ -235,7 +236,7 @@ jobs:
           if [ -f "${PWD}/.hadolint.yaml" ]; then
             IMAGE_SCANNER_EXTRAS="-v ${PWD}/.hadolint.yaml:/app/.hadolint.yaml ${IMAGE_SCANNER_EXTRAS}"
           fi
-          IMAGE_SCANNER_IMAGE_ID_TAG="$DOCKER_ECR/image-scanner:latest"
+          IMAGE_SCANNER_IMAGE_ID_TAG="$GITHUB_REGISTRY_ROOT_REF/image-scanner:latest"
 
           IMAGE_SCANNER_COMMON="docker run -u 0 -v /var/run/docker.sock:/var/run/docker.sock ${IMAGE_SCANNER_EXTRAS} $IMAGE_SCANNER_IMAGE_ID_TAG"
           echo "IMAGE_SCANNER_COMMON=$IMAGE_SCANNER_COMMON" >> $GITHUB_OUTPUT
