@@ -209,13 +209,13 @@ jobs:
 
           echo "GITHUB_BRANCH_TEST_IMAGE_ID_TAG=$GITHUB_BRANCH_TEST_IMAGE_ID_TAG" >> $GITHUB_OUTPUT
 
-          GITHUB_LATEST_IMAGE_ID_TAG="$GITHUB_REGISTRY_REF:latest$WORKFLOW_ID"
+          GITHUB_LATEST_IMAGE_ID_TAG="$GITHUB_REGISTRY_REF:${{ inputs.latest_image_tag }}"
           echo "GITHUB_LATEST_IMAGE_ID_TAG=$GITHUB_LATEST_IMAGE_ID_TAG" >> $GITHUB_OUTPUT
 
-          GITHUB_BRANCH_LATEST_IMAGE_ID_TAG="$GITHUB_LATEST_IMAGE_ID_TAG"
+          GITHUB_BRANCH_LATEST_IMAGE_ID_TAG="$GITHUB_LATEST_IMAGE_ID_TAG$WORKFLOW_ID"
 
           if [ "$IS_DEFAULT_BRANCH_PUSH" != "true" ]; then
-            echo "GITHUB_BRANCH_LATEST_IMAGE_ID_TAG=$GITHUB_LATEST_IMAGE_ID_TAG-$IMAGE_TAG" >> $GITHUB_OUTPUT
+            echo "GITHUB_BRANCH_LATEST_IMAGE_ID_TAG=$GITHUB_LATEST_IMAGE_ID_TAG-$IMAGE_TAG"
           fi
 
           echo "GITHUB_BRANCH_LATEST_IMAGE_ID_TAG=$GITHUB_BRANCH_LATEST_IMAGE_ID_TAG" >> $GITHUB_OUTPUT
@@ -315,6 +315,9 @@ jobs:
           JOB_INDEX: ${{ strategy.job-index }}
           JOB_ID: ${{inputs.workflow_id}}-production
 
+  # TODO: we have a slight issue with this flow as this step will link up the "latest" image tag in gthiub, which will result in the image being used BEFORE
+  # TODO: all the required steps have cleared, not a huge deal as most of the "latest" style images dont really have tests
+  # TODO: But it will bite someone one day who assumes as such...
   post-build-production:
     needs: [init, build-production]
     runs-on: 'ubuntu-latest'
@@ -398,6 +401,7 @@ jobs:
             ${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }} \
             /app/Dockerfile
 
+  # TODO: should we async the inside jobs instead of bash async within the image?
   image-scan:
     needs: [init, post-build-production]
     strategy:
