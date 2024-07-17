@@ -253,7 +253,6 @@ jobs:
       - uses: ausaccessfed/workflows/.github/actions/build@main
         with:
           BRANCH_NAME: ${{ needs.init.outputs.BRANCH_NAME }}
-          ROLE: ${{ secrets.ROLE }}
           ECR_REPOSITORY: ${{ inputs.ecr_repository }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_ACTOR: ${{ github.actor }}
@@ -278,7 +277,6 @@ jobs:
       - uses: ausaccessfed/workflows/.github/actions/publish_manifest@main
         with:
           BRANCH_NAME: ${{ needs.init.outputs.BRANCH_NAME }}
-          ROLE: ${{ secrets.ROLE }}
           ECR_REPOSITORY: ${{ inputs.ecr_repository }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_ACTOR: ${{ github.actor }}
@@ -297,7 +295,6 @@ jobs:
       - uses: ausaccessfed/workflows/.github/actions/build@main
         with:
           BRANCH_NAME: ${{ needs.init.outputs.BRANCH_NAME }}
-          ROLE: ${{ secrets.ROLE }}
           ECR_REPOSITORY: ${{ inputs.ecr_repository }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_ACTOR: ${{ github.actor }}
@@ -322,7 +319,6 @@ jobs:
       - uses: ausaccessfed/workflows/.github/actions/publish_manifest@main
         with:
           BRANCH_NAME: ${{ needs.init.outputs.BRANCH_NAME }}
-          ROLE: ${{ secrets.ROLE }}
           ECR_REPOSITORY: ${{ inputs.ecr_repository }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_ACTOR: ${{ github.actor }}
@@ -384,7 +380,6 @@ jobs:
       - uses: ausaccessfed/workflows/.github/actions/init@main
         with:
           BRANCH_NAME: ${{ needs.init.outputs.BRANCH_NAME }}
-          ROLE: ${{ secrets.ROLE }}
           ECR_REPOSITORY: ${{ inputs.ecr_repository }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_ACTOR: ${{ github.actor }}
@@ -410,7 +405,6 @@ jobs:
       - uses: ausaccessfed/workflows/.github/actions/init@main
         with:
           BRANCH_NAME: ${{ needs.init.outputs.BRANCH_NAME }}
-          ROLE: ${{ secrets.ROLE }}
           ECR_REPOSITORY: ${{ inputs.ecr_repository }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_ACTOR: ${{ github.actor }}
@@ -474,7 +468,6 @@ jobs:
       - uses: ausaccessfed/workflows/.github/actions/publish_manifest@main
         with:
           BRANCH_NAME: ${{ needs.init.outputs.BRANCH_NAME }}
-          ROLE: ${{ secrets.ROLE }}
           ECR_REPOSITORY: ${{ inputs.ecr_repository }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_ACTOR: ${{ github.actor }}
@@ -488,8 +481,6 @@ jobs:
           BRANCH_NAME: ${{ needs.init.outputs.BRANCH_NAME }}
           ROLE: ${{ secrets.ROLE }}
           ECR_REPOSITORY: ${{ inputs.ecr_repository }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITHUB_ACTOR: ${{ github.actor }}
           IMAGE_TAGS: ${{ needs.init.outputs.PRODUCTION_IMAGE_ID_TAG }}~${{ needs.init.outputs.LATEST_IMAGE_ID_TAG }}
           IMAGE_TAG_SOURCE: ${{  needs.init.outputs.PRODUCTION_IMAGE_ID_TAG }}
           JOB_ID: ${{inputs.workflow_id}}-push-to-ecr
