@@ -47,7 +47,7 @@ on:
         default: "['linux/amd64']"
         type: string
       runner-cores:
-        description: 'Provide the amount of cores wanted, '
+        description: 'Provide the amount of cores wanted, if 2 then defaults to free runner for intel'
         default: '2'
         type: string
       development_environments:
@@ -245,6 +245,7 @@ jobs:
           echo "IMAGE_SCANNER_COMMON=$IMAGE_SCANNER_COMMON" >> $GITHUB_OUTPUT
 
           # Note this assumes runners exist given the naming ARCH-NUM_CORES-cores
+          # TODO: make this work for more than intel and arm? maybe we dont need anything else
           INTEL_RUNNER=amd64-${{inputs.runner-cores}}-cores
           if [ "${{inputs.runner-cores}}" == "2" ]; then
             INTEL_RUNNER=ubuntu-latest
