@@ -174,7 +174,11 @@ jobs:
 
           DOCKER_ECR=$(aws secretsmanager get-secret-value --secret-id "aaf-terraform-DOCKER_ECR" --query 'SecretString' --output text | sed 's:/*$::')
 
-          echo "PUBLISH_APP_IMAGE_ID_TAG=$DOCKER_ECR/publish_app:latest" >> $GITHUB_OUTPUT
+          GITHUB_REGISTRY_ROOT_REF="ghcr.io/ausaccessfed"
+          GITHUB_REGISTRY_REF="$GITHUB_REGISTRY_ROOT_REF/${{ inputs.ecr_repository }}"
+          echo "GITHUB_REGISTRY_REF=$GITHUB_REGISTRY_REF" >> $GITHUB_OUTPUT
+
+          echo "PUBLISH_APP_IMAGE_ID_TAG=$GITHUB_REGISTRY_ROOT_REF/publish_app:latest" >> $GITHUB_OUTPUT
 
           RUBY_VERSION=$(${{ inputs.version_command }})
           echo "RUBY_VERSION=$RUBY_VERSION" >> $GITHUB_OUTPUT
@@ -189,9 +193,6 @@ jobs:
           echo "PRODUCTION_IMAGE_ID_TAG=$IMAGE_ID:$IMAGE_TAG" >> $GITHUB_OUTPUT
 
           echo "LATEST_IMAGE_ID_TAG=$IMAGE_ID:${{ inputs.latest_image_tag }}" >> $GITHUB_OUTPUT
-
-          GITHUB_REGISTRY_REF="ghcr.io/ausaccessfed/${{ inputs.ecr_repository }}"
-          echo "GITHUB_REGISTRY_REF=$GITHUB_REGISTRY_REF" >> $GITHUB_OUTPUT
 
           if [ "${{ inputs.workflow_id }}" != "" ]; then
             WORKFLOW_ID="-${{ inputs.workflow_id }}"
@@ -208,13 +209,13 @@ jobs:
 
           echo "GITHUB_BRANCH_TEST_IMAGE_ID_TAG=$GITHUB_BRANCH_TEST_IMAGE_ID_TAG" >> $GITHUB_OUTPUT
 
-          GITHUB_LATEST_IMAGE_ID_TAG="$GITHUB_REGISTRY_REF:latest$WORKFLOW_ID"
+          GITHUB_LATEST_IMAGE_ID_TAG="$GITHUB_REGISTRY_REF:${{ inputs.latest_image_tag }}"
           echo "GITHUB_LATEST_IMAGE_ID_TAG=$GITHUB_LATEST_IMAGE_ID_TAG" >> $GITHUB_OUTPUT
 
-          GITHUB_BRANCH_LATEST_IMAGE_ID_TAG="$GITHUB_LATEST_IMAGE_ID_TAG"
+          GITHUB_BRANCH_LATEST_IMAGE_ID_TAG="$GITHUB_LATEST_IMAGE_ID_TAG$WORKFLOW_ID"
 
           if [ "$IS_DEFAULT_BRANCH_PUSH" != "true" ]; then
-            echo "GITHUB_BRANCH_LATEST_IMAGE_ID_TAG=$GITHUB_LATEST_IMAGE_ID_TAG-$IMAGE_TAG" >> $GITHUB_OUTPUT
+            echo "GITHUB_BRANCH_LATEST_IMAGE_ID_TAG=$GITHUB_LATEST_IMAGE_ID_TAG-$IMAGE_TAG"
           fi
 
           echo "GITHUB_BRANCH_LATEST_IMAGE_ID_TAG=$GITHUB_BRANCH_LATEST_IMAGE_ID_TAG" >> $GITHUB_OUTPUT
@@ -235,7 +236,7 @@ jobs:
           if [ -f "${PWD}/.hadolint.yaml" ]; then
             IMAGE_SCANNER_EXTRAS="-v ${PWD}/.hadolint.yaml:/app/.hadolint.yaml ${IMAGE_SCANNER_EXTRAS}"
           fi
-          IMAGE_SCANNER_IMAGE_ID_TAG="$DOCKER_ECR/image-scanner:latest"
+          IMAGE_SCANNER_IMAGE_ID_TAG="$GITHUB_REGISTRY_ROOT_REF/image-scanner:latest"
 
           IMAGE_SCANNER_COMMON="docker run -u 0 -v /var/run/docker.sock:/var/run/docker.sock ${IMAGE_SCANNER_EXTRAS} $IMAGE_SCANNER_IMAGE_ID_TAG"
           echo "IMAGE_SCANNER_COMMON=$IMAGE_SCANNER_COMMON" >> $GITHUB_OUTPUT
@@ -397,6 +398,7 @@ jobs:
             ${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }} \
             /app/Dockerfile
 
+  # TODO: should we async the inside jobs instead of bash async within the image?
   image-scan:
     needs: [init, post-build-production]
     strategy:
@@ -459,9 +461,9 @@ jobs:
           JOB_INDEX: ${{ strategy.job-index }}
           JOB_ID: ${{inputs.workflow_id}}-push-to-ecr
 
-  update-ecr-manifests:
+  update-production-manifests:
     needs: [push-to-ecr, init]
-    name: 'Update ecr manifests'
+    name: 'Update production manifests'
     runs-on: ubuntu-latest
     if: |
       always() &&
@@ -476,24 +478,21 @@ jobs:
           ECR_REPOSITORY: ${{ inputs.ecr_repository }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_ACTOR: ${{ github.actor }}
+          IMAGE_TAGS: ${{ needs.init.outputs.GITHUB_LATEST_IMAGE_ID_TAG }}
+          IMAGE_TAG_SOURCE: ${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}
+          JOB_ID: ${{inputs.workflow_id}}-production
+
+      - uses: ausaccessfed/workflows/.github/actions/publish_manifest@main
+        name: ecr
+        with:
+          BRANCH_NAME: ${{ needs.init.outputs.BRANCH_NAME }}
+          ROLE: ${{ secrets.ROLE }}
+          ECR_REPOSITORY: ${{ inputs.ecr_repository }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_ACTOR: ${{ github.actor }}
           IMAGE_TAGS: ${{ needs.init.outputs.PRODUCTION_IMAGE_ID_TAG }}~${{ needs.init.outputs.LATEST_IMAGE_ID_TAG }}
           IMAGE_TAG_SOURCE: ${{  needs.init.outputs.PRODUCTION_IMAGE_ID_TAG }}
           JOB_ID: ${{inputs.workflow_id}}-push-to-ecr
-
-      # - uses: ausaccessfed/workflows/.github/actions/init@main
-      #   with:
-      #     ROLE: ${{ secrets.ROLE }}
-      #     ECR_REPOSITORY: ${{ inputs.ecr_repository }}
-
-      # - name: Create and Push Docker Manifest
-      #   run: |
-      #     PLATFORMS_STRING=$(echo "${{ inputs.platforms }}" | tr -d "[]'" | tr / _ | awk -v ORS=' ' 'BEGIN{RS=","}{print "${{ needs.init.outputs.PRODUCTION_IMAGE_ID_TAG }}-"$0}')
-      #     docker buildx imagetools create --tag ${{ needs.init.outputs.PRODUCTION_IMAGE_ID_TAG }} $PLATFORMS_STRING ${{ needs.init.outputs.LATEST_IMAGE_ID_TAG }}
-
-      #     # dont update latest tag if /deploy
-      #     if [ "${{ needs.init.outputs.IS_SLASH_DEPLOY }}" != "true" ]; then
-      #       docker buildx imagetools create --tag ${{ needs.init.outputs.LATEST_IMAGE_ID_TAG }} $PLATFORMS_STRING ${{ needs.init.outputs.PRODUCTION_IMAGE_ID_TAG }}
-      #     fi
 
   update-terraform-manifests:
     needs: [push-to-ecr, init]
@@ -555,7 +554,7 @@ jobs:
         image-lint,
         image-scan,
         push-to-ecr,
-        update-ecr-manifests,
+        update-production-manifests,
         update-terraform-manifests
       ]
     name: 'update-comments'
@@ -619,7 +618,7 @@ jobs:
         image-lint,
         image-scan,
         push-to-ecr,
-        update-ecr-manifests,
+        update-production-manifests,
         update-terraform-manifests
       ]
     if: always()
@@ -628,7 +627,7 @@ jobs:
     steps:
       - name: check for failures
         run: |
-          STRING="${{ needs.init.result }}${{ needs.build-test.result }}${{ needs.build-production.result }}${{ needs.commands.result }}${{ needs.image-lint.result }}${{ needs.image-scan.result }}${{ needs.push-to-ecr.result }}${{ needs.update-ecr-manifests.result }}${{ needs.update-terraform-manifests.result }}"
+          STRING="${{ needs.init.result }}${{ needs.build-test.result }}${{ needs.build-production.result }}${{ needs.commands.result }}${{ needs.image-lint.result }}${{ needs.image-scan.result }}${{ needs.push-to-ecr.result }}${{ needs.update-production-manifests.result }}${{ needs.update-terraform-manifests.result }}"
           if [ "$(echo "$STRING" | grep "failure" || echo "")" != "" ]; then
             exit 1
           fi
