@@ -46,8 +46,9 @@ on:
       platforms:
         default: "['linux/amd64']"
         type: string
-      runner:
-        default: 'ubuntu-latest'
+      runner-cores:
+        description: 'Provide the amount of cores wanted, if 2 then defaults to free runner for intel'
+        default: '2'
         type: string
       development_environments:
         default: 'development'
@@ -97,6 +98,8 @@ jobs:
       GITHUB_BRANCH_TEST_IMAGE_ID_TAG: ${{ steps.env.outputs.GITHUB_BRANCH_TEST_IMAGE_ID_TAG }}
       GITHUB_BRANCH_LATEST_IMAGE_ID_TAG: ${{ steps.env.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}
       IMAGE_ID: ${{ steps.env.outputs.IMAGE_ID }}
+      INTEL_RUNNER: ${{ steps.env.outputs.INTEL_RUNNER }}
+      ARM_RUNNER: ${{ steps.env.outputs.ARM_RUNNER }}
     name: init
     runs-on: ubuntu-latest
     if: inputs.event_name != 'issue_comment' || (contains(inputs.event_comment_body, '/deploy')  && contains(fromJSON(vars.ALLOWED_ACTORS), github.event.comment.user.login))
@@ -241,13 +244,21 @@ jobs:
           IMAGE_SCANNER_COMMON="docker run -u 0 -v /var/run/docker.sock:/var/run/docker.sock ${IMAGE_SCANNER_EXTRAS} $IMAGE_SCANNER_IMAGE_ID_TAG"
           echo "IMAGE_SCANNER_COMMON=$IMAGE_SCANNER_COMMON" >> $GITHUB_OUTPUT
 
+          # Note this assumes runners exist given the naming ARCH-NUM_CORES-cores
+          # TODO: make this work for more than intel and arm? maybe we dont need anything else
+          INTEL_RUNNER=amd64-${{inputs.runner-cores}}-cores
+          if [ "${{inputs.runner-cores}}" == "2" ]; then
+            INTEL_RUNNER=ubuntu-latest
+          fi
+          echo "INTEL_RUNNER=$INTEL_RUNNER" >> $GITHUB_OUTPUT
+          echo "ARM_RUNNER=arm64-${{inputs.runner-cores}}-cores" >> $GITHUB_OUTPUT
+
   build-test:
     needs: [init]
     strategy:
       matrix:
         arch: ${{ fromJSON(inputs.platforms) }}
-    # TODO: need to make runner more configurable atm asssumes we only want amd
-    runs-on: ${{ (matrix.arch == 'linux/amd64' && inputs.runner) || (matrix.arch == 'linux/arm64' && 'arm64-4core') }}
+    runs-on: ${{ (matrix.arch == 'linux/amd64' && needs.init.outputs.INTEL_RUNNER) || needs.init.outputs.ARM_RUNNER }}
     name: Build Test Image
     steps:
       - uses: ausaccessfed/workflows/.github/actions/build@main
@@ -289,7 +300,7 @@ jobs:
     strategy:
       matrix:
         arch: ${{ fromJSON(inputs.platforms) }}
-    runs-on: ${{ (matrix.arch == 'linux/amd64' && inputs.runner) || (matrix.arch == 'linux/arm64' && 'arm64-4core') }}
+    runs-on: ${{ (matrix.arch == 'linux/amd64' && needs.init.outputs.INTEL_RUNNER) || needs.init.outputs.ARM_RUNNER }}
     name: Build Production Image
     steps:
       - uses: ausaccessfed/workflows/.github/actions/build@main
@@ -334,7 +345,7 @@ jobs:
       matrix:
         arch: ${{ fromJSON(inputs.platforms) }}
         command: ${{ fromJSON(inputs.commands) }}
-    runs-on: ${{ (matrix.arch == 'linux/amd64' && inputs.runner) || (matrix.arch == 'linux/arm64' && 'arm64-4core') }}
+    runs-on: ${{ (matrix.arch == 'linux/amd64' && needs.init.outputs.INTEL_RUNNER) || needs.init.outputs.ARM_RUNNER }}
     name: ${{ format(matrix.command, '') }} (${{ matrix.arch }})
     services:
       mysql:
@@ -374,7 +385,7 @@ jobs:
     strategy:
       matrix:
         arch: ${{ fromJSON(inputs.platforms) }}
-    runs-on: ${{ (matrix.arch == 'linux/amd64' && inputs.runner) || (matrix.arch == 'linux/arm64' && 'arm64-4core') }}
+    runs-on: ${{ (matrix.arch == 'linux/amd64' && needs.init.outputs.INTEL_RUNNER) || needs.init.outputs.ARM_RUNNER }}
     env:
       DOCKLE_HOST: 'unix:///var/run/docker.sock'
     name: Running Image lint on ${{ matrix.arch }}
@@ -400,7 +411,7 @@ jobs:
     strategy:
       matrix:
         arch: ${{ fromJSON(inputs.platforms) }}
-    runs-on: ${{ (matrix.arch == 'linux/amd64' && inputs.runner) || (matrix.arch == 'linux/arm64' && 'arm64-4core') }}
+    runs-on: ${{ (matrix.arch == 'linux/amd64' && needs.init.outputs.INTEL_RUNNER) || needs.init.outputs.ARM_RUNNER }}
     name: Running Image scan on ${{ matrix.arch }}
     steps:
       - uses: ausaccessfed/workflows/.github/actions/init@main
@@ -432,7 +443,7 @@ jobs:
     strategy:
       matrix:
         arch: ${{ fromJSON(inputs.platforms) }}
-    runs-on: ${{ (matrix.arch == 'linux/amd64' && inputs.runner) || (matrix.arch == 'linux/arm64' && 'arm64-4core') }}
+    runs-on: ${{ (matrix.arch == 'linux/amd64' && needs.init.outputs.INTEL_RUNNER) || needs.init.outputs.ARM_RUNNER }}
     name: Pushing images to ecr
     steps:
       - uses: ausaccessfed/workflows/.github/actions/build@main
