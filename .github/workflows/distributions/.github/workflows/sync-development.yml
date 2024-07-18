@@ -11,5 +11,9 @@ jobs:
     concurrency:
       group: sync-development
       cancel-in-progress: true
+    permissions:
+      id-token: write
+      contents: read
+      packages: read
     uses: ausaccessfed/workflows/.github/workflows/sync-development.yml@main
     with:

@@ -466,6 +466,7 @@ jobs:
       needs.push-to-ecr.result == 'success'
     steps:
       - uses: ausaccessfed/workflows/.github/actions/publish_manifest@main
+        name: Updating GHCR manifests
         with:
           BRANCH_NAME: ${{ needs.init.outputs.BRANCH_NAME }}
           ECR_REPOSITORY: ${{ inputs.ecr_repository }}
@@ -476,7 +477,7 @@ jobs:
           JOB_ID: ${{inputs.workflow_id}}-production
 
       - uses: ausaccessfed/workflows/.github/actions/publish_manifest@main
-        name: ecr
+        name: Updating ECR manifests
         with:
           BRANCH_NAME: ${{ needs.init.outputs.BRANCH_NAME }}
           ROLE: ${{ secrets.ROLE }}
