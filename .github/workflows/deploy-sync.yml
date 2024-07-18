@@ -258,7 +258,6 @@ jobs:
     strategy:
       matrix:
         arch: ${{ fromJSON(inputs.platforms) }}
-    # TODO: need to make runner more configurable atm asssumes we only want amd
     runs-on: ${{ (matrix.arch == 'linux/amd64' && needs.init.outputs.INTEL_RUNNER) || needs.init.outputs.ARM_RUNNER }}
     name: Build Test Image
     steps:
@@ -302,7 +301,6 @@ jobs:
       matrix:
         arch: ${{ fromJSON(inputs.platforms) }}
     runs-on: ${{ (matrix.arch == 'linux/amd64' && needs.init.outputs.INTEL_RUNNER) || needs.init.outputs.ARM_RUNNER }}
-    # ${{ ((matrix.arch == 'linux/amd64' && inputs.runner == 'ubuntu-latest' && inputs.runner) || 'linux-' + inputs.runner) || (matrix.arch == 'linux/arm64' && 'arm64-4core') }}
     name: Build Production Image
     steps:
       - uses: ausaccessfed/workflows/.github/actions/build@main
