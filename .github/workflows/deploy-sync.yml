@@ -91,7 +91,6 @@ jobs:
       PRODUCTION_IMAGE_ID_TAG: ${{ steps.env.outputs.PRODUCTION_IMAGE_ID_TAG }}
       LATEST_IMAGE_ID_TAG: ${{ steps.env.outputs.LATEST_IMAGE_ID_TAG }}
       SHOULD_PUSH_IMAGE_TO_ECR: ${{ steps.env.outputs.SHOULD_PUSH_IMAGE_TO_ECR }}
-      IMAGE_SCANNER_COMMON: ${{ steps.env.outputs.IMAGE_SCANNER_COMMON }}
       GITHUB_REGISTRY_REF: ${{ steps.env.outputs.GITHUB_REGISTRY_REF }}
       GITHUB_TEST_IMAGE_ID_TAG: ${{ steps.env.outputs.GITHUB_TEST_IMAGE_ID_TAG }}
       GITHUB_LATEST_IMAGE_ID_TAG: ${{ steps.env.outputs.GITHUB_LATEST_IMAGE_ID_TAG }}
@@ -228,21 +227,6 @@ jobs:
             PROJECTS="${{ inputs.projects }}"
           fi
           echo "PROJECTS=$PROJECTS" >> $GITHUB_OUTPUT
-
-          IMAGE_SCANNER_EXTRAS=""
-          if [ -f "${PWD}/Dockerfile" ]; then
-            IMAGE_SCANNER_EXTRAS="-v ${PWD}/Dockerfile:/app/Dockerfile ${IMAGE_SCANNER_EXTRAS}"
-          fi
-          if [ -f "${PWD}/.dockleignore" ]; then
-            IMAGE_SCANNER_EXTRAS="-v ${PWD}/.dockleignore:/app/.dockleignore ${IMAGE_SCANNER_EXTRAS}"
-          fi
-          if [ -f "${PWD}/.hadolint.yaml" ]; then
-            IMAGE_SCANNER_EXTRAS="-v ${PWD}/.hadolint.yaml:/app/.hadolint.yaml ${IMAGE_SCANNER_EXTRAS}"
-          fi
-          IMAGE_SCANNER_IMAGE_ID_TAG="$GITHUB_REGISTRY_ROOT_REF/image-scanner:latest"
-
-          IMAGE_SCANNER_COMMON="docker run -u 0 -v /var/run/docker.sock:/var/run/docker.sock ${IMAGE_SCANNER_EXTRAS} $IMAGE_SCANNER_IMAGE_ID_TAG"
-          echo "IMAGE_SCANNER_COMMON=$IMAGE_SCANNER_COMMON" >> $GITHUB_OUTPUT
 
           # Note this assumes runners exist given the naming ARCH-NUM_CORES-cores
           # TODO: make this work for more than intel and arm? maybe we dont need anything else
@@ -391,30 +375,15 @@ jobs:
     runs-on: ${{ (matrix.arch == 'linux/amd64' && needs.init.outputs.INTEL_RUNNER) || needs.init.outputs.ARM_RUNNER }}
     env:
       DOCKLE_HOST: 'unix:///var/run/docker.sock'
-    name: Running Image lint on ${{ matrix.arch }}
+    name: Running Dockle lint
     steps:
-      - uses: ausaccessfed/workflows/.github/actions/init@main
+      - uses: ausaccessfed/workflows/.github/actions/image_scanner@feature/more-build-adjustments
         with:
           BRANCH_NAME: ${{ needs.init.outputs.BRANCH_NAME }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_ACTOR: ${{ github.actor }}
-
-      - name: Run
-        id: run
-        run: |
-          docker pull ${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}
-          ${{needs.init.outputs.IMAGE_SCANNER_COMMON}} \
-            dockle \
-            -i CIS-DI-0005 \
-            -i CIS-DI-0006 \
-            -i DKL-DI-0006 \
-            -af carrierwave.rb \
-            -af database.yml \
-            -af omniauth.rb \
-            --exit-code 1 \
-            --exit-level \
-            info \
-            "${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}"
+          IMAGE_TAG_FOR_SCAN: ${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}
+          SCAN_NAME: dockle
 
   hadolint:
     needs: [init, post-build-production]
@@ -422,54 +391,71 @@ jobs:
       matrix:
         arch: ${{ fromJSON(inputs.platforms) }}
     runs-on: ${{ (matrix.arch == 'linux/amd64' && needs.init.outputs.INTEL_RUNNER) || needs.init.outputs.ARM_RUNNER }}
-    env:
-      DOCKLE_HOST: 'unix:///var/run/docker.sock'
-    name: Running Image lint on ${{ matrix.arch }}
+    name: Running Hadolint
     steps:
-      - uses: ausaccessfed/workflows/.github/actions/init@main
+      - uses: ausaccessfed/workflows/.github/actions/image_scanner@feature/more-build-adjustments
         with:
           BRANCH_NAME: ${{ needs.init.outputs.BRANCH_NAME }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_ACTOR: ${{ github.actor }}
+          IMAGE_TAG_FOR_SCAN: ${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}
+          SCAN_NAME: hadolint
 
-      - name: Run
-        id: run
-        run: |
-          docker pull ${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}
-          ${{needs.init.outputs.IMAGE_SCANNER_COMMON}} \
-            hadolint \
-            --config /app/.hadolint.yaml \
-            --failure-threshold style \
-            "/app/Dockerfile"
-
-  image-scan:
+  snyk-cve-scan:
     needs: [init, post-build-production]
-    # continue-on-error: true
+    continue-on-error: true
     strategy:
       matrix:
         arch: ${{ fromJSON(inputs.platforms) }}
     runs-on: ${{ (matrix.arch == 'linux/amd64' && needs.init.outputs.INTEL_RUNNER) || needs.init.outputs.ARM_RUNNER }}
-    name: Running Image scan on ${{ matrix.arch }}
+    name: Running Snyk cve scan
     steps:
-      - uses: ausaccessfed/workflows/.github/actions/init@main
+      - uses: ausaccessfed/workflows/.github/actions/image_scanner@feature/more-build-adjustments
         with:
           BRANCH_NAME: ${{ needs.init.outputs.BRANCH_NAME }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_ACTOR: ${{ github.actor }}
+          IMAGE_TAG_FOR_SCAN: ${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}
+          SCAN_NAME: snyk
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
 
-      # - name: Run Image scan on production image for cves
-      #   run: |
-      #     docker pull ${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}
-      #     ${{ needs.init.outputs.IMAGE_SCANNER_COMMON }} \
-      #       ./scripts/scan \
-      #       ${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }} \
-      #       $IMAGE_SHA \
-      #       /app/Dockerfile \
-      #       ${{ secrets.SNYK_TOKEN }} \
-      #       true
+  grype-cve-scan:
+    needs: [init, post-build-production]
+    continue-on-error: true
+    strategy:
+      matrix:
+        arch: ${{ fromJSON(inputs.platforms) }}
+    runs-on: ${{ (matrix.arch == 'linux/amd64' && needs.init.outputs.INTEL_RUNNER) || needs.init.outputs.ARM_RUNNER }}
+    name: Running Grype cve scan
+    steps:
+      - uses: ausaccessfed/workflows/.github/actions/image_scanner@feature/more-build-adjustments
+        with:
+          BRANCH_NAME: ${{ needs.init.outputs.BRANCH_NAME }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_ACTOR: ${{ github.actor }}
+          IMAGE_TAG_FOR_SCAN: ${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}
+          SCAN_NAME: grype
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+
+  trivy-cve-scan:
+    needs: [init, post-build-production]
+    continue-on-error: true
+    strategy:
+      matrix:
+        arch: ${{ fromJSON(inputs.platforms) }}
+    runs-on: ${{ (matrix.arch == 'linux/amd64' && needs.init.outputs.INTEL_RUNNER) || needs.init.outputs.ARM_RUNNER }}
+    name: Running Trivy cve scan
+    steps:
+      - uses: ausaccessfed/workflows/.github/actions/image_scanner@feature/more-build-adjustments
+        with:
+          BRANCH_NAME: ${{ needs.init.outputs.BRANCH_NAME }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_ACTOR: ${{ github.actor }}
+          IMAGE_TAG_FOR_SCAN: ${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}
+          SCAN_NAME: trivy
 
   push-to-ecr:
-    needs: [init, commands, image-scan, hadolint, dockle-lint]
+    needs: [init, commands, trivy-cve-scan, grype-cve-scan, snyk-cve-scan, hadolint, dockle-lint]
     if: needs.init.outputs.SHOULD_PUSH_IMAGE_TO_ECR == 'true'
     strategy:
       matrix:
@@ -575,7 +561,9 @@ jobs:
         commands,
         hadolint,
         dockle-lint,
-        image-scan,
+        trivy-cve-scan,
+        grype-cve-scan,
+        snyk-cve-scan,
         push-to-ecr,
         update-production-manifests,
         update-terraform-manifests
@@ -640,7 +628,9 @@ jobs:
         commands,
         hadolint,
         dockle-lint,
-        image-scan,
+        trivy-cve-scan,
+        grype-cve-scan,
+        snyk-cve-scan,
         push-to-ecr,
         update-production-manifests,
         update-terraform-manifests
@@ -651,7 +641,7 @@ jobs:
     steps:
       - name: check for failures
         run: |
-          STRING="${{ needs.init.result }}${{ needs.build-test.result }}${{ needs.build-production.result }}${{ needs.commands.result }}${{ needs.hadolint.result }}${{ needs.dockle-lint.result }}${{ needs.image-scan.result }}${{ needs.push-to-ecr.result }}${{ needs.update-production-manifests.result }}${{ needs.update-terraform-manifests.result }}"
+          STRING="${{ needs.init.result }}${{ needs.build-test.result }}${{ needs.build-production.result }}${{ needs.commands.result }}${{ needs.hadolint.result }}${{ needs.dockle-lint.result }}${{ needs.trivy-cve-scan.result }}${{ needs.grype-cve-scan.result }}${{ needs.snyk-cve-scan.result }}${{ needs.push-to-ecr.result }}${{ needs.update-production-manifests.result }}${{ needs.update-terraform-manifests.result }}"
           if [ "$(echo "$STRING" | grep "failure" || echo "")" != "" ]; then
             exit 1
           fi
