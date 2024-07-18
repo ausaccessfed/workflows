@@ -499,6 +499,8 @@ jobs:
         with:
           ROLE: ${{ secrets.ROLE }}
           ECR_REPOSITORY: ${{ inputs.ecr_repository }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_ACTOR: ${{ github.actor }}
 
       ## no point making the gitops repo triggers async, they will fight each other
       ## and usually only 1 if statement is called anyway
