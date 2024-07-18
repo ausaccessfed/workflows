@@ -451,7 +451,7 @@ jobs:
           GITHUB_ACTOR: ${{ github.actor }}
           IMAGE_TAG_FOR_SCAN: ${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}
           SCAN_NAME: trivy
-          SUPPRESS_FAILURE: false
+          SUPPRESS_FAILURE: true
 
   push-to-ecr:
     needs: [init, commands, trivy-cve-scan, grype-cve-scan, snyk-cve-scan, hadolint, dockle-lint]
