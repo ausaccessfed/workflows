@@ -486,56 +486,52 @@ jobs:
           JOB_ID: ${{inputs.workflow_id}}-push-to-ecr
 
   update-terraform-manifests:
-    needs: [push-to-ecr, init]
+    needs: [update-production-manifests, init]
     name: 'Update terraform manifests'
     runs-on: ubuntu-latest
     if: |
       always() &&
       needs.init.outputs.SHOULD_PUSH_IMAGE_TO_ECR == 'true' &&
       needs.init.result == 'success' &&
-      needs.push-to-ecr.result == 'success'
+      needs.update-production-manifests.result == 'success'
     steps:
-      - uses: ausaccessfed/workflows/.github/actions/init@main
-        with:
-          ROLE: ${{ secrets.ROLE }}
-          ECR_REPOSITORY: ${{ inputs.ecr_repository }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITHUB_ACTOR: ${{ github.actor }}
-
       ## no point making the gitops repo triggers async, they will fight each other
       ## and usually only 1 if statement is called anyway
       - name: Update GitOps Repo to trigger deploys
         if: inputs.production_environments != '' && (needs.init.outputs.IS_DEFAULT_BRANCH_PUSH == 'true' || needs.init.outputs.IS_MONTHLY_BUILD == 'true')
-        run: |
-          printenv > .envs
-          docker run --env-file .envs \
-          -e PROJECTS="${{ needs.init.outputs.PROJECTS }}" \
-          -e IMAGE_TAG=${{ needs.init.outputs.IMAGE_TAG }} \
-          -e ENVIRONMENTS="${{ inputs.production_environments }}" \
-          -e ECR_REPOSITORY="${{ inputs.ecr_repository }}" \
-          ${{ needs.init.outputs.PUBLISH_APP_IMAGE_ID_TAG }}
+        uses: ausaccessfed/workflows/.github/actions/publish_app@main
+        with:
+          ROLE: ${{ secrets.ROLE }}
+          ECR_REPOSITORY: ${{ inputs.ecr_repository }}
+          PUBLISH_IMAGE_TAG: ${{ needs.init.outputs.IMAGE_TAG }}
+          PUBLISH_APPS: ${{ needs.init.outputs.PROJECTS }}
+          PUBLISH_ENVIRONMENTS: ${{ inputs.production_environments }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_ACTOR: ${{ github.actor }}
 
       - name: Update GitOps Repo to trigger deploys for test
         if: inputs.test_environments != '' && needs.init.outputs.IS_DEFAULT_DEVELOPMENT_BRANCH_PUSH == 'true'
-        run: |
-          printenv > .envs
-          docker run --env-file .envs \
-          -e PROJECTS="${{ needs.init.outputs.PROJECTS }}" \
-          -e IMAGE_TAG=${{ needs.init.outputs.IMAGE_TAG }} \
-          -e ENVIRONMENTS="${{ inputs.test_environments }}" \
-          -e ECR_REPOSITORY="${{ inputs.ecr_repository }}" \
-          ${{ needs.init.outputs.PUBLISH_APP_IMAGE_ID_TAG }}
+        uses: ausaccessfed/workflows/.github/actions/publish_app@main
+        with:
+          ROLE: ${{ secrets.ROLE }}
+          ECR_REPOSITORY: ${{ inputs.ecr_repository }}
+          PUBLISH_IMAGE_TAG: ${{ needs.init.outputs.IMAGE_TAG }}
+          PUBLISH_APPS: ${{ needs.init.outputs.PROJECTS }}
+          PUBLISH_ENVIRONMENTS: ${{ inputs.test_environments }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_ACTOR: ${{ github.actor }}
 
       - name: Update GitOps Repo to trigger deploys for development
         if: inputs.development_environments != '' && needs.init.outputs.IS_SLASH_DEPLOY == 'true'
-        run: |
-          printenv > .envs
-          docker run --env-file .envs \
-          -e PROJECTS="${{ needs.init.outputs.PROJECTS }}" \
-          -e IMAGE_TAG=${{ needs.init.outputs.IMAGE_TAG }} \
-          -e ENVIRONMENTS="${{ inputs.development_environments }}" \
-          -e ECR_REPOSITORY="${{ inputs.ecr_repository }}" \
-          ${{ needs.init.outputs.PUBLISH_APP_IMAGE_ID_TAG }}
+        uses: ausaccessfed/workflows/.github/actions/publish_app@main
+        with:
+          ROLE: ${{ secrets.ROLE }}
+          ECR_REPOSITORY: ${{ inputs.ecr_repository }}
+          PUBLISH_IMAGE_TAG: ${{ needs.init.outputs.IMAGE_TAG }}
+          PUBLISH_APPS: ${{ needs.init.outputs.PROJECTS }}
+          PUBLISH_ENVIRONMENTS: ${{ inputs.development_environments }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_ACTOR: ${{ github.actor }}
 
   update-comments:
     needs:
