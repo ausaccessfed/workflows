@@ -63,7 +63,7 @@ on:
         default: false
         type: boolean
       commands:
-        default: 'skip'
+        default: '["skip"]'
         type: string
       workflow_id:
         description: 'This is an id that is used for things like artifacts, needed when being called in a matrix'
@@ -356,6 +356,7 @@ jobs:
           - '3306:3306'
     steps:
       - uses: ausaccessfed/workflows/.github/actions/init@main
+        if: inputs.commands != '["skip"]'
         with:
           BRANCH_NAME: ${{ needs.init.outputs.BRANCH_NAME }}
           ROLE: ${{ secrets.ROLE }}
@@ -364,6 +365,7 @@ jobs:
           GITHUB_ACTOR: ${{ github.actor }}
 
       - name: Run
+        if: inputs.commands != '["skip"]'
         run: |
           docker pull ${{ needs.init.outputs.GITHUB_BRANCH_TEST_IMAGE_ID_TAG }}
           ${{ format(matrix.command, needs.init.outputs.GITHUB_BRANCH_TEST_IMAGE_ID_TAG) }}
@@ -432,14 +434,8 @@ jobs:
       #       true
 
   push-to-ecr:
-    needs: [init, commands, image-scan, image-lint]
-    if: |
-      always() &&
-      needs.init.outputs.SHOULD_PUSH_IMAGE_TO_ECR == 'true' &&
-      needs.init.result == 'success' &&
-      (needs.commands.result == 'success' || needs.commands.result == 'skipped') &&
-      needs.image-scan.result == 'success' &&
-      needs.image-lint.result == 'success'
+    needs: [init, commands, image-scan, hadolint, dockle-lint]
+    if: needs.init.outputs.SHOULD_PUSH_IMAGE_TO_ECR == 'true'
     strategy:
       matrix:
         arch: ${{ fromJSON(inputs.platforms) }}
@@ -470,11 +466,6 @@ jobs:
     needs: [push-to-ecr, init]
     name: 'Update production manifests'
     runs-on: ubuntu-latest
-    if: |
-      always() &&
-      needs.init.outputs.SHOULD_PUSH_IMAGE_TO_ECR == 'true' &&
-      needs.init.result == 'success' &&
-      needs.push-to-ecr.result == 'success'
     steps:
       - uses: ausaccessfed/workflows/.github/actions/publish_manifest@main
         name: Updating GHCR manifests
@@ -501,11 +492,6 @@ jobs:
     needs: [update-production-manifests, init]
     name: 'Update terraform manifests'
     runs-on: ubuntu-latest
-    if: |
-      always() &&
-      needs.init.outputs.SHOULD_PUSH_IMAGE_TO_ECR == 'true' &&
-      needs.init.result == 'success' &&
-      needs.update-production-manifests.result == 'success'
     steps:
       ## no point making the gitops repo triggers async, they will fight each other
       ## and usually only 1 if statement is called anyway
@@ -552,7 +538,8 @@ jobs:
         build-test,
         build-production,
         commands,
-        image-lint,
+        hadolint,
+        dockle-lint,
         image-scan,
         push-to-ecr,
         update-production-manifests,
@@ -616,7 +603,8 @@ jobs:
         build-test,
         build-production,
         commands,
-        image-lint,
+        hadolint,
+        dockle-lint,
         image-scan,
         push-to-ecr,
         update-production-manifests,
@@ -628,7 +616,7 @@ jobs:
     steps:
       - name: check for failures
         run: |
-          STRING="${{ needs.init.result }}${{ needs.build-test.result }}${{ needs.build-production.result }}${{ needs.commands.result }}${{ needs.image-lint.result }}${{ needs.image-scan.result }}${{ needs.push-to-ecr.result }}${{ needs.update-production-manifests.result }}${{ needs.update-terraform-manifests.result }}"
+          STRING="${{ needs.init.result }}${{ needs.build-test.result }}${{ needs.build-production.result }}${{ needs.commands.result }}${{ needs.hadolint.result }}${{ needs.dockle-lint.result }}${{ needs.image-scan.result }}${{ needs.push-to-ecr.result }}${{ needs.update-production-manifests.result }}${{ needs.update-terraform-manifests.result }}"
           if [ "$(echo "$STRING" | grep "failure" || echo "")" != "" ]; then
             exit 1
           fi
