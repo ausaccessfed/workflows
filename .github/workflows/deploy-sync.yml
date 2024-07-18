@@ -376,7 +376,7 @@ jobs:
       DOCKLE_HOST: 'unix:///var/run/docker.sock'
     name: Dockle
     steps:
-      - uses: ausaccessfed/workflows/.github/actions/image_scanner@feature/more-build-adjustments
+      - uses: ausaccessfed/workflows/.github/actions/image_scanner@main
         with:
           BRANCH_NAME: ${{ needs.init.outputs.BRANCH_NAME }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -392,7 +392,7 @@ jobs:
     runs-on: ${{ (matrix.arch == 'linux/amd64' && needs.init.outputs.INTEL_RUNNER) || needs.init.outputs.ARM_RUNNER }}
     name: Hadolint
     steps:
-      - uses: ausaccessfed/workflows/.github/actions/image_scanner@feature/more-build-adjustments
+      - uses: ausaccessfed/workflows/.github/actions/image_scanner@main
         with:
           BRANCH_NAME: ${{ needs.init.outputs.BRANCH_NAME }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -408,7 +408,7 @@ jobs:
     runs-on: ${{ (matrix.arch == 'linux/amd64' && needs.init.outputs.INTEL_RUNNER) || needs.init.outputs.ARM_RUNNER }}
     name: Snyk
     steps:
-      - uses: ausaccessfed/workflows/.github/actions/image_scanner@feature/more-build-adjustments
+      - uses: ausaccessfed/workflows/.github/actions/image_scanner@main
         with:
           BRANCH_NAME: ${{ needs.init.outputs.BRANCH_NAME }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -426,7 +426,7 @@ jobs:
     runs-on: ${{ (matrix.arch == 'linux/amd64' && needs.init.outputs.INTEL_RUNNER) || needs.init.outputs.ARM_RUNNER }}
     name: Grype
     steps:
-      - uses: ausaccessfed/workflows/.github/actions/image_scanner@feature/more-build-adjustments
+      - uses: ausaccessfed/workflows/.github/actions/image_scanner@main
         with:
           BRANCH_NAME: ${{ needs.init.outputs.BRANCH_NAME }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -444,7 +444,7 @@ jobs:
     runs-on: ${{ (matrix.arch == 'linux/amd64' && needs.init.outputs.INTEL_RUNNER) || needs.init.outputs.ARM_RUNNER }}
     name: Trivy
     steps:
-      - uses: ausaccessfed/workflows/.github/actions/image_scanner@feature/more-build-adjustments
+      - uses: ausaccessfed/workflows/.github/actions/image_scanner@main
         with:
           BRANCH_NAME: ${{ needs.init.outputs.BRANCH_NAME }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
