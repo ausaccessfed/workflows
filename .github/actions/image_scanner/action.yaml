@@ -68,7 +68,7 @@ runs:
         docker run \
           -u 0 \
           -v /var/run/docker.sock:/var/run/docker.sock \
-          ${{ steps.args.outputs.IMAGE_SCANNER_EXTRAS} \
+          ${{ steps.args.outputs.IMAGE_SCANNER_EXTRAS }} \
           ghcr.io/ausaccessfed/image-scanner:latest \
           ./scripts/${{ inputs.SCAN_NAME }} \
           ${{ steps.args.outputs.ARGS }}
