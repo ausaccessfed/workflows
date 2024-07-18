@@ -19,6 +19,9 @@ inputs:
   SNYK_TOKEN:
     description: 'Only needed when running snyk'
     default: ''
+  SUPPRESS_FAILURE:
+    description: 'Set to true to suppress any failures'
+    default: 'false'
 runs:
   using: 'composite'
   steps:
@@ -71,4 +74,4 @@ runs:
           ${{ steps.args.outputs.IMAGE_SCANNER_EXTRAS }} \
           ghcr.io/ausaccessfed/image-scanner:latest \
           ./scripts/${{ inputs.SCAN_NAME }} \
-          ${{ steps.args.outputs.ARGS }}
+          ${{ steps.args.outputs.ARGS }} || [ "${{ inputs.SUPPRESS_FAILURE }}" = "true" ] && echo "Failed, but marked as skippable"

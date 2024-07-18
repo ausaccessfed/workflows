@@ -338,7 +338,6 @@ jobs:
         ports:
           - '3306:3306'
     steps:
-      # TODO: make sure this whole step doesnt count as a skip
       - uses: ausaccessfed/workflows/.github/actions/init@main
         if: inputs.commands != '["skip"]' && needs.init.outputs.IS_SLASH_DEPLOY == 'false'
         with:
@@ -403,7 +402,6 @@ jobs:
 
   snyk-cve-scan:
     needs: [init, post-build-production]
-    continue-on-error: true
     strategy:
       matrix:
         arch: ${{ fromJSON(inputs.platforms) }}
@@ -418,10 +416,10 @@ jobs:
           IMAGE_TAG_FOR_SCAN: ${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}
           SCAN_NAME: snyk
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+          SUPPRESS_FAILURE: true
 
   grype-cve-scan:
     needs: [init, post-build-production]
-    continue-on-error: true
     strategy:
       matrix:
         arch: ${{ fromJSON(inputs.platforms) }}
@@ -436,10 +434,10 @@ jobs:
           IMAGE_TAG_FOR_SCAN: ${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}
           SCAN_NAME: grype
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+          SUPPRESS_FAILURE: true
 
   trivy-cve-scan:
     needs: [init, post-build-production]
-    continue-on-error: true
     strategy:
       matrix:
         arch: ${{ fromJSON(inputs.platforms) }}
@@ -453,6 +451,7 @@ jobs:
           GITHUB_ACTOR: ${{ github.actor }}
           IMAGE_TAG_FOR_SCAN: ${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}
           SCAN_NAME: trivy
+          SUPPRESS_FAILURE: false
 
   push-to-ecr:
     needs: [init, commands, trivy-cve-scan, grype-cve-scan, snyk-cve-scan, hadolint, dockle-lint]
