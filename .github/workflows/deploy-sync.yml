@@ -332,7 +332,7 @@ jobs:
       matrix:
         arch: ${{ (inputs.commands != '["skip"]' && needs.init.outputs.IS_SLASH_DEPLOY == 'false' &&  fromJSON(inputs.platforms)) || fromJSON('["linux/amd64"]') }}
         command: ${{ fromJSON(inputs.commands) }}
-    runs-on: ${{ (matrix.arch == 'linux/amd64' && needs.init.outputs.INTEL_RUNNER) || needs.init.outputs.ARM_RUNNER }}
+    runs-on: ${{ (matrix.arch == 'linux/amd64' && ((contains(matrix.command, 'MORE_POWER') && needs.init.outputs.INTEL_RUNNER) || needs.init.outputs.INTEL_RUNNER_CHEAP)) || ((contains(matrix.command, 'MORE_POWER') && needs.init.outputs.ARM_RUNNER) || needs.init.outputs.ARM_RUNNER_CHEAP) }}
     name: ${{ format(matrix.command, '') }} (${{ matrix.arch }})
     services:
       mysql:
