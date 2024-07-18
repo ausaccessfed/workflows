@@ -99,6 +99,8 @@ jobs:
       IMAGE_ID: ${{ steps.env.outputs.IMAGE_ID }}
       INTEL_RUNNER: ${{ steps.env.outputs.INTEL_RUNNER }}
       ARM_RUNNER: ${{ steps.env.outputs.ARM_RUNNER }}
+      INTEL_RUNNER_CHEAP: ${{ steps.env.outputs.INTEL_RUNNER_CHEAP }}
+      ARM_RUNNER_CHEAP: ${{ steps.env.outputs.ARM_RUNNER_CHEAP }}
     name: init
     runs-on: ubuntu-latest
     if: inputs.event_name != 'issue_comment' || (contains(inputs.event_comment_body, '/deploy')  && contains(fromJSON(vars.ALLOWED_ACTORS), github.event.comment.user.login))
@@ -235,14 +237,16 @@ jobs:
             INTEL_RUNNER=ubuntu-latest
           fi
           echo "INTEL_RUNNER=$INTEL_RUNNER" >> $GITHUB_OUTPUT
+          echo "INTEL_RUNNER_CHEAP=ubuntu-latest" >> $GITHUB_OUTPUT
           echo "ARM_RUNNER=arm64-${{inputs.runner-cores}}-cores" >> $GITHUB_OUTPUT
+          echo "ARM_RUNNER_CHEAP=arm64-2-cores" >> $GITHUB_OUTPUT
 
   build-test:
     needs: [init]
     strategy:
       matrix:
         arch: ${{ fromJSON(inputs.platforms) }}
-    runs-on: ${{ (matrix.arch == 'linux/amd64' && needs.init.outputs.INTEL_RUNNER) || needs.init.outputs.ARM_RUNNER }}
+    runs-on: ${{ (matrix.arch == 'linux/amd64' && needs.init.outputs.INTEL_RUNNER_CHEAP) || needs.init.outputs.ARM_RUNNER_CHEAP }}
     name: Build Test Image
     steps:
       - uses: ausaccessfed/workflows/.github/actions/build@main
@@ -267,7 +271,7 @@ jobs:
 
   post-build-test:
     needs: [init, build-test]
-    runs-on: 'ubuntu-latest'
+    runs-on: ${{needs.init.outputs.INTEL_RUNNER_CHEAP}}
     steps:
       - uses: ausaccessfed/workflows/.github/actions/publish_manifest@main
         with:
@@ -284,7 +288,7 @@ jobs:
     strategy:
       matrix:
         arch: ${{ fromJSON(inputs.platforms) }}
-    runs-on: ${{ (matrix.arch == 'linux/amd64' && needs.init.outputs.INTEL_RUNNER) || needs.init.outputs.ARM_RUNNER }}
+    runs-on: ${{ (matrix.arch == 'linux/amd64' && needs.init.outputs.INTEL_RUNNER_CHEAP) || needs.init.outputs.ARM_RUNNER_CHEAP }}
     name: Build Production Image
     steps:
       - uses: ausaccessfed/workflows/.github/actions/build@main
@@ -309,7 +313,7 @@ jobs:
 
   post-build-production:
     needs: [init, build-production]
-    runs-on: 'ubuntu-latest'
+    runs-on: ${{needs.init.outputs.INTEL_RUNNER_CHEAP}}
     steps:
       - uses: ausaccessfed/workflows/.github/actions/publish_manifest@main
         with:
@@ -371,7 +375,7 @@ jobs:
     strategy:
       matrix:
         arch: ${{ fromJSON(inputs.platforms) }}
-    runs-on: ${{ (matrix.arch == 'linux/amd64' && needs.init.outputs.INTEL_RUNNER) || needs.init.outputs.ARM_RUNNER }}
+    runs-on: ${{ (matrix.arch == 'linux/amd64' && needs.init.outputs.INTEL_RUNNER_CHEAP) || needs.init.outputs.ARM_RUNNER_CHEAP }}
     env:
       DOCKLE_HOST: 'unix:///var/run/docker.sock'
     name: Dockle
@@ -389,7 +393,7 @@ jobs:
     strategy:
       matrix:
         arch: ${{ fromJSON(inputs.platforms) }}
-    runs-on: ${{ (matrix.arch == 'linux/amd64' && needs.init.outputs.INTEL_RUNNER) || needs.init.outputs.ARM_RUNNER }}
+    runs-on: ${{ (matrix.arch == 'linux/amd64' && needs.init.outputs.INTEL_RUNNER_CHEAP) || needs.init.outputs.ARM_RUNNER_CHEAP }}
     name: Hadolint
     steps:
       - uses: ausaccessfed/workflows/.github/actions/image_scanner@main
@@ -405,7 +409,7 @@ jobs:
     strategy:
       matrix:
         arch: ${{ fromJSON(inputs.platforms) }}
-    runs-on: ${{ (matrix.arch == 'linux/amd64' && needs.init.outputs.INTEL_RUNNER) || needs.init.outputs.ARM_RUNNER }}
+    runs-on: ${{ (matrix.arch == 'linux/amd64' && needs.init.outputs.INTEL_RUNNER_CHEAP) || needs.init.outputs.ARM_RUNNER_CHEAP }}
     name: Snyk
     steps:
       - uses: ausaccessfed/workflows/.github/actions/image_scanner@main
@@ -423,7 +427,7 @@ jobs:
     strategy:
       matrix:
         arch: ${{ fromJSON(inputs.platforms) }}
-    runs-on: ${{ (matrix.arch == 'linux/amd64' && needs.init.outputs.INTEL_RUNNER) || needs.init.outputs.ARM_RUNNER }}
+    runs-on: ${{ (matrix.arch == 'linux/amd64' && needs.init.outputs.INTEL_RUNNER_CHEAP) || needs.init.outputs.ARM_RUNNER_CHEAP }}
     name: Grype
     steps:
       - uses: ausaccessfed/workflows/.github/actions/image_scanner@main
@@ -441,7 +445,7 @@ jobs:
     strategy:
       matrix:
         arch: ${{ fromJSON(inputs.platforms) }}
-    runs-on: ${{ (matrix.arch == 'linux/amd64' && needs.init.outputs.INTEL_RUNNER) || needs.init.outputs.ARM_RUNNER }}
+    runs-on: ${{ (matrix.arch == 'linux/amd64' && needs.init.outputs.INTEL_RUNNER_CHEAP) || needs.init.outputs.ARM_RUNNER_CHEAP }}
     name: Trivy
     steps:
       - uses: ausaccessfed/workflows/.github/actions/image_scanner@main
@@ -459,7 +463,7 @@ jobs:
     strategy:
       matrix:
         arch: ${{ fromJSON(inputs.platforms) }}
-    runs-on: ${{ (matrix.arch == 'linux/amd64' && needs.init.outputs.INTEL_RUNNER) || needs.init.outputs.ARM_RUNNER }}
+    runs-on: ${{ (matrix.arch == 'linux/amd64' && needs.init.outputs.INTEL_RUNNER_CHEAP) || needs.init.outputs.ARM_RUNNER_CHEAP }}
     name: Pushing images to ecr
     steps:
       - uses: ausaccessfed/workflows/.github/actions/build@main
@@ -485,7 +489,7 @@ jobs:
   update-production-manifests:
     needs: [push-to-ecr, init]
     name: 'Update production manifests'
-    runs-on: ubuntu-latest
+    runs-on: ${{needs.init.outputs.INTEL_RUNNER_CHEAP}}
     steps:
       - uses: ausaccessfed/workflows/.github/actions/publish_manifest@main
         name: Updating GHCR manifests
@@ -511,7 +515,7 @@ jobs:
   update-terraform-manifests:
     needs: [update-production-manifests, init]
     name: 'Update terraform manifests'
-    runs-on: ubuntu-latest
+    runs-on: ${{needs.init.outputs.INTEL_RUNNER_CHEAP}}
     steps:
       ## no point making the gitops repo triggers async, they will fight each other
       ## and usually only 1 if statement is called anyway
@@ -568,7 +572,7 @@ jobs:
         update-terraform-manifests
       ]
     name: 'update-comments'
-    runs-on: ubuntu-latest
+    runs-on: ${{needs.init.outputs.INTEL_RUNNER_CHEAP}}
     if: needs.init.outputs.IS_SLASH_DEPLOY == 'true' && always()
     steps:
       - name: check for failures
@@ -636,7 +640,7 @@ jobs:
       ]
     if: always()
     name: 'finish'
-    runs-on: ubuntu-latest
+    runs-on: ${{needs.init.outputs.INTEL_RUNNER_CHEAP}}
     steps:
       - name: check for failures
         run: |
