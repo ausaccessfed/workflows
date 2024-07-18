@@ -326,7 +326,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        arch: ${{ (inputs.commands == '["skip"]' && fromJSON('["linux/amd64"]')) || fromJSON(inputs.platforms) }}
+        arch: ${{ (inputs.commands != '["skip"]' && needs.init.outputs.IS_SLASH_DEPLOY == 'false' &&  fromJSON(inputs.platforms)) || fromJSON('["linux/amd64"]') }}
         command: ${{ fromJSON(inputs.commands) }}
     runs-on: ${{ (matrix.arch == 'linux/amd64' && needs.init.outputs.INTEL_RUNNER) || needs.init.outputs.ARM_RUNNER }}
     name: ${{ format(matrix.command, '') }} (${{ matrix.arch }})
@@ -340,7 +340,7 @@ jobs:
     steps:
       # TODO: make sure this whole step doesnt count as a skip
       - uses: ausaccessfed/workflows/.github/actions/init@main
-        if: inputs.commands != '["skip"]'
+        if: inputs.commands != '["skip"]' && needs.init.outputs.IS_SLASH_DEPLOY == 'false'
         with:
           BRANCH_NAME: ${{ needs.init.outputs.BRANCH_NAME }}
           ROLE: ${{ secrets.ROLE }}
@@ -349,7 +349,7 @@ jobs:
           GITHUB_ACTOR: ${{ github.actor }}
 
       - name: Run
-        if: inputs.commands != '["skip"]'
+        if: inputs.commands != '["skip"]' && needs.init.outputs.IS_SLASH_DEPLOY == 'false'
         run: |
           docker pull ${{ needs.init.outputs.GITHUB_BRANCH_TEST_IMAGE_ID_TAG }}
           ${{ format(matrix.command, needs.init.outputs.GITHUB_BRANCH_TEST_IMAGE_ID_TAG) }}
