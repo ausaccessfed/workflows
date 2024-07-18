@@ -339,11 +339,10 @@ jobs:
 
   commands:
     needs: [init, post-build-test]
-    if: inputs.commands != 'skip'
     strategy:
       fail-fast: false
       matrix:
-        arch: ${{ fromJSON(inputs.platforms) }}
+        arch: ${{ (inputs.commands == '["skip"]' && fromJSON('["linux/amd64"]')) || fromJSON(inputs.platforms) }}
         command: ${{ fromJSON(inputs.commands) }}
     runs-on: ${{ (matrix.arch == 'linux/amd64' && needs.init.outputs.INTEL_RUNNER) || needs.init.outputs.ARM_RUNNER }}
     name: ${{ format(matrix.command, '') }} (${{ matrix.arch }})
@@ -355,6 +354,7 @@ jobs:
         ports:
           - '3306:3306'
     steps:
+      # TODO: make sure this whole step doesnt count as a skip
       - uses: ausaccessfed/workflows/.github/actions/init@main
         if: inputs.commands != '["skip"]'
         with:
@@ -382,7 +382,8 @@ jobs:
     #   with:
     #     name: failed_images
     #     path: screenshots.zip
-  image-lint:
+
+  dockle-lint:
     needs: [init, post-build-production]
     strategy:
       matrix:
@@ -403,13 +404,47 @@ jobs:
         run: |
           docker pull ${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}
           ${{needs.init.outputs.IMAGE_SCANNER_COMMON}} \
-            ./scripts/lint \
-            ${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }} \
-            /app/Dockerfile
+            dockle \
+            -i CIS-DI-0005 \
+            -i CIS-DI-0006 \
+            -i DKL-DI-0006 \
+            -af carrierwave.rb \
+            -af database.yml \
+            -af omniauth.rb \
+            --exit-code 1 \
+            --exit-level \
+            info \
+            "${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}"
 
-  # TODO: should we async the inside jobs instead of bash async within the image?
+  hadolint:
+    needs: [init, post-build-production]
+    strategy:
+      matrix:
+        arch: ${{ fromJSON(inputs.platforms) }}
+    runs-on: ${{ (matrix.arch == 'linux/amd64' && needs.init.outputs.INTEL_RUNNER) || needs.init.outputs.ARM_RUNNER }}
+    env:
+      DOCKLE_HOST: 'unix:///var/run/docker.sock'
+    name: Running Image lint on ${{ matrix.arch }}
+    steps:
+      - uses: ausaccessfed/workflows/.github/actions/init@main
+        with:
+          BRANCH_NAME: ${{ needs.init.outputs.BRANCH_NAME }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_ACTOR: ${{ github.actor }}
+
+      - name: Run
+        id: run
+        run: |
+          docker pull ${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}
+          ${{needs.init.outputs.IMAGE_SCANNER_COMMON}} \
+            hadolint \
+            --config /app/.hadolint.yaml \
+            --failure-threshold style \
+            "/app/Dockerfile"
+
   image-scan:
     needs: [init, post-build-production]
+    # continue-on-error: true
     strategy:
       matrix:
         arch: ${{ fromJSON(inputs.platforms) }}
