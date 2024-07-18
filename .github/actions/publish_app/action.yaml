@@ -1,0 +1,50 @@
+name: 'Publish App'
+description: ''
+inputs:
+  ROLE:
+    description: 'aws role to be used'
+    required: true
+  ECR_REPOSITORY:
+    description: 'ecr repository to login to'
+    required: true
+  GITHUB_TOKEN:
+    description: 'github token used to auth to ghcr'
+    default: ''
+  GITHUB_ACTOR:
+    description: 'github actor used to auth to ghcr'
+    default: ''
+  PUBLISH_ENVIRONMENTS:
+    description: 'Environments to update manifests for'
+    required: true
+  PUBLISH_APPS:
+    description: 'Apps to update manifests for'
+    required: true
+  PUBLISH_IMAGE_TAG:
+    description: 'Tag to update manifests with'
+    required: true
+runs:
+  using: 'composite'
+  steps:
+    - uses: ausaccessfed/workflows/.github/actions/init@main
+      with:
+        ROLE: ${{ inputs.ROLE }}
+        ECR_REPOSITORY: ${{ inputs.ECR_REPOSITORY }}
+        GITHUB_TOKEN: ${{ inputs.GITHUB_TOKEN }}
+        GITHUB_ACTOR: ${{ inputs.GITHUB_ACTOR }}
+
+    - name: Check if there's an app image corresponding to this commit
+      shell: bash
+      run: |
+        aws ecr describe-images --repository-name "${{ inputs.ECR_REPOSITORY }}" \
+          --image-ids imageTag=${{ inputs.PUBLISH_IMAGE_TAG }}
+
+    - name: Update GitOps Repo to deploy in development
+      shell: bash
+      run: |
+        printenv > .envs
+        docker run --env-file .envs \
+          -e PROJECTS="${{ inputs.PUBLISH_APPS }}" \
+          -e IMAGE_TAG="${{ inputs.PUBLISH_IMAGE_TAG }}" \
+          -e ENVIRONMENTS="${{ inputs.PUBLISH_ENVIRONMENTS }}" \
+          -e ECR_REPOSITORY="${{ inputs.ECR_REPOSITORY }}" \
+          ghcr.io/ausaccessfed/publish_app:latest
