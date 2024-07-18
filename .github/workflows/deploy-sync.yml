@@ -403,7 +403,7 @@ jobs:
 
   snyk-cve-scan:
     needs: [init, post-build-production]
-    continue-on-error: true
+    # continue-on-error: true
     strategy:
       matrix:
         arch: ${{ fromJSON(inputs.platforms) }}
@@ -421,7 +421,7 @@ jobs:
 
   grype-cve-scan:
     needs: [init, post-build-production]
-    continue-on-error: true
+    # continue-on-error: true
     strategy:
       matrix:
         arch: ${{ fromJSON(inputs.platforms) }}
@@ -439,7 +439,7 @@ jobs:
 
   trivy-cve-scan:
     needs: [init, post-build-production]
-    continue-on-error: true
+    # continue-on-error: true
     strategy:
       matrix:
         arch: ${{ fromJSON(inputs.platforms) }}
