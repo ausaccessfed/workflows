@@ -12,8 +12,6 @@ on:
         required: true
         type: string
     secrets:
-      DOCKER_ECR:
-        required: true
       ROLE:
         required: true
 
@@ -24,36 +22,15 @@ jobs:
     permissions:
       id-token: write
       contents: read
+      packages: read
 
     steps:
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@master
+      - uses: ausaccessfed/workflows/.github/actions/publish_app@main
         with:
-          aws-region: ap-southeast-2
-          role-to-assume: ${{ secrets.ROLE }}
-          role-session-name: GithubActions-${{ inputs.ecr_repository }}-ci
-
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@062b18b96a7aff071d4dc91bc00c4c1a7945b076 # v2.0.1
-
-
-      - name: Check if there's an app image corresponding to this commit
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-        # This throws an error if there's no matching image.
-        run: |
-          aws ecr describe-images --repository-name "${{ inputs.ecr_repository }}" \
-           --image-ids imageTag=stable-${{ inputs.sha }}
-
-      - name: Update GitOps Repo to deploy in development
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-        run: |
-          printenv > .envs
-           docker run --env-file .envs \
-           -e PROJECTS="${{ inputs.app }}" \
-           -e IMAGE_TAG=stable-${{ inputs.sha }} \
-           -e ENVIRONMENTS="development" \
-           -e ECR_REPOSITORY="${{ inputs.ecr_repository }}" \
-           $ECR_REGISTRY/publish_app:latest
+          ROLE: ${{ secrets.ROLE }}
+          ECR_REPOSITORY: ${{ inputs.ecr_repository }}
+          PUBLISH_IMAGE_TAG: stable-${{ inputs.sha }}
+          PUBLISH_APPS: ${{ inputs.app }}
+          PUBLISH_ENVIRONMENTS: development
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_ACTOR: ${{ github.actor }}
