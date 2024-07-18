@@ -15,7 +15,8 @@ const common = [
         sourceType: 'module'
       },
       globals: {
-        ...globals.browser, ...globals.node
+        ...globals.browser,
+        ...globals.node
       }
     },
     rules: {
