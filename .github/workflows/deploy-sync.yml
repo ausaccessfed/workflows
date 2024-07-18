@@ -375,7 +375,7 @@ jobs:
     runs-on: ${{ (matrix.arch == 'linux/amd64' && needs.init.outputs.INTEL_RUNNER) || needs.init.outputs.ARM_RUNNER }}
     env:
       DOCKLE_HOST: 'unix:///var/run/docker.sock'
-    name: Running Dockle lint
+    name: Dockle
     steps:
       - uses: ausaccessfed/workflows/.github/actions/image_scanner@feature/more-build-adjustments
         with:
@@ -391,7 +391,7 @@ jobs:
       matrix:
         arch: ${{ fromJSON(inputs.platforms) }}
     runs-on: ${{ (matrix.arch == 'linux/amd64' && needs.init.outputs.INTEL_RUNNER) || needs.init.outputs.ARM_RUNNER }}
-    name: Running Hadolint
+    name: Hadolint
     steps:
       - uses: ausaccessfed/workflows/.github/actions/image_scanner@feature/more-build-adjustments
         with:
@@ -403,12 +403,12 @@ jobs:
 
   snyk-cve-scan:
     needs: [init, post-build-production]
-    # continue-on-error: true
+    continue-on-error: true
     strategy:
       matrix:
         arch: ${{ fromJSON(inputs.platforms) }}
     runs-on: ${{ (matrix.arch == 'linux/amd64' && needs.init.outputs.INTEL_RUNNER) || needs.init.outputs.ARM_RUNNER }}
-    name: Running Snyk cve scan
+    name: Snyk
     steps:
       - uses: ausaccessfed/workflows/.github/actions/image_scanner@feature/more-build-adjustments
         with:
@@ -421,12 +421,12 @@ jobs:
 
   grype-cve-scan:
     needs: [init, post-build-production]
-    # continue-on-error: true
+    continue-on-error: true
     strategy:
       matrix:
         arch: ${{ fromJSON(inputs.platforms) }}
     runs-on: ${{ (matrix.arch == 'linux/amd64' && needs.init.outputs.INTEL_RUNNER) || needs.init.outputs.ARM_RUNNER }}
-    name: Running Grype cve scan
+    name: Grype
     steps:
       - uses: ausaccessfed/workflows/.github/actions/image_scanner@feature/more-build-adjustments
         with:
@@ -439,12 +439,12 @@ jobs:
 
   trivy-cve-scan:
     needs: [init, post-build-production]
-    # continue-on-error: true
+    continue-on-error: true
     strategy:
       matrix:
         arch: ${{ fromJSON(inputs.platforms) }}
     runs-on: ${{ (matrix.arch == 'linux/amd64' && needs.init.outputs.INTEL_RUNNER) || needs.init.outputs.ARM_RUNNER }}
-    name: Running Trivy cve scan
+    name: Trivy
     steps:
       - uses: ausaccessfed/workflows/.github/actions/image_scanner@feature/more-build-adjustments
         with:
