@@ -7,7 +7,6 @@ inputs:
   ROLE:
     description: 'aws role to be used'
     default: ''
-
   ECR_REPOSITORY:
     description: 'ecr repository to login to'
     default: ''

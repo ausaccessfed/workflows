@@ -347,6 +347,8 @@ jobs:
       - uses: ausaccessfed/workflows/.github/actions/init@main
         with:
           BRANCH_NAME: ${{ needs.init.outputs.BRANCH_NAME }}
+          ROLE: ${{ secrets.ROLE }}
+          ECR_REPOSITORY: ${{ inputs.ecr_repository }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_ACTOR: ${{ github.actor }}
 
@@ -380,7 +382,6 @@ jobs:
       - uses: ausaccessfed/workflows/.github/actions/init@main
         with:
           BRANCH_NAME: ${{ needs.init.outputs.BRANCH_NAME }}
-          ECR_REPOSITORY: ${{ inputs.ecr_repository }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_ACTOR: ${{ github.actor }}
 
@@ -405,7 +406,6 @@ jobs:
       - uses: ausaccessfed/workflows/.github/actions/init@main
         with:
           BRANCH_NAME: ${{ needs.init.outputs.BRANCH_NAME }}
-          ECR_REPOSITORY: ${{ inputs.ecr_repository }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_ACTOR: ${{ github.actor }}
 
