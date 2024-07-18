@@ -19,11 +19,6 @@ jobs:
   sync:
     name: Deploy trunk to development
     runs-on: ubuntu-latest
-    permissions:
-      id-token: write
-      contents: read
-      packages: read
-
     steps:
       - uses: ausaccessfed/workflows/.github/actions/publish_app@main
         with:
