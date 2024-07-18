@@ -1,6 +1,8 @@
+/* eslint-disable no-undef */
 const eslintPluginPrettierRecommended = require('eslint-plugin-prettier/recommended')
 const eslintPluginYml = require('eslint-plugin-yml')
 const eslint = require('@eslint/js')
+const globals = require('globals')
 
 const common = [
   eslintPluginPrettierRecommended,
@@ -10,6 +12,9 @@ const common = [
     languageOptions: {
       parserOptions: {
         sourceType: 'module'
+      },
+      globals: {
+        ...globals.browser, ...globals.node
       }
     },
     rules: {
@@ -70,7 +75,8 @@ const common = [
       '**/templates/',
       '**/values.yaml',
       '**/templates/',
-      '.github/'
+      '.github/',
+      '.torba/'
     ]
   }
 ]
