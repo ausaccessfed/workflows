@@ -63,7 +63,7 @@ on:
         default: false
         type: boolean
       commands:
-        default: 'skip'
+        default: '["skip"]'
         type: string
       workflow_id:
         description: 'This is an id that is used for things like artifacts, needed when being called in a matrix'
@@ -91,7 +91,6 @@ jobs:
       PRODUCTION_IMAGE_ID_TAG: ${{ steps.env.outputs.PRODUCTION_IMAGE_ID_TAG }}
       LATEST_IMAGE_ID_TAG: ${{ steps.env.outputs.LATEST_IMAGE_ID_TAG }}
       SHOULD_PUSH_IMAGE_TO_ECR: ${{ steps.env.outputs.SHOULD_PUSH_IMAGE_TO_ECR }}
-      IMAGE_SCANNER_COMMON: ${{ steps.env.outputs.IMAGE_SCANNER_COMMON }}
       GITHUB_REGISTRY_REF: ${{ steps.env.outputs.GITHUB_REGISTRY_REF }}
       GITHUB_TEST_IMAGE_ID_TAG: ${{ steps.env.outputs.GITHUB_TEST_IMAGE_ID_TAG }}
       GITHUB_LATEST_IMAGE_ID_TAG: ${{ steps.env.outputs.GITHUB_LATEST_IMAGE_ID_TAG }}
@@ -100,6 +99,8 @@ jobs:
       IMAGE_ID: ${{ steps.env.outputs.IMAGE_ID }}
       INTEL_RUNNER: ${{ steps.env.outputs.INTEL_RUNNER }}
       ARM_RUNNER: ${{ steps.env.outputs.ARM_RUNNER }}
+      INTEL_RUNNER_CHEAP: ${{ steps.env.outputs.INTEL_RUNNER_CHEAP }}
+      ARM_RUNNER_CHEAP: ${{ steps.env.outputs.ARM_RUNNER_CHEAP }}
     name: init
     runs-on: ubuntu-latest
     if: inputs.event_name != 'issue_comment' || (contains(inputs.event_comment_body, '/deploy')  && contains(fromJSON(vars.ALLOWED_ACTORS), github.event.comment.user.login))
@@ -229,21 +230,6 @@ jobs:
           fi
           echo "PROJECTS=$PROJECTS" >> $GITHUB_OUTPUT
 
-          IMAGE_SCANNER_EXTRAS=""
-          if [ -f "${PWD}/Dockerfile" ]; then
-            IMAGE_SCANNER_EXTRAS="-v ${PWD}/Dockerfile:/app/Dockerfile ${IMAGE_SCANNER_EXTRAS}"
-          fi
-          if [ -f "${PWD}/.dockleignore" ]; then
-            IMAGE_SCANNER_EXTRAS="-v ${PWD}/.dockleignore:/app/.dockleignore ${IMAGE_SCANNER_EXTRAS}"
-          fi
-          if [ -f "${PWD}/.hadolint.yaml" ]; then
-            IMAGE_SCANNER_EXTRAS="-v ${PWD}/.hadolint.yaml:/app/.hadolint.yaml ${IMAGE_SCANNER_EXTRAS}"
-          fi
-          IMAGE_SCANNER_IMAGE_ID_TAG="$GITHUB_REGISTRY_ROOT_REF/image-scanner:latest"
-
-          IMAGE_SCANNER_COMMON="docker run -u 0 -v /var/run/docker.sock:/var/run/docker.sock ${IMAGE_SCANNER_EXTRAS} $IMAGE_SCANNER_IMAGE_ID_TAG"
-          echo "IMAGE_SCANNER_COMMON=$IMAGE_SCANNER_COMMON" >> $GITHUB_OUTPUT
-
           # Note this assumes runners exist given the naming ARCH-NUM_CORES-cores
           # TODO: make this work for more than intel and arm? maybe we dont need anything else
           INTEL_RUNNER=amd64-${{inputs.runner-cores}}-cores
@@ -251,14 +237,16 @@ jobs:
             INTEL_RUNNER=ubuntu-latest
           fi
           echo "INTEL_RUNNER=$INTEL_RUNNER" >> $GITHUB_OUTPUT
+          echo "INTEL_RUNNER_CHEAP=ubuntu-latest" >> $GITHUB_OUTPUT
           echo "ARM_RUNNER=arm64-${{inputs.runner-cores}}-cores" >> $GITHUB_OUTPUT
+          echo "ARM_RUNNER_CHEAP=arm64-2-cores" >> $GITHUB_OUTPUT
 
   build-test:
     needs: [init]
     strategy:
       matrix:
         arch: ${{ fromJSON(inputs.platforms) }}
-    runs-on: ${{ (matrix.arch == 'linux/amd64' && needs.init.outputs.INTEL_RUNNER) || needs.init.outputs.ARM_RUNNER }}
+    runs-on: ${{ (matrix.arch == 'linux/amd64' && needs.init.outputs.INTEL_RUNNER_CHEAP) || needs.init.outputs.ARM_RUNNER_CHEAP }}
     name: Build Test Image
     steps:
       - uses: ausaccessfed/workflows/.github/actions/build@main
@@ -283,7 +271,7 @@ jobs:
 
   post-build-test:
     needs: [init, build-test]
-    runs-on: 'ubuntu-latest'
+    runs-on: ${{needs.init.outputs.INTEL_RUNNER_CHEAP}}
     steps:
       - uses: ausaccessfed/workflows/.github/actions/publish_manifest@main
         with:
@@ -300,7 +288,7 @@ jobs:
     strategy:
       matrix:
         arch: ${{ fromJSON(inputs.platforms) }}
-    runs-on: ${{ (matrix.arch == 'linux/amd64' && needs.init.outputs.INTEL_RUNNER) || needs.init.outputs.ARM_RUNNER }}
+    runs-on: ${{ (matrix.arch == 'linux/amd64' && needs.init.outputs.INTEL_RUNNER_CHEAP) || needs.init.outputs.ARM_RUNNER_CHEAP }}
     name: Build Production Image
     steps:
       - uses: ausaccessfed/workflows/.github/actions/build@main
@@ -325,7 +313,7 @@ jobs:
 
   post-build-production:
     needs: [init, build-production]
-    runs-on: 'ubuntu-latest'
+    runs-on: ${{needs.init.outputs.INTEL_RUNNER_CHEAP}}
     steps:
       - uses: ausaccessfed/workflows/.github/actions/publish_manifest@main
         with:
@@ -339,11 +327,10 @@ jobs:
 
   commands:
     needs: [init, post-build-test]
-    if: inputs.commands != 'skip'
     strategy:
       fail-fast: false
       matrix:
-        arch: ${{ fromJSON(inputs.platforms) }}
+        arch: ${{ (inputs.commands != '["skip"]' && needs.init.outputs.IS_SLASH_DEPLOY == 'false' &&  fromJSON(inputs.platforms)) || fromJSON('["linux/amd64"]') }}
         command: ${{ fromJSON(inputs.commands) }}
     runs-on: ${{ (matrix.arch == 'linux/amd64' && needs.init.outputs.INTEL_RUNNER) || needs.init.outputs.ARM_RUNNER }}
     name: ${{ format(matrix.command, '') }} (${{ matrix.arch }})
@@ -356,6 +343,7 @@ jobs:
           - '3306:3306'
     steps:
       - uses: ausaccessfed/workflows/.github/actions/init@main
+        if: inputs.commands != '["skip"]' && needs.init.outputs.IS_SLASH_DEPLOY == 'false'
         with:
           BRANCH_NAME: ${{ needs.init.outputs.BRANCH_NAME }}
           ROLE: ${{ secrets.ROLE }}
@@ -364,6 +352,7 @@ jobs:
           GITHUB_ACTOR: ${{ github.actor }}
 
       - name: Run
+        if: inputs.commands != '["skip"]' && needs.init.outputs.IS_SLASH_DEPLOY == 'false'
         run: |
           docker pull ${{ needs.init.outputs.GITHUB_BRANCH_TEST_IMAGE_ID_TAG }}
           ${{ format(matrix.command, needs.init.outputs.GITHUB_BRANCH_TEST_IMAGE_ID_TAG) }}
@@ -380,70 +369,101 @@ jobs:
     #   with:
     #     name: failed_images
     #     path: screenshots.zip
-  image-lint:
+
+  dockle-lint:
     needs: [init, post-build-production]
     strategy:
       matrix:
         arch: ${{ fromJSON(inputs.platforms) }}
-    runs-on: ${{ (matrix.arch == 'linux/amd64' && needs.init.outputs.INTEL_RUNNER) || needs.init.outputs.ARM_RUNNER }}
+    runs-on: ${{ (matrix.arch == 'linux/amd64' && needs.init.outputs.INTEL_RUNNER_CHEAP) || needs.init.outputs.ARM_RUNNER_CHEAP }}
     env:
       DOCKLE_HOST: 'unix:///var/run/docker.sock'
-    name: Running Image lint on ${{ matrix.arch }}
+    name: Dockle
     steps:
-      - uses: ausaccessfed/workflows/.github/actions/init@main
+      - uses: ausaccessfed/workflows/.github/actions/image_scanner@main
         with:
           BRANCH_NAME: ${{ needs.init.outputs.BRANCH_NAME }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_ACTOR: ${{ github.actor }}
+          IMAGE_TAG_FOR_SCAN: ${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}
+          SCAN_NAME: dockle
 
-      - name: Run
-        id: run
-        run: |
-          docker pull ${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}
-          ${{needs.init.outputs.IMAGE_SCANNER_COMMON}} \
-            ./scripts/lint \
-            ${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }} \
-            /app/Dockerfile
-
-  # TODO: should we async the inside jobs instead of bash async within the image?
-  image-scan:
+  hadolint:
     needs: [init, post-build-production]
     strategy:
       matrix:
         arch: ${{ fromJSON(inputs.platforms) }}
-    runs-on: ${{ (matrix.arch == 'linux/amd64' && needs.init.outputs.INTEL_RUNNER) || needs.init.outputs.ARM_RUNNER }}
-    name: Running Image scan on ${{ matrix.arch }}
+    runs-on: ${{ (matrix.arch == 'linux/amd64' && needs.init.outputs.INTEL_RUNNER_CHEAP) || needs.init.outputs.ARM_RUNNER_CHEAP }}
+    name: Hadolint
     steps:
-      - uses: ausaccessfed/workflows/.github/actions/init@main
+      - uses: ausaccessfed/workflows/.github/actions/image_scanner@main
         with:
           BRANCH_NAME: ${{ needs.init.outputs.BRANCH_NAME }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_ACTOR: ${{ github.actor }}
+          IMAGE_TAG_FOR_SCAN: ${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}
+          SCAN_NAME: hadolint
 
-      # - name: Run Image scan on production image for cves
-      #   run: |
-      #     docker pull ${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}
-      #     ${{ needs.init.outputs.IMAGE_SCANNER_COMMON }} \
-      #       ./scripts/scan \
-      #       ${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }} \
-      #       $IMAGE_SHA \
-      #       /app/Dockerfile \
-      #       ${{ secrets.SNYK_TOKEN }} \
-      #       true
-
-  push-to-ecr:
-    needs: [init, commands, image-scan, image-lint]
-    if: |
-      always() &&
-      needs.init.outputs.SHOULD_PUSH_IMAGE_TO_ECR == 'true' &&
-      needs.init.result == 'success' &&
-      (needs.commands.result == 'success' || needs.commands.result == 'skipped') &&
-      needs.image-scan.result == 'success' &&
-      needs.image-lint.result == 'success'
+  snyk-cve-scan:
+    needs: [init, post-build-production]
     strategy:
       matrix:
         arch: ${{ fromJSON(inputs.platforms) }}
-    runs-on: ${{ (matrix.arch == 'linux/amd64' && needs.init.outputs.INTEL_RUNNER) || needs.init.outputs.ARM_RUNNER }}
+    runs-on: ${{ (matrix.arch == 'linux/amd64' && needs.init.outputs.INTEL_RUNNER_CHEAP) || needs.init.outputs.ARM_RUNNER_CHEAP }}
+    name: Snyk
+    steps:
+      - uses: ausaccessfed/workflows/.github/actions/image_scanner@main
+        with:
+          BRANCH_NAME: ${{ needs.init.outputs.BRANCH_NAME }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_ACTOR: ${{ github.actor }}
+          IMAGE_TAG_FOR_SCAN: ${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}
+          SCAN_NAME: snyk
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+          SUPPRESS_FAILURE: true
+
+  grype-cve-scan:
+    needs: [init, post-build-production]
+    strategy:
+      matrix:
+        arch: ${{ fromJSON(inputs.platforms) }}
+    runs-on: ${{ (matrix.arch == 'linux/amd64' && needs.init.outputs.INTEL_RUNNER_CHEAP) || needs.init.outputs.ARM_RUNNER_CHEAP }}
+    name: Grype
+    steps:
+      - uses: ausaccessfed/workflows/.github/actions/image_scanner@main
+        with:
+          BRANCH_NAME: ${{ needs.init.outputs.BRANCH_NAME }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_ACTOR: ${{ github.actor }}
+          IMAGE_TAG_FOR_SCAN: ${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}
+          SCAN_NAME: grype
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+          SUPPRESS_FAILURE: true
+
+  trivy-cve-scan:
+    needs: [init, post-build-production]
+    strategy:
+      matrix:
+        arch: ${{ fromJSON(inputs.platforms) }}
+    runs-on: ${{ (matrix.arch == 'linux/amd64' && needs.init.outputs.INTEL_RUNNER_CHEAP) || needs.init.outputs.ARM_RUNNER_CHEAP }}
+    name: Trivy
+    steps:
+      - uses: ausaccessfed/workflows/.github/actions/image_scanner@main
+        with:
+          BRANCH_NAME: ${{ needs.init.outputs.BRANCH_NAME }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_ACTOR: ${{ github.actor }}
+          IMAGE_TAG_FOR_SCAN: ${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}
+          SCAN_NAME: trivy
+          SUPPRESS_FAILURE: true
+
+  push-to-ecr:
+    needs: [init, commands, trivy-cve-scan, grype-cve-scan, snyk-cve-scan, hadolint, dockle-lint]
+    if: needs.init.outputs.SHOULD_PUSH_IMAGE_TO_ECR == 'true'
+    strategy:
+      matrix:
+        arch: ${{ fromJSON(inputs.platforms) }}
+    runs-on: ${{ (matrix.arch == 'linux/amd64' && needs.init.outputs.INTEL_RUNNER_CHEAP) || needs.init.outputs.ARM_RUNNER_CHEAP }}
     name: Pushing images to ecr
     steps:
       - uses: ausaccessfed/workflows/.github/actions/build@main
@@ -469,12 +489,7 @@ jobs:
   update-production-manifests:
     needs: [push-to-ecr, init]
     name: 'Update production manifests'
-    runs-on: ubuntu-latest
-    if: |
-      always() &&
-      needs.init.outputs.SHOULD_PUSH_IMAGE_TO_ECR == 'true' &&
-      needs.init.result == 'success' &&
-      needs.push-to-ecr.result == 'success'
+    runs-on: ${{needs.init.outputs.INTEL_RUNNER_CHEAP}}
     steps:
       - uses: ausaccessfed/workflows/.github/actions/publish_manifest@main
         name: Updating GHCR manifests
@@ -500,12 +515,7 @@ jobs:
   update-terraform-manifests:
     needs: [update-production-manifests, init]
     name: 'Update terraform manifests'
-    runs-on: ubuntu-latest
-    if: |
-      always() &&
-      needs.init.outputs.SHOULD_PUSH_IMAGE_TO_ECR == 'true' &&
-      needs.init.result == 'success' &&
-      needs.update-production-manifests.result == 'success'
+    runs-on: ${{needs.init.outputs.INTEL_RUNNER_CHEAP}}
     steps:
       ## no point making the gitops repo triggers async, they will fight each other
       ## and usually only 1 if statement is called anyway
@@ -552,14 +562,17 @@ jobs:
         build-test,
         build-production,
         commands,
-        image-lint,
-        image-scan,
+        hadolint,
+        dockle-lint,
+        trivy-cve-scan,
+        grype-cve-scan,
+        snyk-cve-scan,
         push-to-ecr,
         update-production-manifests,
         update-terraform-manifests
       ]
     name: 'update-comments'
-    runs-on: ubuntu-latest
+    runs-on: ${{needs.init.outputs.INTEL_RUNNER_CHEAP}}
     if: needs.init.outputs.IS_SLASH_DEPLOY == 'true' && always()
     steps:
       - name: check for failures
@@ -616,19 +629,22 @@ jobs:
         build-test,
         build-production,
         commands,
-        image-lint,
-        image-scan,
+        hadolint,
+        dockle-lint,
+        trivy-cve-scan,
+        grype-cve-scan,
+        snyk-cve-scan,
         push-to-ecr,
         update-production-manifests,
         update-terraform-manifests
       ]
     if: always()
     name: 'finish'
-    runs-on: ubuntu-latest
+    runs-on: ${{needs.init.outputs.INTEL_RUNNER_CHEAP}}
     steps:
       - name: check for failures
         run: |
-          STRING="${{ needs.init.result }}${{ needs.build-test.result }}${{ needs.build-production.result }}${{ needs.commands.result }}${{ needs.image-lint.result }}${{ needs.image-scan.result }}${{ needs.push-to-ecr.result }}${{ needs.update-production-manifests.result }}${{ needs.update-terraform-manifests.result }}"
+          STRING="${{ needs.init.result }}${{ needs.build-test.result }}${{ needs.build-production.result }}${{ needs.commands.result }}${{ needs.hadolint.result }}${{ needs.dockle-lint.result }}${{ needs.trivy-cve-scan.result }}${{ needs.grype-cve-scan.result }}${{ needs.snyk-cve-scan.result }}${{ needs.push-to-ecr.result }}${{ needs.update-production-manifests.result }}${{ needs.update-terraform-manifests.result }}"
           if [ "$(echo "$STRING" | grep "failure" || echo "")" != "" ]; then
             exit 1
           fi
