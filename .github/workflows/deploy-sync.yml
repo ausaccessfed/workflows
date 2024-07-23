@@ -46,10 +46,14 @@ on:
       platforms:
         default: "['linux/amd64']"
         type: string
-      runner-cores:
-        description: 'Provide the amount of cores wanted, if 2 then defaults to free runner for intel'
-        default: '2'
+      runner_cores:
+        description: 'Provide the amount of cores wanted, if the powerful runner is requested, defaults to 8'
+        default: '8'
         type: string
+      use_better_runner_for_builds:
+        description: 'if true, powerful runner will be used for build docker images'
+        default: false
+        type: boolean
       development_environments:
         default: 'development'
         type: string
@@ -232,13 +236,13 @@ jobs:
 
           # Note this assumes runners exist given the naming ARCH-NUM_CORES-cores
           # TODO: make this work for more than intel and arm? maybe we dont need anything else
-          INTEL_RUNNER=amd64-${{inputs.runner-cores}}-cores
-          if [ "${{inputs.runner-cores}}" == "2" ]; then
+          INTEL_RUNNER=amd64-${{inputs.runner_cores}}-cores
+          if [ "${{inputs.runner_cores}}" == "2" ]; then
             INTEL_RUNNER=ubuntu-latest
           fi
           echo "INTEL_RUNNER=$INTEL_RUNNER" >> $GITHUB_OUTPUT
           echo "INTEL_RUNNER_CHEAP=ubuntu-latest" >> $GITHUB_OUTPUT
-          echo "ARM_RUNNER=arm64-${{inputs.runner-cores}}-cores" >> $GITHUB_OUTPUT
+          echo "ARM_RUNNER=arm64-${{inputs.runner_cores}}-cores" >> $GITHUB_OUTPUT
           echo "ARM_RUNNER_CHEAP=arm64-2-cores" >> $GITHUB_OUTPUT
 
   build-test:
@@ -246,7 +250,7 @@ jobs:
     strategy:
       matrix:
         arch: ${{ fromJSON(inputs.platforms) }}
-    runs-on: ${{ (matrix.arch == 'linux/amd64' && needs.init.outputs.INTEL_RUNNER_CHEAP) || needs.init.outputs.ARM_RUNNER_CHEAP }}
+    runs-on: ${{ (matrix.arch == 'linux/amd64' && ((inputs.use_better_runner_for_builds && needs.init.outputs.INTEL_RUNNER) || needs.init.outputs.INTEL_RUNNER_CHEAP)) || ((inputs.use_better_runner_for_builds && needs.init.outputs.ARM_RUNNER) || needs.init.outputs.ARM_RUNNER_CHEAP) }}
     name: Build Test Image
     steps:
       - uses: ausaccessfed/workflows/.github/actions/build@main
@@ -288,7 +292,7 @@ jobs:
     strategy:
       matrix:
         arch: ${{ fromJSON(inputs.platforms) }}
-    runs-on: ${{ (matrix.arch == 'linux/amd64' && needs.init.outputs.INTEL_RUNNER_CHEAP) || needs.init.outputs.ARM_RUNNER_CHEAP }}
+    runs-on: ${{ (matrix.arch == 'linux/amd64' && ((inputs.use_better_runner_for_builds && needs.init.outputs.INTEL_RUNNER) || needs.init.outputs.INTEL_RUNNER_CHEAP)) || ((inputs.use_better_runner_for_builds && needs.init.outputs.ARM_RUNNER) || needs.init.outputs.ARM_RUNNER_CHEAP) }}
     name: Build Production Image
     steps:
       - uses: ausaccessfed/workflows/.github/actions/build@main
@@ -332,7 +336,7 @@ jobs:
       matrix:
         arch: ${{ (inputs.commands != '["skip"]' && needs.init.outputs.IS_SLASH_DEPLOY == 'false' &&  fromJSON(inputs.platforms)) || fromJSON('["linux/amd64"]') }}
         command: ${{ fromJSON(inputs.commands) }}
-    runs-on: ${{ (matrix.arch == 'linux/amd64' && needs.init.outputs.INTEL_RUNNER) || needs.init.outputs.ARM_RUNNER }}
+    runs-on: ${{ (matrix.arch == 'linux/amd64' && ((contains(matrix.command, 'BETTER_RUNNER') && needs.init.outputs.INTEL_RUNNER) || needs.init.outputs.INTEL_RUNNER_CHEAP)) || ((contains(matrix.command, 'BETTER_RUNNER') && needs.init.outputs.ARM_RUNNER) || needs.init.outputs.ARM_RUNNER_CHEAP) }}
     name: ${{ format(matrix.command, '') }} (${{ matrix.arch }})
     services:
       mysql:
