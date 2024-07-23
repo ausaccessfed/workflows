@@ -369,7 +369,8 @@ jobs:
           if [ -n "$(find /tmp/screenshots -mindepth 1 -print -quit)" ]; then
             zip -r screenshots.zip /tmp/screenshots
             echo "UPLOAD_FAILURES=true" >> $GITHUB_OUTPUT
-            echo "UPLOAD_UUID=$(uuidgen)" >> $GITHUB_OUTPUT
+            COMMAND_CLEANED=$(echo "${{matrix.command}}" | tr '[:space:]/\:*?"<>|' '_' )
+            echo "UPLOAD_UUID=$(uuidgen)-${COMMAND_CLEANED:0:200}" >> $GITHUB_OUTPUT
           fi
 
       - name: Upload screenshots
