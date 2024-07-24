@@ -54,6 +54,7 @@ jobs:
         with:
           BRANCH_NAME: 'main'
           ROLE: ${{ secrets.ROLE }}
+          ECR_REPOSITORY: workflows
 
       - name: vars
         id: vars
