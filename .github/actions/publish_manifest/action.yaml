@@ -50,9 +50,9 @@ runs:
       shell: bash
       run: |
         IMAGE_TAGS="$(echo "${{inputs.IMAGE_TAGS}}" | sed 's/~/\n/g' | sed -e 's/^/-t /')"
-        docker buildx imagetools create \
-          $IMAGE_TAGS \
-          $(printf '${{ inputs.IMAGE_TAG_SOURCE }}@sha256:%s ' $(ls /tmp/digests)) \
+        IMAGE_SHAS="$(printf '${{ inputs.IMAGE_TAG_SOURCE }}@sha256:%s ' $(ls /tmp/digests))"
+        echo "Linking $IMAGE_SHAS to $IMAGE_TAGS"
+        docker buildx imagetools create $IMAGE_TAGS $IMAGE_SHAS
     - name: Inspect image
       shell: bash
       run: |
