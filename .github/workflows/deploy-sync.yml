@@ -332,7 +332,6 @@ jobs:
   commands:
     needs: [init, post-build-test]
     strategy:
-      fail-fast: false
       matrix:
         arch: ${{ (inputs.commands != '["skip"]' && needs.init.outputs.IS_SLASH_DEPLOY == 'false' &&  fromJSON(inputs.platforms)) || fromJSON('["linux/amd64"]') }}
         command: ${{ fromJSON(inputs.commands) }}
