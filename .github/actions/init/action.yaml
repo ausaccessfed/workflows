@@ -4,6 +4,9 @@ inputs:
   BRANCH_NAME:
     description: 'branch to checkout'
     default: ''
+  REPOSITORY:
+    description: 'branch to checkout'
+    default: ''
   FETCH_DEPTH:
     description: 'depth to fetch for checkout'
     default: '1'
@@ -27,6 +30,7 @@ runs:
       with:
         ref: ${{ inputs.BRANCH_NAME }}
         fetch-depth: ${{ inputs.FETCH_DEPTH }}
+        repository: ${{ inputs.REPOSITORY || github.repository }}
 
     - id: role_name
       if: inputs.ROLE != ''
