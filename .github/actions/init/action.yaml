@@ -24,13 +24,19 @@ runs:
       with:
         ref: ${{ inputs.BRANCH_NAME }}
 
+    - id: role_name
+      if: inputs.ROLE != ''
+      shell: bash
+      run: |
+        echo "ROLE_NAME=$(echo "${{ inputs.ROLE }}" | cut -d/ -f2)" >> $GITHUB_OUTPUT
+
     - name: Configure AWS Credentials
       if: inputs.ROLE != ''
       uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502 # v4.0.2
       with:
         aws-region: ap-southeast-2
         role-to-assume: ${{ inputs.ROLE }}
-        role-session-name: GithubActions-${{ inputs.ECR_REPOSITORY }}-ci
+        role-session-name: GithubActions-${{ steps.role_name.outputs.role_name }}
 
     - name: Login to Amazon ECR
       if: inputs.ROLE != '' && inputs.ECR_REPOSITORY != ''

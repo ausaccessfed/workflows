@@ -51,7 +51,7 @@ jobs:
       contents: read
       id-token: write
     steps:
-      - uses: ausaccessfed/workflows/.github/actions/init@main
+      - uses: ausaccessfed/workflows/.github/actions/init@hotfix/fixing-renovate-action
         with:
           BRANCH_NAME: 'main'
           ROLE: ${{ secrets.ROLE }}
