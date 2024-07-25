@@ -4,6 +4,9 @@ inputs:
   BRANCH_NAME:
     description: 'branch to checkout'
     default: ''
+  FETCH_DEPTH:
+    description: 'depth to fetch for checkout'
+    default: '1'
   ROLE:
     description: 'aws role to be used'
     default: ''
@@ -23,6 +26,7 @@ runs:
       if: inputs.BRANCH_NAME != ''
       with:
         ref: ${{ inputs.BRANCH_NAME }}
+        fetch-depth: ${{ inputs.FETCH_DEPTH }}
 
     - id: role_name
       if: inputs.ROLE != ''
