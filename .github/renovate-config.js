@@ -49,7 +49,7 @@ module.exports = {
       customType: "regex",
       fileMatch: ["layer-2/.*services\\.tf$"],
       matchStrings: [
-        "\\s*#\\s*renovate:\\s*amiFilter=(?<lookupName>.+?) depName=(?<depName>.*) versioning=(?<versioning>.*)\\s*.*_version\\s*=\\s*\"(?<currentValue>.*)\""
+        "\\s*#\\s*renovate:\\s*amiFilter=(?<packageName>.+?) depName=(?<depName>.*) versioning=(?<versioning>.*)\\s*.*_version\\s*=\\s*\"(?<currentValue>.*)\""
       ],
       datasourceTemplate: "aws-rds"
     },
