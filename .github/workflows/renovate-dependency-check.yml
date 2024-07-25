@@ -74,7 +74,7 @@ jobs:
         with:
           configurationFile: .github/renovate-config.js
           token: ${{ secrets.ALL_REPO_SCOPED_TOKEN }}
-          env-regex: ^(?:RENOVATE_\\w+|LOG_LEVEL|GITHUB_COM_TOKEN|NODE_OPTIONS|(?:HTTPS?|NO)_PROXY|(?:https?|no)_proxy|AWS_.*)$
+          env-regex: ^(?:RENOVATE_\w+|AWS_\w+|LOG_LEVEL|GITHUB_COM_TOKEN|NODE_OPTIONS|(?:HTTPS?|NO)_PROXY|(?:https?|no)_proxy)$
         env:
           LOG_LEVEL: '${{ steps.vars.outputs.LOG_LEVEL }}'
           RENOVATE_GIT_PRIVATE_KEY: ${{ secrets.RENOVATE_GPG_PRIVATE_KEY }}
