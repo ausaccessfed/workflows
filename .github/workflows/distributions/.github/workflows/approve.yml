@@ -14,7 +14,6 @@ jobs:
       pull-requests: write
     secrets:
       REPO_SCOPED_TOKEN: ${{secrets.ALL_REPO_SCOPED_TOKEN_2}}
-      GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
     uses: ausaccessfed/workflows/.github/workflows/approve.yml@main
     with:
       event_name: ${{ github.event_name }}

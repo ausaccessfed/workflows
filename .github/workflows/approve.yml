@@ -14,8 +14,6 @@ on:
     secrets:
       REPO_SCOPED_TOKEN:
         required: true
-      GITHUB_TOKEN:
-        required: true
 jobs:
   approve:
     name: approve
