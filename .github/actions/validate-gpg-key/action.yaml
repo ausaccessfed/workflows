@@ -10,7 +10,7 @@ runs:
     - uses: ausaccessfed/workflows/.github/actions/init@main
       with:
         FETCH_DEPTH: '0'
-        BRANCH_NAME: 'master'
+        BRANCH_NAME: 'main'
         REPOSITORY: 'ausaccessfed/workflows'
 
     - name: Copy source
