@@ -520,13 +520,21 @@ jobs:
           IMAGE_TAG_SOURCE: ${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}
           JOB_ID: ${{inputs.workflow_id}}-production
 
+      - id: env
+        run: |
+          ECR_LINK_TAGS="${{ needs.init.outputs.PRODUCTION_IMAGE_ID_TAG }}~${{ needs.init.outputs.LATEST_IMAGE_ID_TAG }}"
+          if [ "${{needs.init.outputs.IS_SLASH_DEPLOY}}" == "true" ]; then
+            ECR_LINK_TAGS="${{ needs.init.outputs.PRODUCTION_IMAGE_ID_TAG }}"
+          fi
+          echo "ECR_LINK_TAGS=$ECR_LINK_TAGS" >> $GITHUB_OUTPUT
+
       - uses: ausaccessfed/workflows/.github/actions/publish_manifest@main
         name: Updating ECR manifests
         with:
           BRANCH_NAME: ${{ needs.init.outputs.BRANCH_NAME }}
           ROLE: ${{ secrets.ROLE }}
           ECR_REPOSITORY: ${{ inputs.ecr_repository }}
-          IMAGE_TAGS: ${{ needs.init.outputs.PRODUCTION_IMAGE_ID_TAG }}~${{ needs.init.outputs.LATEST_IMAGE_ID_TAG }}
+          IMAGE_TAGS: ${{ steps.env.outputs.ECR_LINK_TAGS }}
           IMAGE_TAG_SOURCE: ${{  needs.init.outputs.PRODUCTION_IMAGE_ID_TAG }}
           JOB_ID: ${{inputs.workflow_id}}-push-to-ecr
 
@@ -656,7 +664,7 @@ jobs:
         update-production-manifests,
         update-terraform-manifests
       ]
-    if: always()
+    if: always() && needs.init.result != 'skipped'
     name: 'finish'
     runs-on: ${{needs.init.outputs.INTEL_RUNNER_CHEAP}}
     steps:
