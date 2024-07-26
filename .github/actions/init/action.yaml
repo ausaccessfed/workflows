@@ -5,7 +5,7 @@ inputs:
     description: 'branch to checkout'
     default: ''
   REPOSITORY:
-    description: 'branch to checkout'
+    description: 'repository to checkout'
     default: ''
   FETCH_DEPTH:
     description: 'depth to fetch for checkout'
