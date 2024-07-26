@@ -107,7 +107,7 @@ jobs:
       ARM_RUNNER_CHEAP: ${{ steps.env.outputs.ARM_RUNNER_CHEAP }}
     name: init
     runs-on: ubuntu-latest
-    if: inputs.event_name != 'issue_comment' || (contains(inputs.event_comment_body, '/deploy')  && contains(fromJSON(vars.ALLOWED_ACTORS), github.event.comment.user.login))
+    if: inputs.event_name != 'issue_comment' || (contains(inputs.event_comment_body, '/deploy') && contains(fromJSON(vars.ALLOWED_ACTORS), github.event.comment.user.login))
     steps:
       - uses: xt0rted/pull-request-comment-branch@d97294d304604fa98a2600a6e2f916a84b596dc7 # v2.0.0
         if: inputs.event_name == 'issue_comment'
@@ -136,6 +136,12 @@ jobs:
           fi
           echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_OUTPUT
 
+      - uses: ausaccessfed/workflows/.github/actions/validate-gpg-key@main
+        if: inputs.event_name == 'issue_comment'
+        with:
+          BRANCH_NAME: ${{ steps.branch.outputs.BRANCH_NAME }}
+        id: validate_issue_comment
+
       - uses: ausaccessfed/workflows/.github/actions/init@main
         with:
           BRANCH_NAME: ${{ steps.branch.outputs.BRANCH_NAME }}
@@ -145,7 +151,7 @@ jobs:
       - name: set more envs
         id: env
         run: |
-          IS_SLASH_DEPLOY=$([ "${{ inputs.event_name }}" == "issue_comment" ] && echo "true" || echo "false")
+          IS_SLASH_DEPLOY=$(([ "${{ inputs.event_name }}" == "issue_comment" ] && [ "${{contains(inputs.event_comment_body, '/deploy')}}" == "true" ] && echo "true") || echo "false")
           echo "IS_SLASH_DEPLOY=$IS_SLASH_DEPLOY" >> $GITHUB_OUTPUT
 
           IS_MONTHLY_BUILD=$([ "${{ inputs.event_name }}" == "schedule" ] && echo "true" || echo "false")
@@ -627,7 +633,7 @@ jobs:
               --method DELETE \
               -H "Accept: application/vnd.github+json" \
               -H "X-GitHub-Api-Version: 2022-11-28" \
-              /repos/ausaccessfed/${{ inputs.ecr_repository }}/issues/comments/${{ inputs.event_comment_id }}
+              /repos/${{ github.repository }}/issues/comments/${{ inputs.event_comment_id }}
           fi
 
       - name: Set final commit status

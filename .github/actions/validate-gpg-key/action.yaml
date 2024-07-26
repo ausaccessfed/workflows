@@ -4,6 +4,9 @@ inputs:
   BRANCH_NAME:
     description: 'branch to checkout'
     default: ''
+  CHECK_TRUSTED:
+    description: 'Check if user is trusted'
+    default: 'false'
 runs:
   using: 'composite'
   steps:
@@ -13,12 +16,18 @@ runs:
         BRANCH_NAME: 'main'
         REPOSITORY: 'ausaccessfed/workflows'
 
+    - name: Verify user as trusted
+      if: inputs.CHECK_TRUSTED == 'true'
+      shell: bash
+      run: |
+        cat trusted_keys/trusted_auto_approvers | grep "${{github.actor}}"
+
     - name: Copy source
       shell: bash
       id: copy-source
       run: |
         mkdir ../temp
-        cp -r ..github/verify_commit.sh ../temp/verify_commit.sh
+        cp -r scripts/verify_commit.sh ../temp/verify_commit.sh
         cp -r trusted_keys ../temp/trusted_keys
 
     - uses: ausaccessfed/workflows/.github/actions/init@main
