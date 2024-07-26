@@ -18,7 +18,7 @@ runs:
       id: copy-source
       run: |
         mkdir ../temp
-        cp -r ..github/verify_commit.sh ../temp/verify_commit.sh
+        cp -r ../github/verify_commit.sh ../temp/verify_commit.sh
         cp -r trusted_keys ../temp/trusted_keys
 
     - uses: ausaccessfed/workflows/.github/actions/init@main
