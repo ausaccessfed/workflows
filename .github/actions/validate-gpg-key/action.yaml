@@ -1,0 +1,34 @@
+name: 'Validate gpg key'
+description: ''
+inputs:
+  BRANCH_NAME:
+    description: 'branch to checkout'
+    default: ''
+runs:
+  using: 'composite'
+  steps:
+    - uses: ausaccessfed/workflows/.github/actions/init@main
+      with:
+        FETCH_DEPTH: '0'
+        BRANCH_NAME: 'master'
+        REPOSITORY: 'ausaccessfed/workflows'
+
+    - name: Copy source
+      shell: bash
+      id: copy-source
+      run: |
+        mkdir ../temp
+        cp -r ..github/verify_commit.sh ../temp/verify_commit.sh
+        cp -r trusted_keys ../temp/trusted_keys
+
+    - uses: ausaccessfed/workflows/.github/actions/init@main
+      with:
+        BRANCH_NAME: ${{ inputs.BRANCH_NAME }}
+
+    - name: Verify Commit
+      shell: bash
+      id: verify-commit
+      run: |
+        cp ../temp/verify_commit.sh verify_commit.sh
+        cp -r ../temp/trusted_keys trusted_keys
+        bash verify_commit.sh ${{ inputs.BRANCH_NAME }}
