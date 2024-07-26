@@ -26,7 +26,19 @@ jobs:
       - uses: ausaccessfed/workflows/.github/actions/validate-gpg-key@feature/slash-approve
         with:
           BRANCH_NAME: ${{ steps.comment-branch.outputs.head_ref }}
+          CHECK_TRUSTED: true
         id: validate_issue_comment
+
+      - name: Reserved file check
+        run: |
+          FILES_CHANGED="$(git diff --name-only $(git merge-base origin/${{ steps.comment-branch.outputs.base_ref }} origin/${{ steps.comment-branch.outputs.head_ref }})..origin/${{ steps.comment-branch.outputs.head_ref }})"
+          RESERVED_FILES=("trusted_keys", "verify_commit", "trusted_auto_approvers")
+          for RESERVED_FILE in "${RESERVED_FILES[@]}"; do
+            if [[ "${FILES_CHANGED}" == *"${RESERVED_FILE}"* ]]; then
+              echo "Reserved file ${RESERVED_FILE} has been changed"
+              exit 1
+            fi
+          done
 
       - uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
         with:
