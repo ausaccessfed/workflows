@@ -84,7 +84,7 @@ jobs:
   init:
     outputs:
       HEAD_SHA: ${{ steps.comment-branch.outputs.HEAD_SHA }}
-      IS_SLASH_DEPLOY: ${{ steps.init_envs.outputs.IS_SLASH_DEPLOY }}
+      IS_SLASH_DEPLOY: ${{ steps.env.outputs.IS_SLASH_DEPLOY }}
       PUBLISH_APP_IMAGE_ID_TAG: ${{ steps.env.outputs.PUBLISH_APP_IMAGE_ID_TAG }}
       IMAGE_TAG: ${{ steps.env.outputs.IMAGE_TAG }}
       PROJECTS: ${{ steps.env.outputs.PROJECTS }}
@@ -153,7 +153,7 @@ jobs:
       - name: set more envs
         id: env
         run: |
-          IS_SLASH_DEPLOY=$(([ "$IS_ISSUE_COMMENT" == "true" ] && [ "${{contains(inputs.event_comment_body, '/deploy')}}" == "true" ] && echo "true") || echo "false")
+          IS_SLASH_DEPLOY=$(([ "${{ inputs.event_name }}" == "issue_comment" ] && [ "${{contains(inputs.event_comment_body, '/deploy')}}" == "true" ] && echo "true") || echo "false")
           echo "IS_SLASH_DEPLOY=$IS_SLASH_DEPLOY" >> $GITHUB_OUTPUT
 
           IS_MONTHLY_BUILD=$([ "${{ inputs.event_name }}" == "schedule" ] && echo "true" || echo "false")
@@ -165,7 +165,7 @@ jobs:
           IS_DEFAULT_DEVELOPMENT_BRANCH_PUSH=$(([ "${{ inputs.event_name }}" == "push" ] && [ "${{steps.branch.outputs.BRANCH_NAME}}" == "${{ inputs.default_develop_branch }}" ]) && echo "true" || echo "false")
           echo "IS_DEFAULT_DEVELOPMENT_BRANCH_PUSH=$IS_DEFAULT_DEVELOPMENT_BRANCH_PUSH" >> $GITHUB_OUTPUT
 
-          if [ "${{steps.init_envs.outputs.IS_SLASH_DEPLOY}}" == "true" ]; then
+          if [ "$IS_SLASH_DEPLOY" == "true" ]; then
             IMAGE_TAG="adhoc-${{steps.comment-branch.outputs.head_ref}}-${{steps.comment-branch.outputs.HEAD_SHA}}"
           else
             if [ "$IS_DEFAULT_BRANCH_PUSH" == "true" ]; then
@@ -180,7 +180,7 @@ jobs:
           SHOULD_PUSH_IMAGE_TO_ECR=$([ \
             "$IS_DEFAULT_BRANCH_PUSH" == "true" \
             -o \
-            "${{steps.init_envs.outputs.IS_SLASH_DEPLOY}}" == "true" \
+            "$IS_SLASH_DEPLOY" == "true" \
             -o \
             "$IS_DEFAULT_DEVELOPMENT_BRANCH_PUSH" == "true" \
             -o \
