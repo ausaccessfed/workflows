@@ -53,7 +53,7 @@ jobs:
             })
 
       - env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.REPO_SCOPED_TOKEN }}
         run: |
           if [ "${{ inputs.event_comment_id }}" != "" ]; then
             gh api \
