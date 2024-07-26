@@ -78,8 +78,6 @@ on:
         required: true
       SNYK_TOKEN:
         required: true
-      REPO_SCOPED_TOKEN_2:
-        required: true
 jobs:
   init:
     outputs:
