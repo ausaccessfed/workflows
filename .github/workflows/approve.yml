@@ -32,7 +32,25 @@ jobs:
         with:
           github-token: ${{secrets.REPO_SCOPED_TOKEN}}
           script: |
-            console.dir(context)
+            const {
+                payload: {
+                    issue: {
+                        number: pull_number,
+                    },
+                },
+                repo: {
+                    owner,
+                    repo
+                }
+            } = context
+
+            // Autoapprove
+            await github.rest.pulls.createReview({
+                owner,
+                repo,
+                pull_number,
+                event: "APPROVE"
+            })
 
       - env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
