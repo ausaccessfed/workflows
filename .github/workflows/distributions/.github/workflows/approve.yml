@@ -12,7 +12,8 @@ jobs:
       statuses: write
       issues: read
       pull-requests: write
-    secrets: inherit
+    secrets:
+      REPO_SCOPED_TOKEN: ${{secrets.ALL_REPO_SCOPED_TOKEN_2}}
     uses: ausaccessfed/workflows/.github/workflows/approve.yml@main
     with:
       event_name: ${{ github.event_name }}
