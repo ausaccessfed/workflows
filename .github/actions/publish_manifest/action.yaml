@@ -53,7 +53,8 @@ runs:
         IMAGE_SHAS="$(printf '${{ inputs.IMAGE_TAG_SOURCE }}@sha256:%s ' $(ls /tmp/digests))"
         echo "Linking $IMAGE_SHAS to $IMAGE_TAGS"
         docker buildx imagetools create $IMAGE_TAGS $IMAGE_SHAS
-    - name: Inspect image
+    - name: Finish
       shell: bash
       run: |
         docker buildx imagetools inspect ${{ inputs.IMAGE_TAG_SOURCE }}
+        rm -rf /tmp/digests
