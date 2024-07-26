@@ -656,7 +656,7 @@ jobs:
         update-production-manifests,
         update-terraform-manifests
       ]
-    if: always()
+    if: always() && needs.init.result != 'skipped'
     name: 'finish'
     runs-on: ${{needs.init.outputs.INTEL_RUNNER_CHEAP}}
     steps:
