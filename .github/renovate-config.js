@@ -89,6 +89,11 @@ module.exports = {
     //registryUrl: 'https://kubecost.github.io/cost-analyzer'
     // },
     {
+      matchDatasources: ["docker"],
+      matchPackageNames: ["rockylinux"],
+      versioning: "semver"
+    },
+    {
       matchDatasources: ['endoflife-date'],
       matchPackageNames: ['amazon-eks'],
       extractVersion: '^(?<version>.*)-eks.+$'
