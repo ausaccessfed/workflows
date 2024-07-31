@@ -81,7 +81,6 @@ const deleteFile = async ({ repo, file, prBranch, baseBranch }) => {
     data: { sha }
   } = await getFile({ repo, path: file.prFilePath, ref: baseBranch })
   if (sha) {
-    // TODO: how does this work for deletions?
     const commit = {
       message: file.message,
       parents: [sha],
