@@ -94,6 +94,13 @@ module.exports = {
       versioning: "semver"
     },
     {
+      fileMatch: ["kustomization.yaml"],
+      matchStrings: [
+        "image:\\s*(?<depName>\\S+):(?<currentValue>\\S+)"
+      ],
+      datasourceTemplate: "docker"
+    },
+    {
       matchDatasources: ['endoflife-date'],
       matchPackageNames: ['amazon-eks'],
       extractVersion: '^(?<version>.*)-eks.+$'
