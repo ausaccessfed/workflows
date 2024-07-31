@@ -1,5 +1,3 @@
-#PARTIAL#
-#REPOSITORY_MATCH discovery-service,ecr-retagger,federationmanager,idp,image-scanner,kubeval-tools,lambda-promtail,oidc_relying_party_example,publish_app,puppeteer-tester,rapid-connector,rapid-idp-manager,reporting-service,shib-sp,validator-service,verifid #
 name: Approve
 on:
   issue_comment:
