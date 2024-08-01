@@ -171,7 +171,7 @@ jobs:
           if [ "$IS_SLASH_DEPLOY" == "true" ]; then
             IMAGE_TAG="adhoc-${{steps.comment-branch.outputs.head_ref}}-${{steps.comment-branch.outputs.HEAD_SHA}}"
           else
-            if [ "$IS_DEFAULT_BRANCH_PUSH" == "true" ]; then
+            if [ "$IS_DEFAULT_BRANCH_PUSH" == "true" ] || [ "$IS_MONTHLY_BUILD" == "true" ]; then
               IMAGE_TAG="stable-${{ github.sha }}"
              else
               IMAGE_TAG="${{ steps.branch.outputs.BRANCH_NAME }}"
