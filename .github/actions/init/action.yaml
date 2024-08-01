@@ -20,7 +20,7 @@ inputs:
     description: 'github token used to auth to ghcr'
     default: ''
   GITHUB_ACTOR:
-    description: 'github actor used to auth to ghcr'
+    description: 'github actor used to auth to ghcr and used for checking out if the default token isnt good enough'
     default: ''
 runs:
   using: 'composite'
@@ -31,6 +31,7 @@ runs:
         ref: ${{ inputs.BRANCH_NAME }}
         fetch-depth: ${{ inputs.FETCH_DEPTH }}
         repository: ${{ inputs.REPOSITORY || github.repository }}
+        token: ${{ inputs.GITHUB_TOKEN || github.token }}
 
     - id: role_name
       if: inputs.ROLE != ''
