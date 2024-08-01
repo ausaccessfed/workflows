@@ -62,11 +62,34 @@ const getFile = async ({ repo, path, ref }) => {
   return result
 }
 
+const createSignature = async (commit) => {
+  if (GLOBALS.signature) {
+    return {
+      signature: await GLOBALS.signature.createSignature(
+        commit,
+        GLOBALS.gpgPrivateKey,
+        GLOBALS.gpgPrivateKeyPassword
+      )
+    }
+  }
+  return {};
+};
+
+
 const deleteFile = async ({ repo, file, prBranch, baseBranch }) => {
   const {
     data: { sha }
   } = await getFile({ repo, path: file.prFilePath, ref: baseBranch })
   if (sha) {
+    const commit = {
+      message: file.message,
+      parents: [sha],
+      author: GLOBALS.committer,
+      committer: GLOBALS.committer
+    };
+
+    const signature = await createSignature(commit);
+
     return await GLOBALS.github.request(`DELETE /repos/${GLOBALS.owner}/${repo}/contents/${file.prFilePath}`, {
       owner: GLOBALS.owner,
       repo,
@@ -75,6 +98,7 @@ const deleteFile = async ({ repo, file, prBranch, baseBranch }) => {
       message: file.message,
       committer: GLOBALS.committer,
       sha,
+      ...signature,
       headers: {
         'X-GitHub-Api-Version': '2022-11-28'
       }
@@ -99,25 +123,16 @@ const createCommit = async ({ repo, baseSha, tree, message }) => {
     author: GLOBALS.committer,
     committer: GLOBALS.committer
   }
+  const signature = await createSignature(commit);
 
   // if these are the same for whatever reason then no point committing as zero diff change
-
   const {
     data: { sha: newCommitSha }
   } = await GLOBALS.github.rest.git.createCommit({
     owner: GLOBALS.owner,
     repo,
     ...commit,
-    ...(GLOBALS.signature
-      ? {
-        signature: await GLOBALS.signature.createSignature(
-          commit,
-          GLOBALS.gpgPrivateKey,
-          GLOBALS.gpgPrivateKeyPassword
-        )
-      }
-      : {}
-    )
+    ...signature
   })
 
   return { newCommitSha, isDiff: baseSha !== treeSha }
@@ -287,34 +302,32 @@ const getFileRemovals = async ({ repo, parsedFiles, baseBranch }) => {
   if (distributionsRefFileSHA) {
     distributionsRefContent = base64TextToUtf8(distributionsRefBase64Content)
     const bootstrappedFiles = distributionsRefContent.split('\n')
-    const removalFiles = bootstrappedFiles.filter((file) => !parsedFiles.find(parsedFile => file == parsedFile.distributionsFilePath))
+    const removalFiles = bootstrappedFiles.filter(
+      (file) => !parsedFiles.find((parsedFile) => file == parsedFile.distributionsFilePath)
+    )
 
     return parseFiles(removalFiles)
   }
   return []
 }
 
-const getFiles = (dirPath = ".github/workflows/distributions") => {
-  let files = [];
-  const entries = GLOBALS.fs.readdirSync(dirPath, { withFileTypes: true });
+const getFiles = (dirPath = '.github/workflows/distributions') => {
+  let files = []
+  const entries = GLOBALS.fs.readdirSync(dirPath, { withFileTypes: true })
 
   for (let entry of entries) {
-    const fullPath = `${dirPath}/${entry.name}`;
+    const fullPath = `${dirPath}/${entry.name}`
     if (entry.isDirectory()) {
-      files = files.concat(getFiles(fullPath));
+      files = files.concat(getFiles(fullPath))
     } else {
-      files.push(fullPath);
+      files.push(fullPath)
     }
   }
 
-  return files;
+  return files
 }
 
 const createPR = async ({ repo, tree, baseBranch }) => {
-  tree = tree.filter(Boolean)
-  if (!tree.length) {
-    return
-  }
   const {
     data: {
       commit: { sha: baseSha }
@@ -346,7 +359,7 @@ const createPR = async ({ repo, tree, baseBranch }) => {
 const run = async ({ github, signature, context, repositories, fs, gpgPrivateKey, gpgPrivateKeyPassword }) => {
   setGlobals({ context, github, signature, fs, gpgPrivateKey, gpgPrivateKeyPassword })
   const files = getFiles()
-  console.log("Procesing the following templates")
+  console.log('Procesing the following templates')
   console.log(files)
   // parses files and then extracts the bootstrap file as its a special one
   let parsedFiles = parseFiles(files)
@@ -366,15 +379,23 @@ const run = async ({ github, signature, context, repositories, fs, gpgPrivateKey
     } = await getRepo({ repo })
     await deleteBranch({ repo, branch: CONSTANTS.prBranchName })
 
-    const tree = []
+    let tree = []
+
+    const filesToBeRemoved = await getFileRemovals({ repo, parsedFiles, baseBranch })
+
     // handle files
     for (const parsedFile of parsedFiles) {
       tree.push(await updateFileTreeObject({ baseBranch, repo, parsedFile }))
     }
 
-    await createPR({ repo, tree, baseBranch })
+    tree = tree.filter(Boolean)
 
-    const filesToBeRemoved = await getFileRemovals({ repo, parsedFiles, baseBranch })
+    if (tree.length == 0 && parsedFiles.length == 0) {
+      console.log(`Skipping no changes for ${repository}`)
+      continue
+    }
+
+    await createPR({ repo, tree, baseBranch })
 
     for (const file of filesToBeRemoved) {
       await deleteFile({ repo, file, prBranch: CONSTANTS.prBranchName, baseBranch })
