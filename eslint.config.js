@@ -93,6 +93,7 @@ module.exports = [
           prefer: 'double'
         }
       ],
+      'prettier/prettier': 'off',
       'no-param-reassign': ['off']
     }
   }
