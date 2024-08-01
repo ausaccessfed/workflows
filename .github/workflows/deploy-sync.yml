@@ -401,7 +401,7 @@ jobs:
     name: ${{ format(matrix.command, '') }} (${{ matrix.arch }})
     steps:
       - uses: ausaccessfed/workflows/.github/actions/init@main
-        if: inputs.commands != '["skip"]' && needs.init.outputs.IS_SLASH_DEPLOY == 'false'
+        if: inputs.production_commands != '["skip"]' && needs.init.outputs.IS_SLASH_DEPLOY == 'false'
         with:
           BRANCH_NAME: ${{ needs.init.outputs.BRANCH_NAME }}
           ROLE: ${{ secrets.ROLE }}
@@ -411,7 +411,7 @@ jobs:
 
       - name: Run
         id: run
-        if: inputs.commands != '["skip"]' && needs.init.outputs.IS_SLASH_DEPLOY == 'false'
+        if: inputs.production_commands != '["skip"]' && needs.init.outputs.IS_SLASH_DEPLOY == 'false'
         run: |
           docker pull ${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}
           ${{ format(matrix.command, needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG) }}
