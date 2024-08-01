@@ -1,8 +1,12 @@
 {
   "name": "app-name",
   "private": true,
-  "dependencies": {},
   "version": "0.1.0",
+  "dependencies": {
+    "@octokit/rest": "21.0.0",
+    "diff": "5.2.0",
+    "github-api-signature": "1.0.0"
+  },
   "devDependencies": {
     "eslint": "9.8.0",
     "eslint-config-prettier": "9.1.0",
@@ -10,9 +14,7 @@
     "eslint-plugin-import": "2.29.1",
     "eslint-plugin-prettier": "5.2.1",
     "eslint-plugin-yml": "1.14.0",
-    "prettier": "3.3.3",
-    "@octokit/rest": "21.0.0",
-    "diff": "5.2.0"
+    "prettier": "3.3.3"
   },
   "scripts": {
     "lint": "eslint . --ignore-path .eslintignore --quiet"
