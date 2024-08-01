@@ -10,7 +10,7 @@ const CONSTANTS = {
 }
 
 let GLOBALS = {}
-const setGlobals = ({ context, github, fs, signature, gpgPrivateKey, gpgPrivateKeyPassword }) => {
+const setGlobals = ({ context, github, fs, signature, gpgPrivateKey, gpgPrivateKeyPassword, diff }) => {
   const contextPayload = context.payload
   GLOBALS = {
     gpgPrivateKey,
@@ -18,6 +18,7 @@ const setGlobals = ({ context, github, fs, signature, gpgPrivateKey, gpgPrivateK
     signature,
     github,
     fs,
+    diff,
     owner: contextPayload.organization.login,
     committer: {
       email: 'fishwhack9000+terraform@gmail.com',
@@ -81,6 +82,8 @@ const deleteFile = async ({ repo, file, prBranch, baseBranch }) => {
     data: { sha }
   } = await getFile({ repo, path: file.prFilePath, ref: baseBranch })
   if (sha) {
+    console.log(`Deleting ${file.prFilePath}`)
+
     const commit = {
       message: file.message,
       parents: [sha],
@@ -286,6 +289,21 @@ const updateFileTreeObject = async ({ baseBranch, repo, parsedFile }) => {
 
   newContent = handlePartial({ currentContentBase64, newContent })
 
+  // Assuming currentContentBase64 and newContent are defined
+  const currentContent = Buffer.from(currentContentBase64, 'base64').toString('utf-8');
+
+  if (currentContent == newContent) {
+    console.log(`Not updating ${prFilePath} due to NO CHANGE`)
+    return null
+  }
+
+  // Compute the diff
+  const differences = GLOBALS.diff.createPatch('file', currentContent, newContent);
+
+  // Print the diff
+  console.log(`Updating ${prFilePath}`)
+  console.log(differences);
+
   return {
     path: prFilePath,
     mode: '100644',
@@ -356,8 +374,8 @@ const createPR = async ({ repo, tree, baseBranch }) => {
   }
 }
 
-const run = async ({ github, signature, context, repositories, fs, gpgPrivateKey, gpgPrivateKeyPassword }) => {
-  setGlobals({ context, github, signature, fs, gpgPrivateKey, gpgPrivateKeyPassword })
+const run = async ({ github, signature, context, repositories, fs, gpgPrivateKey, gpgPrivateKeyPassword, diff }) => {
+  setGlobals({ context, github, signature, fs, gpgPrivateKey, gpgPrivateKeyPassword, diff })
   const files = getFiles()
   console.log('Procesing the following templates')
   console.log(files)
@@ -390,10 +408,13 @@ const run = async ({ github, signature, context, repositories, fs, gpgPrivateKey
 
     tree = tree.filter(Boolean)
 
-    if (tree.length == 0 && parsedFiles.length == 0) {
+    if (tree.length == 0 && filesToBeRemoved.length == 0) {
       console.log(`Skipping no changes for ${repository}`)
       continue
     }
+
+    console.log(`Updating/adding ${tree.length} files`)
+    console.log(`deleting ${filesToBeRemoved.length} files`)
 
     await createPR({ repo, tree, baseBranch })
 

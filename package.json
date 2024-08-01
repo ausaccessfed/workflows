@@ -11,7 +11,8 @@
     "eslint-plugin-prettier": "5.2.1",
     "eslint-plugin-yml": "1.14.0",
     "prettier": "3.3.3",
-    "@octokit/rest": "21.0.0"
+    "@octokit/rest": "21.0.0",
+    "diff": "5.2.0"
   },
   "scripts": {
     "lint": "eslint . --ignore-path .eslintignore --quiet"
