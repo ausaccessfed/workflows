@@ -1,3 +1,4 @@
+/* eslint-disable no-undef */
 const eslintPluginPrettierRecommended = require('eslint-plugin-prettier/recommended')
 const eslintPluginYml = require('eslint-plugin-yml')
 const eslint = require('@eslint/js')
@@ -32,7 +33,7 @@ const common = [
       'import/extensions': 'off',
       'import/first': 'off',
       'import/no-unresolved': 'off',
-      'prettier/prettier': 'off',
+      'prettier/prettier': 'error',
       'yml/plain-scalar': 'off',
       'yml/quotes': [
         'error',
