@@ -1,4 +1,3 @@
-#REPOSITORY_EXCLUSION_MATCH workflows #
 name: Approve
 on:
   issue_comment:
