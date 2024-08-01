@@ -289,7 +289,7 @@ const updateFileTreeObject = async ({ baseBranch, repo, parsedFile }) => {
 
   newContent = handlePartial({ currentContentBase64, newContent })
 
-  if (currentContentBase64) {
+  if (currentContentBase64 != undefined) {
     // Assuming currentContentBase64 and newContent are defined
     const currentContent = Buffer.from(currentContentBase64, 'base64').toString('utf-8');
 
