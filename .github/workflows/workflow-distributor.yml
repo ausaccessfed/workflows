@@ -16,13 +16,17 @@ jobs:
         uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
       - uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8 # v4.0.2
         with:
-          node-version: 16
-      - run: |
-          rm package.json
-          npm install github-api-signature
+          node-version: 20
+      - name: Install Yarn
+        run: npm install -g yarn
+      - env:
+          NODE_ENV: production
+        run: |
+          yarn install
 
       - uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
         env:
+          NODE_ENV: production
           gpgPrivateKey: ${{secrets.GPG_PRIVATE_KEY}}
           gpgPrivateKeyPassword: ${{secrets.GPG_PRIVATE_KEY_PASSWORD}}
         with:

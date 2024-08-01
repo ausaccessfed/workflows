@@ -289,20 +289,23 @@ const updateFileTreeObject = async ({ baseBranch, repo, parsedFile }) => {
 
   newContent = handlePartial({ currentContentBase64, newContent })
 
-  // Assuming currentContentBase64 and newContent are defined
-  const currentContent = Buffer.from(currentContentBase64, 'base64').toString('utf-8');
+  if (currentContentBase64) {
+    // Assuming currentContentBase64 and newContent are defined
+    const currentContent = Buffer.from(currentContentBase64, 'base64').toString('utf-8');
 
-  if (currentContent == newContent) {
-    console.log(`Not updating ${prFilePath} due to NO CHANGE`)
-    return null
+    if (currentContent == newContent) {
+      console.log(`Not updating ${prFilePath} due to NO CHANGE`)
+      return null
+    }
+
+    // Compute the diff
+    const differences = GLOBALS.diff.createPatch('file', currentContent, newContent);
+    // Print the diff
+    console.log(`Updating ${prFilePath}`)
+    console.log(differences);
+  } else {
+    console.log(`Adding ${prFilePath}`)
   }
-
-  // Compute the diff
-  const differences = GLOBALS.diff.createPatch('file', currentContent, newContent);
-
-  // Print the diff
-  console.log(`Updating ${prFilePath}`)
-  console.log(differences);
 
   return {
     path: prFilePath,
