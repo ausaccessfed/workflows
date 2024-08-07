@@ -1,5 +1,5 @@
 #REPOSITORY_EXCLUSION_MATCH workflows #
-name: Approve
+name: Self-approve tidying
 on:
   issue_comment:
     types: [created]

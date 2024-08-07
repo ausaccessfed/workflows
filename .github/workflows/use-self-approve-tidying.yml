@@ -1,4 +1,4 @@
-name: Approve
+name: Self-approve tidying
 on:
   issue_comment:
     types: [created]
