@@ -1,4 +1,4 @@
-name: Approve
+name: Self-approve tidying
 on:
   workflow_call:
     inputs:
@@ -18,7 +18,7 @@ jobs:
   approve:
     name: approve
     runs-on: ubuntu-latest
-    if: inputs.event_name == 'issue_comment' && contains(inputs.event_comment_body, '/approve') && contains(fromJSON(vars.ALLOWED_ACTORS), github.event.comment.user.login)
+    if: inputs.event_name == 'issue_comment' && contains(inputs.event_comment_body, '/tidy') && contains(fromJSON(vars.ALLOWED_ACTORS), github.event.comment.user.login)
     steps:
       - uses: xt0rted/pull-request-comment-branch@d97294d304604fa98a2600a6e2f916a84b596dc7 # v2.0.0
         id: comment-branch
@@ -29,10 +29,10 @@ jobs:
           CHECK_TRUSTED: true
         id: validate_issue_comment
 
-      - name: Reserved file check
+      - name: Check no reserved files changed
         run: |
           FILES_CHANGED="$(git diff --name-only $(git merge-base origin/${{ steps.comment-branch.outputs.base_ref }} origin/${{ steps.comment-branch.outputs.head_ref }})..origin/${{ steps.comment-branch.outputs.head_ref }})"
-          RESERVED_FILES=("trusted_keys", "verify_commit", "trusted_auto_approvers")
+          RESERVED_FILES=("trusted_keys", "verify_commit", "trusted_self_approvers")
           for RESERVED_FILE in "${RESERVED_FILES[@]}"; do
             if [[ "${FILES_CHANGED}" == *"${RESERVED_FILE}"* ]]; then
               echo "Reserved file ${RESERVED_FILE} has been changed"
@@ -40,7 +40,8 @@ jobs:
             fi
           done
 
-      - uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+      - name: Approve
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
         with:
           github-token: ${{secrets.REPO_SCOPED_TOKEN}}
           script: |
@@ -56,21 +57,9 @@ jobs:
                 }
             } = context
 
-            // Autoapprove
             await github.rest.pulls.createReview({
+                event: "APPROVE"
                 owner,
                 repo,
-                pull_number,
-                event: "APPROVE"
+                pull_number
             })
-
-      - env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          if [ "${{ inputs.event_comment_id }}" != "" ]; then
-            gh api \
-              --method DELETE \
-              -H "Accept: application/vnd.github+json" \
-              -H "X-GitHub-Api-Version: 2022-11-28" \
-              /repos/${{ github.repository }}/issues/comments/${{ inputs.event_comment_id }}
-          fi

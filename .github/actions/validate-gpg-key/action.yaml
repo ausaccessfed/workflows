@@ -20,7 +20,7 @@ runs:
       if: inputs.CHECK_TRUSTED == 'true'
       shell: bash
       run: |
-        cat trusted_keys/trusted_auto_approvers | grep "${{github.actor}}"
+        cat trusted_keys/trusted_self_approvers | grep "${{github.actor}}"
 
     - name: Copy source
       shell: bash
