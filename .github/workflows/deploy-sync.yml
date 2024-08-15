@@ -352,6 +352,8 @@ jobs:
         with:
           BRANCH_NAME: ${{ needs.init.outputs.BRANCH_NAME }}
           SCAN_NAME: trivy_repo
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_ACTOR: ${{ github.actor }}
           SUPPRESS_FAILURE: true
 
   test-image-commands:
