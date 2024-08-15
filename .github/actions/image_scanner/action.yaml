@@ -67,7 +67,7 @@ runs:
             ARGS="${{ inputs.IMAGE_TAG_FOR_SCAN }} /app/Dockerfile ${{ inputs.SNYK_TOKEN }}"
           elif [ "${{ inputs.SCAN_NAME }}" = "hadolint" ]; then
             ARGS="/app/Dockerfile"
-          elif [ "${{ inputs.SCAN_NAME }}" = "trivy_repo" ]; then
+          elif [ "${{ inputs.SCAN_NAME }}" = "trivy_repo" ] || [ "${{ inputs.SCAN_NAME }}" = "trivy_config" ]; then
             ARGS="/repo"
           else
             ARGS="${{ inputs.IMAGE_TAG_FOR_SCAN }}"
