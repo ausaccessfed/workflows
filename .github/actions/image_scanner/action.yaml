@@ -59,7 +59,7 @@ runs:
         fi
 
         if [ "${{ inputs.SCAN_NAME }}" = "trivy_repo" ] || [ "${{ inputs.SCAN_NAME }}" = "trivy_config" ]; then
-          IMAGE_SCANNER_EXTRAS="-v ${PWD}:/repo ${IMAGE_SCANNER_EXTRAS}"
+          IMAGE_SCANNER_EXTRAS="-v ${PWD}/:/repo/ ${IMAGE_SCANNER_EXTRAS}"
         fi
 
         echo "IMAGE_SCANNER_EXTRAS=$IMAGE_SCANNER_EXTRAS" >> $GITHUB_OUTPUT
