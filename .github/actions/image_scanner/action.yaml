@@ -6,8 +6,10 @@ inputs:
     required: true
   GITHUB_TOKEN:
     description: 'github token used to auth to ghcr'
+    required: true
   GITHUB_ACTOR:
     description: 'github actor used to auth to ghcr'
+    required: true
   SCAN_NAME:
     description: 'Which scan to run'
     required: true
