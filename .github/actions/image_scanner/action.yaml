@@ -15,7 +15,7 @@ inputs:
     required: true
   IMAGE_TAG_FOR_SCAN:
     description: 'Tag to run scans on'
-    required: true
+    default: ''
   SNYK_TOKEN:
     description: 'Only needed when running snyk'
     default: ''
@@ -33,6 +33,7 @@ runs:
 
     - name: pull the image
       shell: bash
+      if: inputs.IMAGE_TAG_FOR_SCAN != ''
       run: docker pull ${{ inputs.IMAGE_TAG_FOR_SCAN }}
 
     - name: args
@@ -52,14 +53,29 @@ runs:
         if [ -f "${PWD}/.hadolint.yaml" ]; then
           IMAGE_SCANNER_EXTRAS="-v ${PWD}/.hadolint.yaml:/app/.hadolint.yaml ${IMAGE_SCANNER_EXTRAS}"
         fi
+
+        if [ -f "${PWD}/.trivy.yaml" ]; then
+          IMAGE_SCANNER_EXTRAS="-v ${PWD}/.trivy.yaml:/app/.trivy.yaml ${IMAGE_SCANNER_EXTRAS}"
+        fi
+
+        if [ "${{ inputs.SCAN_NAME }}" = "trivy_repo" ] || [ "${{ inputs.SCAN_NAME }}" = "trivy_config" ]; then
+          IMAGE_SCANNER_EXTRAS="-v ${PWD}:/repo ${IMAGE_SCANNER_EXTRAS}"
+        fi
+
         echo "IMAGE_SCANNER_EXTRAS=$IMAGE_SCANNER_EXTRAS" >> $GITHUB_OUTPUT
 
-        ARGS="${{ inputs.IMAGE_TAG_FOR_SCAN }}"
-        if [ "${{ inputs.SCAN_NAME }}" = "snyk" ]; then
-          ARGS="${{ inputs.IMAGE_TAG_FOR_SCAN }} /app/Dockerfile ${{ inputs.SNYK_TOKEN }}"
-        fi
-        if [ "${{ inputs.SCAN_NAME }}" = "hadolint" ]; then
-          ARGS="/app/Dockerfile"
+        if [ "${{ inputs.IMAGE_TAG_FOR_SCAN }}" != "" ]; then
+          if [ "${{ inputs.SCAN_NAME }}" = "snyk" ]; then
+            ARGS="${{ inputs.IMAGE_TAG_FOR_SCAN }} /app/Dockerfile ${{ inputs.SNYK_TOKEN }}"
+          elif [ "${{ inputs.SCAN_NAME }}" = "hadolint" ]; then
+            ARGS="/app/Dockerfile"
+          else
+            ARGS="${{ inputs.IMAGE_TAG_FOR_SCAN }}"
+          fi
+        else
+          if [ "${{ inputs.SCAN_NAME }}" = "trivy_repo" ] || [ "${{ inputs.SCAN_NAME }}" = "trivy_config" ]; then
+            ARGS="/repo"
+          fi
         fi
         echo "ARGS=$ARGS" >> $GITHUB_OUTPUT
 

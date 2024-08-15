@@ -340,6 +340,22 @@ jobs:
           IMAGE_TAG_SOURCE: ${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}
           JOB_ID: ${{inputs.workflow_id}}-production
 
+  trivy-repo-scan:
+    needs: [init, post-build-test]
+    strategy:
+      matrix:
+        arch: ${{ fromJSON(inputs.platforms) }}
+    runs-on: ${{ (matrix.arch == 'linux/amd64' && needs.init.outputs.INTEL_RUNNER_CHEAP) || needs.init.outputs.ARM_RUNNER_CHEAP }}
+    name: Trivy repo scan
+    steps:
+      - uses: ausaccessfed/workflows/.github/actions/image_scanner@main
+        with:
+          BRANCH_NAME: ${{ needs.init.outputs.BRANCH_NAME }}
+          SCAN_NAME: trivy_repo
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_ACTOR: ${{ github.actor }}
+          SUPPRESS_FAILURE: true
+
   test-image-commands:
     needs: [init, post-build-test]
     strategy:
@@ -511,7 +527,7 @@ jobs:
       matrix:
         arch: ${{ fromJSON(inputs.platforms) }}
     runs-on: ${{ (matrix.arch == 'linux/amd64' && needs.init.outputs.INTEL_RUNNER_CHEAP) || needs.init.outputs.ARM_RUNNER_CHEAP }}
-    name: Trivy
+    name: Trivy image scan
     steps:
       - uses: ausaccessfed/workflows/.github/actions/image_scanner@main
         with:
@@ -519,7 +535,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_ACTOR: ${{ github.actor }}
           IMAGE_TAG_FOR_SCAN: ${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}
-          SCAN_NAME: trivy
+          SCAN_NAME: trivy_image
           SUPPRESS_FAILURE: true
 
   push-to-ecr:
@@ -723,6 +739,7 @@ jobs:
         trivy-cve-scan,
         grype-cve-scan,
         snyk-cve-scan,
+        trivy-repo-scan,
         push-to-ecr,
         update-production-manifests,
         update-terraform-manifests
@@ -733,7 +750,7 @@ jobs:
     steps:
       - name: check for failures
         run: |
-          STRING="${{ needs.init.result }}${{ needs.build-test.result }}${{ needs.build-production.result }}${{ needs.test-image-commands.result }}${{ needs.production-image-commands.result }}${{ needs.hadolint.result }}${{ needs.dockle-lint.result }}${{ needs.trivy-cve-scan.result }}${{ needs.grype-cve-scan.result }}${{ needs.snyk-cve-scan.result }}${{ needs.push-to-ecr.result }}${{ needs.update-production-manifests.result }}${{ needs.update-terraform-manifests.result }}"
+          STRING="${{ needs.init.result }}${{ needs.build-test.result }}${{ needs.build-production.result }}${{ needs.test-image-commands.result }}${{ needs.production-image-commands.result }}${{ needs.hadolint.result }}${{ needs.dockle-lint.result }}${{ needs.trivy-repo-scan.result }}${{ needs.trivy-cve-scan.result }}${{ needs.grype-cve-scan.result }}${{ needs.snyk-cve-scan.result }}${{ needs.push-to-ecr.result }}${{ needs.update-production-manifests.result }}${{ needs.update-terraform-manifests.result }}"
           if [ "$(echo "$STRING" | grep "failure" || echo "")" != "" ]; then
             exit 1
           fi

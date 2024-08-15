@@ -1,0 +1,5 @@
+#ONCE#
+scan:
+  skip-dirs: []
+  skip-files:
+    - .env
