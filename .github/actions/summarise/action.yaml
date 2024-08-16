@@ -15,10 +15,14 @@ runs:
     - id: summary_tab
       shell: bash
       run: |
-        echo '<details>' >> $GITHUB_STEP_SUMMARY
-        echo "<summary>${{ inputs.TITLE }}</summary>" >> $GITHUB_STEP_SUMMARY
-        echo "$(cat ${{ inputs.OUTPUT_FILE }})" >> $GITHUB_STEP_SUMMARY
-        echo '</details>' >> $GITHUB_STEP_SUMMARY
+        if [ -s "${{ inputs.OUTPUT_FILE }}" ]; then
+          echo '<details>' >> $GITHUB_STEP_SUMMARY
+          echo "<summary>${{ inputs.TITLE }}</summary>" >> $GITHUB_STEP_SUMMARY
+          echo "$(cat ${{ inputs.OUTPUT_FILE }})" >> $GITHUB_STEP_SUMMARY
+          echo '</details>' >> $GITHUB_STEP_SUMMARY
+        else
+          echo "Output file is empty, skipping summary."
+        fi
     - id: throw_error
       shell: bash
       if: inputs.SUCCESS == 'failure' || inputs.SUCCESS == 'false'
