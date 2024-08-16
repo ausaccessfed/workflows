@@ -93,12 +93,9 @@ runs:
           ghcr.io/ausaccessfed/image-scanner:latest \
           ./scripts/${{ inputs.SCAN_NAME }} \
           ${{ steps.args.outputs.ARGS }} | tee /tmp/output.txt
-        SUCCESS="$([[ "${PIPESTATUS[0]}" == "0" ]] && echo "success" || echo "failure")"
-        EXTRA_TEXT="$([[ "${SUCCESS}" == "failure" && "${{ inputs.SUPPRESS_FAILURE }}" == "true" ]] && echo " (Failed, but marked as skippable)" || echo "")" >> $GITHUB_OUTPUT
-        echo "SUCCESS=$SUCCESS" >> $GITHUB_OUTPUT
 
     - uses: ausaccessfed/workflows/.github/actions/summarise@main
       with:
         OUTPUT_FILE: '/tmp/output.txt'
-        TITLE: ${{ inputs.SCAN_NAME }} Check ${{ steps.task.outputs.EXTRA_TEXT }}
-        SUCCESS: ${{ inputs.SUPPRESS_FAILURE == 'true' || steps.task.outputs.SUCCESS }}
+        TITLE: ${{ inputs.SCAN_NAME }} Check ${{ (inputs.SUPPRESS_FAILURE == 'true' && steps.task.outcome == 'failure' && '(Failed, but marked as skippable)') || '' }}
+        SUCCESS: ${{ inputs.SUPPRESS_FAILURE == 'true' || steps.task.outcome }}
