@@ -17,9 +17,7 @@ runs:
       run: |
         echo '<details>' >> $GITHUB_STEP_SUMMARY
         echo "<summary>${{ inputs.TITLE }}</summary>" >> $GITHUB_STEP_SUMMARY
-        echo '```' >> $GITHUB_STEP_SUMMARY
         echo "$(cat ${{ inputs.OUTPUT_FILE }})" >> $GITHUB_STEP_SUMMARY
-        echo '```' >> $GITHUB_STEP_SUMMARY
         echo '</details>' >> $GITHUB_STEP_SUMMARY
     - id: throw_error
       shell: bash
