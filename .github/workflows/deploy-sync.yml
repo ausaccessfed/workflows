@@ -386,7 +386,16 @@ jobs:
         if: inputs.commands != '["skip"]' && needs.init.outputs.IS_SLASH_DEPLOY == 'false'
         run: |
           docker pull ${{ needs.init.outputs.GITHUB_BRANCH_TEST_IMAGE_ID_TAG }}
-          ${{ format(matrix.command, needs.init.outputs.GITHUB_BRANCH_TEST_IMAGE_ID_TAG) }}
+          ${{ format(matrix.command, needs.init.outputs.GITHUB_BRANCH_TEST_IMAGE_ID_TAG) }} | tee /tmp/output.txt
+          SUCCESS="$([[ "${PIPESTATUS[0]}" == "0" ]] && echo "success" || echo "failure")"
+          echo "SUCCESS=$SUCCESS" >> $GITHUB_OUTPUT
+
+      - uses: ausaccessfed/workflows/.github/actions/summarise@main
+        if: inputs.commands != '["skip"]' && needs.init.outputs.IS_SLASH_DEPLOY == 'false'
+        with:
+          OUTPUT_FILE: '/tmp/output.txt'
+          TITLE: 'Output for: ${{ matrix.command }}'
+          SUCCESS: ${{ steps.run.outputs.SUCCESS }}
 
       - name: zip artifacts
         id: zip_failures
@@ -430,7 +439,16 @@ jobs:
         if: inputs.production_commands != '["skip"]' && needs.init.outputs.IS_SLASH_DEPLOY == 'false'
         run: |
           docker pull ${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}
-          ${{ format(matrix.command, needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG) }}
+          ${{ format(matrix.command, needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG) }} | tee /tmp/output.txt
+          SUCCESS="$([[ "${PIPESTATUS[0]}" == "0" ]] && echo "success" || echo "failure")"
+          echo "SUCCESS=$SUCCESS" >> $GITHUB_OUTPUT
+
+      - uses: ausaccessfed/workflows/.github/actions/summarise@main
+        if: inputs.commands != '["skip"]' && needs.init.outputs.IS_SLASH_DEPLOY == 'false'
+        with:
+          OUTPUT_FILE: '/tmp/output.txt'
+          TITLE: 'Output for: ${{ matrix.command }}'
+          SUCCESS: ${{ steps.run.outputs.SUCCESS }}
 
       - name: zip artifacts
         id: zip_failures
