@@ -1,0 +1,27 @@
+name: 'Summarise'
+description: ''
+inputs:
+  OUTPUT_FILE:
+    description: 'file containing output to be posted'
+  TITLE:
+    description: 'Summary Title'
+  SUCCESS:
+    description: 'If the task was successful'
+runs:
+  using: 'composite'
+  steps:
+    # TODO: do we want to also add logic to post as a pr comment ?
+    # TODO: do we want to also add logic to post as a webhook to slack?
+    - id: summary_tab
+      shell: bash
+      run: |
+        echo '<details>' >> $GITHUB_STEP_SUMMARY
+        echo "<summary>${{ inputs.TITLE }}</summary>" >> $GITHUB_STEP_SUMMARY
+        echo '```' >> $GITHUB_STEP_SUMMARY
+        echo "$(cat ${{ inputs.OUTPUT_FILE }})" >> $GITHUB_STEP_SUMMARY
+        echo '```' >> $GITHUB_STEP_SUMMARY
+        echo '</details>' >> $GITHUB_STEP_SUMMARY
+    - id: throw_error
+      shell: bash
+      if: inputs.SUCCESS != 'true'
+      run: exit 1
