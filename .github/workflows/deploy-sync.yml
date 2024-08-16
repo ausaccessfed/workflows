@@ -390,7 +390,7 @@ jobs:
           SUCCESS="$([[ "${PIPESTATUS[0]}" == "0" ]] && echo "success" || echo "failure")"
           echo "SUCCESS=$SUCCESS" >> $GITHUB_OUTPUT
 
-      - uses: ausaccessfed/workflows/.github/actions/summarise@main
+      - uses: ausaccessfed/workflows/.github/actions/summarise@feature/resuable-summariser
         if: inputs.commands != '["skip"]' && needs.init.outputs.IS_SLASH_DEPLOY == 'false'
         with:
           OUTPUT_FILE: '/tmp/output.txt'
@@ -443,7 +443,7 @@ jobs:
           SUCCESS="$([[ "${PIPESTATUS[0]}" == "0" ]] && echo "success" || echo "failure")"
           echo "SUCCESS=$SUCCESS" >> $GITHUB_OUTPUT
 
-      - uses: ausaccessfed/workflows/.github/actions/summarise@main
+      - uses: ausaccessfed/workflows/.github/actions/summarise@feature/resuable-summariser
         if: inputs.commands != '["skip"]' && needs.init.outputs.IS_SLASH_DEPLOY == 'false'
         with:
           OUTPUT_FILE: '/tmp/output.txt'
