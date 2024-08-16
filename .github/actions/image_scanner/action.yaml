@@ -81,6 +81,7 @@ runs:
 
     - name: Run image scanner
       shell: bash
+      id: task
       continue-on-error: true
       env:
         DOCKLE_HOST: 'unix:///var/run/docker.sock'
