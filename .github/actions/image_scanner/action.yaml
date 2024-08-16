@@ -96,5 +96,5 @@ runs:
     - uses: ausaccessfed/workflows/.github/actions/summarise@feature/resuable-summariser
       with:
         OUTPUT_FILE: '/tmp/output.txt'
-        TITLE: '${{ inputs.SCAN_NAME }} Check (${{ (inputs.SUPPRESS_FAILURE == "true" && "") || "Failed, but marked as skippable" }})'
+        TITLE: '${{ inputs.SCAN_NAME }} Check (${{ inputs.SUPPRESS_FAILURE == "true" && steps.task.outcome == "failure" ? "Failed, but marked as skippable" : "" }})'
         SUCCESS: ${{ inputs.SUPPRESS_FAILURE == "true" || steps.task.outcome }}
