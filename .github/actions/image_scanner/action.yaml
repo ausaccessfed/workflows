@@ -95,7 +95,7 @@ runs:
         SUCCESS="$([[ "${PIPESTATUS[0]}" == "0" ]] && echo "success" || echo "failure")"
         echo "SUCCESS=$SUCCESS" >> $GITHUB_OUTPUT
 
-    - uses: ausaccessfed/workflows/.github/actions/summarise@feature/resuable-summariser
+    - uses: ausaccessfed/workflows/.github/actions/summarise@main
       with:
         OUTPUT_FILE: '/tmp/output.txt'
         TITLE: ${{ inputs.SCAN_NAME }} Check ${{ (inputs.SUPPRESS_FAILURE == 'true' && steps.task.outputs.SUCCESS == 'failure' && '(Failed, but marked as skippable)') || '' }}
