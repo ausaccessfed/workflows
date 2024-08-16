@@ -92,9 +92,11 @@ runs:
           ghcr.io/ausaccessfed/image-scanner:latest \
           ./scripts/${{ inputs.SCAN_NAME }} \
           ${{ steps.args.outputs.ARGS }} | tee /tmp/output.txt
+        SUCCESS="$([[ "${PIPESTATUS[0]}" == "0" ]] && echo "success" || echo "failure")"
+        echo "SUCCESS=$SUCCESS" >> $GITHUB_OUTPUT
 
     - uses: ausaccessfed/workflows/.github/actions/summarise@feature/resuable-summariser
       with:
         OUTPUT_FILE: '/tmp/output.txt'
-        TITLE: ${{ inputs.SCAN_NAME }} Check ${{ (inputs.SUPPRESS_FAILURE == 'true' && steps.task.outcome == 'failure' && '(Failed, but marked as skippable)') || '' }}
-        SUCCESS: ${{ inputs.SUPPRESS_FAILURE == 'true' || steps.task.outcome }}
+        TITLE: ${{ inputs.SCAN_NAME }} Check ${{ (inputs.SUPPRESS_FAILURE == 'true' && steps.task.outputs.SUCCESS == 'failure' && '(Failed, but marked as skippable)') || '' }}
+        SUCCESS: ${{ inputs.SUPPRESS_FAILURE == 'true' || steps.task.outputs.SUCCESS }}
