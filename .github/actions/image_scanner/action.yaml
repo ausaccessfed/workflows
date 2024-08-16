@@ -81,6 +81,7 @@ runs:
 
     - name: Run image scanner
       shell: bash
+      continue-on-error: true
       env:
         DOCKLE_HOST: 'unix:///var/run/docker.sock'
       run: |
@@ -90,4 +91,10 @@ runs:
           ${{ steps.args.outputs.IMAGE_SCANNER_EXTRAS }} \
           ghcr.io/ausaccessfed/image-scanner:latest \
           ./scripts/${{ inputs.SCAN_NAME }} \
-          ${{ steps.args.outputs.ARGS }} || [ "${{ inputs.SUPPRESS_FAILURE }}" = "true" ] && echo "Failed, but marked as skippable"
+          ${{ steps.args.outputs.ARGS }} | tee /tmp/output.txt
+
+    - uses: ausaccessfed/workflows/.github/actions/summarise@feature/resuable-summariser
+      with:
+        OUTPUT_FILE: '/tmp/output.txt'
+        TITLE: '${{ inputs.SCAN_NAME }} Check (${{ (inputs.SUPPRESS_FAILURE == "true" && "") || "Failed, but marked as skippable" }})'
+        SUCCESS: ${{ inputs.SUPPRESS_FAILURE == "true" || steps.task.outcome }}
