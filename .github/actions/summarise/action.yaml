@@ -1,0 +1,67 @@
+name: 'Summarise'
+description: ''
+inputs:
+  OUTPUT_FILE:
+    description: 'file containing output to be posted'
+  TITLE:
+    description: 'Summary Title'
+  SUCCESS:
+    description: 'If the task was successful'
+runs:
+  using: 'composite'
+  steps:
+    # TODO: do we want to also add logic to post as a pr comment ?
+    # TODO: do we want to also add logic to post as a webhook to slack?
+    - id: split_file
+      shell: bash
+      run: |
+        FILE_SIZE=$(stat -c%s "${{ inputs.OUTPUT_FILE }}")
+        CHUNK_SIZE=$((900 * 1024)) # 700KB in bytes
+
+        if [ $FILE_SIZE -gt $CHUNK_SIZE ]; then
+          split -b $CHUNK_SIZE "${{ inputs.OUTPUT_FILE }}" chunk_
+          echo "File split into chunks."
+        else
+          cp "${{ inputs.OUTPUT_FILE }}" chunk_aa
+          echo "File is small enough, no need to split."
+        fi
+    - id: summary_tab_1
+      shell: bash
+      run: |
+        if [ -s "chunk_aa" ]; then
+          echo '<details>' >> $GITHUB_STEP_SUMMARY
+          echo "<summary>${{ inputs.TITLE }} (part 1)</summary>" >> $GITHUB_STEP_SUMMARY
+          echo "$(cat chunk_aa)" >> $GITHUB_STEP_SUMMARY
+          echo '</details>' >> $GITHUB_STEP_SUMMARY
+        else
+          echo "Output file is empty, skipping summary."
+        fi
+    - id: summary_tab_2
+      shell: bash
+      run: |
+        if [ -s "chunk_ab" ]; then
+          echo '<details>' >> $GITHUB_STEP_SUMMARY
+          echo "<summary>${{ inputs.TITLE }} (part 2)</summary>" >> $GITHUB_STEP_SUMMARY
+          echo "$(cat chunk_ab)" >> $GITHUB_STEP_SUMMARY
+          echo '</details>' >> $GITHUB_STEP_SUMMARY
+        fi
+    - id: summary_tab_3
+      shell: bash
+      run: |
+        if [ -s "chunk_ac" ]; then
+          echo '<details>' >> $GITHUB_STEP_SUMMARY
+          echo "<summary>${{ inputs.TITLE }} (part 3)</summary>" >> $GITHUB_STEP_SUMMARY
+          echo "$(cat chunk_ab)" >> $GITHUB_STEP_SUMMARY
+          echo '</details>' >> $GITHUB_STEP_SUMMARY
+        fi
+    - id: summary_tab_4
+      shell: bash
+      run: |
+        if [ -s "chunk_ad" ]; then
+          echo 'We shouldnt be getting outputs this big!'
+          exit 1
+        fi
+    - id: throw_error
+      shell: bash
+      if: inputs.SUCCESS == 'failure' || inputs.SUCCESS == 'false'
+      run: exit 1
