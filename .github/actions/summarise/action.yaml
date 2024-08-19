@@ -33,10 +33,10 @@ runs:
           echo '<details>' > $tmp
           echo "<summary>${{ inputs.TITLE }} (part 1)</summary>" >> $tmp
           echo '```' >> $tmp
-          cat chunk_aa >> $tmp
+          echo "$(cat chunk_aa)" >> $tmp
           echo '```' >> $tmp
           echo '</details>' >> $tmp
-          cat $tmp >> $GITHUB_STEP_SUMMARY
+          echo "$(cat $tmp)" >> $GITHUB_STEP_SUMMARY
         else
           echo "Output file is empty, skipping summary."
         fi
@@ -48,10 +48,10 @@ runs:
           echo '<details>' > $tmp
           echo "<summary>${{ inputs.TITLE }} (part 1)</summary>" >> $tmp
           echo '```' >> $tmp
-          cat chunk_aa >> $tmp
+          echo "$(cat chunk_ab)" >> $tmp
           echo '```' >> $tmp
           echo '</details>' >> $tmp
-          cat $tmp >> $GITHUB_STEP_SUMMARY
+          echo "$(cat $tmp)" >> $GITHUB_STEP_SUMMARY
         fi
     - id: summary_tab_3
       shell: bash
@@ -61,10 +61,10 @@ runs:
           echo '<details>' > $tmp
           echo "<summary>${{ inputs.TITLE }} (part 1)</summary>" >> $tmp
           echo '```' >> $tmp
-          cat chunk_aa >> $tmp
+          echo "$(cat chunk_ac)" >> $tmp
           echo '```' >> $tmp
           echo '</details>' >> $tmp
-          cat $tmp >> $GITHUB_STEP_SUMMARY
+          echo "$(cat $tmp)" >> $GITHUB_STEP_SUMMARY
         fi
     - id: summary_tab_4
       shell: bash
