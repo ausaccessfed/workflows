@@ -36,6 +36,7 @@ runs:
           $(cat chunk_ab)
           ```
           EOF >> $GITHUB_STEP_SUMMARY
+
           echo '</details>' >> $GITHUB_STEP_SUMMARY
         else
           echo "Output file is empty, skipping summary."
@@ -51,6 +52,7 @@ runs:
           $(cat chunk_ab)
           ```
           EOF >> $GITHUB_STEP_SUMMARY
+
           echo '</details>' >> $GITHUB_STEP_SUMMARY
         fi
     - id: summary_tab_3
