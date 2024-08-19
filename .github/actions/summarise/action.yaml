@@ -64,7 +64,7 @@ runs:
       shell: bash
       run: |
         if [ -s "chunk_ad" ]; then
-          echo 'We shouldnt be getting outputs this big!'
+          echo 'We shouldn\'t be getting outputs this big!'
           exit 1
         fi
     - id: throw_error
