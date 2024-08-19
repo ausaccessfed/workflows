@@ -30,41 +30,47 @@ runs:
       run: |
         tmp="tmp_aa.txt"
         if [ -s "chunk_aa" ]; then
-          echo '<details>' > $tmp
-          echo "<summary>${{ inputs.TITLE }} (part 1)</summary>" >> $tmp
-          echo '```' >> $tmp
-          echo "$(cat chunk_aa)" >> $tmp
-          echo '```' >> $tmp
-          echo '</details>' >> $tmp
-          echo "$(cat $tmp)" >> $GITHUB_STEP_SUMMARY
+          echo '<details>' >> $GITHUB_STEP_SUMMARY
+          echo "<summary>${{ inputs.TITLE }} (part 1)</summary>" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "\n" >> $GITHUB_STEP_SUMMARY
+          echo "$(cat chunk_aa)" >> $GITHUB_STEP_SUMMARY
+          echo "\n" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo '</details>' >> $GITHUB_STEP_SUMMARY
+          echo "\n" >> $GITHUB_STEP_SUMMARY
+          echo "\n" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "$(cat chunk_aa)" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
         else
           echo "Output file is empty, skipping summary."
         fi
     - id: summary_tab_2
       shell: bash
       run: |
-        tmp="tmp_ab.txt"
         if [ -s "chunk_ab" ]; then
-          echo '<details>' > $tmp
-          echo "<summary>${{ inputs.TITLE }} (part 1)</summary>" >> $tmp
-          echo '```' >> $tmp
-          echo "$(cat chunk_ab)" >> $tmp
-          echo '```' >> $tmp
-          echo '</details>' >> $tmp
-          echo "$(cat $tmp)" >> $GITHUB_STEP_SUMMARY
+          echo '<details>' >> $GITHUB_STEP_SUMMARY
+          echo "<summary>${{ inputs.TITLE }} (part 1)</summary>" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "\n" >> $GITHUB_STEP_SUMMARY
+          echo "$(cat chunk_ab)" >> $GITHUB_STEP_SUMMARY
+          echo "\n" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo '</details>' >> $GITHUB_STEP_SUMMARY
         fi
     - id: summary_tab_3
       shell: bash
       run: |
-        tmp="tmp_ac.txt"
         if [ -s "chunk_ac" ]; then
-          echo '<details>' > $tmp
-          echo "<summary>${{ inputs.TITLE }} (part 1)</summary>" >> $tmp
-          echo '```' >> $tmp
-          echo "$(cat chunk_ac)" >> $tmp
-          echo '```' >> $tmp
-          echo '</details>' >> $tmp
-          echo "$(cat $tmp)" >> $GITHUB_STEP_SUMMARY
+          echo '<details>' >> $GITHUB_STEP_SUMMARY
+          echo "<summary>${{ inputs.TITLE }} (part 1)</summary>" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "\n" >> $GITHUB_STEP_SUMMARY
+          echo "$(cat chunk_ac)" >> $GITHUB_STEP_SUMMARY
+          echo "\n" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo '</details>' >> $GITHUB_STEP_SUMMARY
         fi
     - id: summary_tab_4
       shell: bash
