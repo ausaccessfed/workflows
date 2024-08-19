@@ -31,12 +31,9 @@ runs:
         if [ -s "chunk_aa" ]; then
           echo '<details>' >> $GITHUB_STEP_SUMMARY
           echo "<summary>${{ inputs.TITLE }} (part 1)</summary>" >> $GITHUB_STEP_SUMMARY
-          cat <<EOF
-          ```
-          $(cat chunk_ab)
-          ```
-          EOF >> $GITHUB_STEP_SUMMARY
-
+          echo "<code>" >> $GITHUB_STEP_SUMMARY
+          echo "$(cat chunk_aa)" >> $GITHUB_STEP_SUMMARY
+          echo "</code>" >> $GITHUB_STEP_SUMMARY
           echo '</details>' >> $GITHUB_STEP_SUMMARY
         else
           echo "Output file is empty, skipping summary."
@@ -47,12 +44,9 @@ runs:
         if [ -s "chunk_ab" ]; then
           echo '<details>' >> $GITHUB_STEP_SUMMARY
           echo "<summary>${{ inputs.TITLE }} (part 2)</summary>" >> $GITHUB_STEP_SUMMARY
-          cat <<EOF
-          ```
-          $(cat chunk_ab)
-          ```
-          EOF >> $GITHUB_STEP_SUMMARY
-
+          echo "<code>" >> $GITHUB_STEP_SUMMARY
+          echo "$(cat chunk_ab)" >> $GITHUB_STEP_SUMMARY
+          echo "</code>" >> $GITHUB_STEP_SUMMARY
           echo '</details>' >> $GITHUB_STEP_SUMMARY
         fi
     - id: summary_tab_3
@@ -61,11 +55,9 @@ runs:
         if [ -s "chunk_ac" ]; then
           echo '<details>' >> $GITHUB_STEP_SUMMARY
           echo "<summary>${{ inputs.TITLE }} (part 3)</summary>" >> $GITHUB_STEP_SUMMARY
-          cat <<EOF
-          ```
-          $(cat chunk_ab)
-          ```
-          EOF >> $GITHUB_STEP_SUMMARY
+          echo "<code>" >> $GITHUB_STEP_SUMMARY
+          echo "$(cat chunk_ab)" >> $GITHUB_STEP_SUMMARY
+          echo "</code>" >> $GITHUB_STEP_SUMMARY
           echo '</details>' >> $GITHUB_STEP_SUMMARY
         fi
     - id: summary_tab_4
