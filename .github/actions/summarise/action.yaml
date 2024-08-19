@@ -31,9 +31,7 @@ runs:
         if [ -s "chunk_aa" ]; then
           echo '<details>' >> $GITHUB_STEP_SUMMARY
           echo "<summary>${{ inputs.TITLE }} (part 1)</summary>" >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
-          echo "  " >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo ' ```' >> $GITHUB_STEP_SUMMARY
           echo "$(cat chunk_aa)" >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
           echo '</details>' >> $GITHUB_STEP_SUMMARY
@@ -46,10 +44,8 @@ runs:
         if [ -s "chunk_ab" ]; then
           echo '<details>' >> $GITHUB_STEP_SUMMARY
           echo "<summary>${{ inputs.TITLE }} (part 1)</summary>" >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
-          echo "\n" >> $GITHUB_STEP_SUMMARY
+          echo ' ```' >> $GITHUB_STEP_SUMMARY
           echo "$(cat chunk_ab)" >> $GITHUB_STEP_SUMMARY
-          echo "\n" >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
           echo '</details>' >> $GITHUB_STEP_SUMMARY
         fi
@@ -59,10 +55,8 @@ runs:
         if [ -s "chunk_ac" ]; then
           echo '<details>' >> $GITHUB_STEP_SUMMARY
           echo "<summary>${{ inputs.TITLE }} (part 1)</summary>" >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
-          echo "\n" >> $GITHUB_STEP_SUMMARY
+          echo ' ```' >> $GITHUB_STEP_SUMMARY
           echo "$(cat chunk_ac)" >> $GITHUB_STEP_SUMMARY
-          echo "\n" >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
           echo '</details>' >> $GITHUB_STEP_SUMMARY
         fi
@@ -70,7 +64,7 @@ runs:
       shell: bash
       run: |
         if [ -s "chunk_ad" ]; then
-          echo 'We shouldn\'t be getting outputs this big!'
+          echo "We shouldn't be getting outputs this big!"
           exit 1
         fi
     - id: throw_error
