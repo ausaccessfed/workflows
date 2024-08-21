@@ -97,7 +97,8 @@ jobs:
       BRANCH_NAME: ${{ steps.branch.outputs.BRANCH_NAME }}
       RUBY_VERSION: ${{ steps.env.outputs.RUBY_VERSION }}
       BASE_IMAGE: ${{ steps.env.outputs.BASE_IMAGE }}
-      PRODUCTION_IMAGE_ID_TAG: ${{ steps.env.outputs.PRODUCTION_IMAGE_ID_TAG }}
+      ECR_IMAGE_ID_TAG: ${{ steps.env.outputs.ECR_IMAGE_ID_TAG }}
+      ECR_IMAGE_TAG: ${{ steps.env.outputs.ECR_IMAGE_TAG }}
       LATEST_IMAGE_ID_TAG: ${{ steps.env.outputs.LATEST_IMAGE_ID_TAG }}
       SHOULD_PUSH_IMAGE_TO_ECR: ${{ steps.env.outputs.SHOULD_PUSH_IMAGE_TO_ECR }}
       GITHUB_REGISTRY_REF: ${{ steps.env.outputs.GITHUB_REGISTRY_REF }}
@@ -169,7 +170,7 @@ jobs:
           echo "IS_DEFAULT_DEVELOPMENT_BRANCH_PUSH=$IS_DEFAULT_DEVELOPMENT_BRANCH_PUSH" >> $GITHUB_OUTPUT
 
           if [ "$IS_SLASH_DEPLOY" == "true" ]; then
-            IMAGE_TAG="adhoc-${{steps.comment-branch.outputs.head_ref}}-${{steps.comment-branch.outputs.HEAD_SHA}}"
+            IMAGE_TAG="adhoc-${{steps.comment-branch.outputs.head_ref}}"
           else
             if [ "$IS_DEFAULT_BRANCH_PUSH" == "true" ] || [ "$IS_MONTHLY_BUILD" == "true" ]; then
               IMAGE_TAG="stable-${{ github.sha }}"
@@ -209,7 +210,13 @@ jobs:
 
           echo "IMAGE_ID=$IMAGE_ID" >> $GITHUB_OUTPUT
 
-          echo "PRODUCTION_IMAGE_ID_TAG=$IMAGE_ID:$IMAGE_TAG" >> $GITHUB_OUTPUT
+          ECR_IMAGE_TAG="$IMAGE_TAG"
+          if [ "$IS_SLASH_DEPLOY" == "true" ]; then
+            ECR_IMAGE_TAG="$ECR_IMAGE_TAG-${{steps.comment-branch.outputs.HEAD_SHA}}"
+          fi
+
+          echo "ECR_IMAGE_TAG=$ECR_IMAGE_TAG" >> $GITHUB_OUTPUT
+          echo "ECR_IMAGE_ID_TAG=$IMAGE_ID:$ECR_IMAGE_TAG" >> $GITHUB_OUTPUT
 
           echo "LATEST_IMAGE_ID_TAG=$IMAGE_ID:${{ inputs.latest_image_tag }}" >> $GITHUB_OUTPUT
 
@@ -589,7 +596,7 @@ jobs:
             RELEASE_VERSION=${{ needs.init.outputs.IMAGE_TAG }}
           IMAGE_TARGET: production
           IMAGE_CACHE_FROM: ${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}
-          IMAGE_TAGS: ${{ needs.init.outputs.PRODUCTION_IMAGE_ID_TAG }}
+          IMAGE_TAGS: ${{ needs.init.outputs.ECR_IMAGE_ID_TAG }}
           IMAGE_LOAD: false
           IMAGE_PUSH: true
           JOB_INDEX: ${{ strategy.job-index }}
@@ -613,9 +620,9 @@ jobs:
 
       - id: env
         run: |
-          ECR_LINK_TAGS="${{ needs.init.outputs.PRODUCTION_IMAGE_ID_TAG }}~${{ needs.init.outputs.LATEST_IMAGE_ID_TAG }}"
+          ECR_LINK_TAGS="${{ needs.init.outputs.ECR_IMAGE_ID_TAG }}~${{ needs.init.outputs.LATEST_IMAGE_ID_TAG }}"
           if [ "${{needs.init.outputs.IS_SLASH_DEPLOY}}" == "true" ]; then
-            ECR_LINK_TAGS="${{ needs.init.outputs.PRODUCTION_IMAGE_ID_TAG }}"
+            ECR_LINK_TAGS="${{ needs.init.outputs.ECR_IMAGE_ID_TAG }}"
           fi
           echo "ECR_LINK_TAGS=$ECR_LINK_TAGS" >> $GITHUB_OUTPUT
 
@@ -626,7 +633,7 @@ jobs:
           ROLE: ${{ secrets.ROLE }}
           ECR_REPOSITORY: ${{ inputs.ecr_repository }}
           IMAGE_TAGS: ${{ steps.env.outputs.ECR_LINK_TAGS }}
-          IMAGE_TAG_SOURCE: ${{  needs.init.outputs.PRODUCTION_IMAGE_ID_TAG }}
+          IMAGE_TAG_SOURCE: ${{  needs.init.outputs.ECR_IMAGE_ID_TAG }}
           JOB_ID: ${{inputs.workflow_id}}-push-to-ecr
 
   update-terraform-manifests:
@@ -642,7 +649,7 @@ jobs:
         with:
           ROLE: ${{ secrets.ROLE }}
           ECR_REPOSITORY: ${{ inputs.ecr_repository }}
-          PUBLISH_IMAGE_TAG: ${{ needs.init.outputs.IMAGE_TAG }}
+          PUBLISH_IMAGE_TAG: ${{ needs.init.outputs.ECR_IMAGE_TAG }}
           PUBLISH_APPS: ${{ needs.init.outputs.PROJECTS }}
           PUBLISH_ENVIRONMENTS: ${{ inputs.production_environments }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -654,7 +661,7 @@ jobs:
         with:
           ROLE: ${{ secrets.ROLE }}
           ECR_REPOSITORY: ${{ inputs.ecr_repository }}
-          PUBLISH_IMAGE_TAG: ${{ needs.init.outputs.IMAGE_TAG }}
+          PUBLISH_IMAGE_TAG: ${{ needs.init.outputs.ECR_IMAGE_TAG }}
           PUBLISH_APPS: ${{ needs.init.outputs.PROJECTS }}
           PUBLISH_ENVIRONMENTS: ${{ inputs.test_environments }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -666,7 +673,7 @@ jobs:
         with:
           ROLE: ${{ secrets.ROLE }}
           ECR_REPOSITORY: ${{ inputs.ecr_repository }}
-          PUBLISH_IMAGE_TAG: ${{ needs.init.outputs.IMAGE_TAG }}
+          PUBLISH_IMAGE_TAG: ${{ needs.init.outputs.ECR_IMAGE_TAG }}
           PUBLISH_APPS: ${{ needs.init.outputs.PROJECTS }}
           PUBLISH_ENVIRONMENTS: ${{ inputs.development_environments }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
