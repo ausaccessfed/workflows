@@ -73,4 +73,6 @@ runs:
     - id: throw_error
       shell: bash
       if: inputs.SUCCESS == 'failure' || inputs.SUCCESS == 'false'
-      run: exit 1
+      run: |
+        cat "${{ inputs.OUTPUT_FILE }}"
+        exit 1
