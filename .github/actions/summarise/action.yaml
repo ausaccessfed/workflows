@@ -3,6 +3,19 @@ description: ''
 inputs:
   OUTPUT_FILE:
     description: 'file containing output to be posted'
+    default: 'output.txt'
+  OUTPUT_MESSAGE:
+    description: 'Will be used to generate the OUTPUT_FILE, note will override OUTPUT_FILE if provided'
+    default: ''
+  SLACK_WEBHOOK_URL:
+    description: 'If not null, will post to slack'
+    default: ''
+  ENABLE_PR:
+    description: 'If true, will post pr as comment (STILL TODO)'
+    default: 'false'
+  ENABLE_ACTION_SUMMARY:
+    description: 'If true, will post to summary tab in flow'
+    default: 'true'
   TITLE:
     description: 'Summary Title'
   SUCCESS:
@@ -10,8 +23,13 @@ inputs:
 runs:
   using: 'composite'
   steps:
-    # TODO: do we want to also add logic to post as a pr comment ?
-    # TODO: do we want to also add logic to post as a webhook to slack?
+    - id: create_output
+      if: inputs.OUTPUT_MESSAGE != ''
+      shell: bash
+      run: |
+        echo "${{ inputs.OUTPUT_MESSAGE }}" > ${{ inputs.OUTPUT_FILE }}
+        echo "Output file created."
+
     - id: split_file
       shell: bash
       run: |
@@ -25,7 +43,66 @@ runs:
           cp "${{ inputs.OUTPUT_FILE }}" chunk_aa
           echo "File is small enough, no need to split."
         fi
+    - id: pr_comment
+      shell: bash
+      if: inputs.ENABLE_PR == 'true'
+      run: |
+        echo "TODO:"
+    - id: slack_message
+      shell: bash
+      if: inputs.SLACK_WEBHOOK_URL != ''
+      run: |
+        json="{
+            \"attachments\": [{
+              \"color\": \"#f4c030\",
+              \"blocks\": [
+                {
+                  \"type\": \"header\",
+                  \"text\": {
+                    \"type\": \"plain_text\",
+                    \"text\": \"${{ inputs.TITLE }}\",
+                    \"emoji\": true
+                  }
+                }"
+
+        for chunk in chunk_*; do
+          json="$json,
+            {
+                \"type\": \"rich_text\",
+                \"elements\": [{
+                    \"type\": \"rich_text_preformatted\",
+                    \"elements\": [{
+                        \"type\": \"text\",
+                        \"text\": \"$(cat $chunk)\"
+                    }]
+                }]
+            }"
+        done
+
+        json="$json,
+            {
+              \"type\": \"section\",
+              \"text\": {
+                \"type\": \"mrkdwn\",
+                \"text\": \"Please review run at\"
+              },
+              \"accessory\": {
+                \"type\": \"button\",
+                \"text\": {
+                  \"type\": \"plain_text\",
+                  \"text\": \"${{ inputs.TITLE }}\",
+                  \"emoji\": true
+                },
+                \"value\": \"click_me_123\",
+                \"url\": \"https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}\",
+                \"action_id\": \"button-action\"
+              }
+            }"
+        json="$json]}]}"
+
+        curl -H 'Content-Type: application/json' -X POST -d "$json" ${{ inputs.SLACK_WEBHOOK_URL }}
     - id: summary_tab_1
+      if: inputs.ENABLE_ACTION_SUMMARY == 'true'
       shell: bash
       run: |
         if [ -s "chunk_aa" ]; then
@@ -40,6 +117,7 @@ runs:
           echo "Output file is empty, skipping summary."
         fi
     - id: summary_tab_2
+      if: inputs.ENABLE_ACTION_SUMMARY == 'true'
       shell: bash
       run: |
         if [ -s "chunk_ab" ]; then
@@ -52,6 +130,7 @@ runs:
           echo '</details>' >> $GITHUB_STEP_SUMMARY
         fi
     - id: summary_tab_3
+      if: inputs.ENABLE_ACTION_SUMMARY == 'true'
       shell: bash
       run: |
         if [ -s "chunk_ac" ]; then
@@ -63,7 +142,7 @@ runs:
           echo '```' >> $GITHUB_STEP_SUMMARY
           echo '</details>' >> $GITHUB_STEP_SUMMARY
         fi
-    - id: summary_tab_4
+    - id: verify_size
       shell: bash
       run: |
         if [ -s "chunk_ad" ]; then
