@@ -1,9 +1,9 @@
 name: 'Backup all repositories'
 on:
   # change branch to run in a pr
-  push:
-    branches:
-      - feature/make-backup-script-break
+  # push:
+  #   branches:
+  #     - feature/make-backup-script-break
   schedule:
     # Our Recovery Point Objective (RPO) is four hours.
     # Back up every three hours to give us some extra breathing room on top of that.
@@ -31,7 +31,7 @@ jobs:
 
       - name: Backup
         run: |
-          bash ./scripts/copy-repos.sh "${{ secrets.ALL_REPO_SCOPED_TOKEN }}" &> /tmp/output.txt
+          bash ./scripts/copy-repos.sh "${{ secrets.ALL_REPO_SCOPED_TOKEN }}" 2>&1 | tee /tmp/output.txt
 
       - name: Cache backup directory
         uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
@@ -45,7 +45,7 @@ jobs:
         run: |
           echo "SUCCESS=true" >> $GITHUB_OUTPUT
 
-      - uses: ausaccessfed/workflows/.github/actions/summarise@feature/make-backup-script-break
+      - uses: ausaccessfed/workflows/.github/actions/summarise@main
         if: always() && steps.failure_check.outputs.SUCCESS != 'true'
         with:
           OUTPUT_FILE: '/tmp/output.txt'
