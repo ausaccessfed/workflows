@@ -69,37 +69,25 @@ runs:
           PART=$(echo $chunk | sed 's/[^0-9]*//g')
           json="$json,
             {
-              \"title\": \"Part $PART\",
-              \"text\": \"Expand\",
-              \"fallback\": \"Expand\",
-              \"callback_id\": \"expand_message\",
-              \"actions\": [
+              \"type\": \"actions\",
+              \"elements\": [
                 {
-                  \"name\": \"expand\",
-                  \"text\": \"Expand\",
                   \"type\": \"button\",
-                  \"value\": \"expand\"
+                  \"text\": {
+                    \"type\": \"plain_text\",
+                    \"text\": \"Show Details\"
+                  },
+                  \"action_id\": \"show_details\",
+                  \"value\": \"details\"
                 }
               ]
             },
             {
-                \"title\": \"Part $PART\",
-                \"type\": \"rich_text\",
-                \"elements\": [{
-                    \"type\": \"rich_text_preformatted\",
-                    \"elements\": [{
-                        \"type\": \"text\",
-                        \"text\": \"$(cat $chunk)\"
-                    }]
-                }]
-                \"actions\": [{
-                  \"name\": \"collapse\",
-                  \"text\": \"Collapse\",
-                  \"type\": \"button\",
-                  \"value\": \"collapse\"
-                }],
-                \"collapsible\": true,
-                \"collapsed\": true
+              \"type\": \"context\",
+              \"elements\": [{
+                  \"type\": \"mrkdwn\",
+                  \"text\": \"```$(cat $chunk)```\"
+              }]
             }"
         done
 
