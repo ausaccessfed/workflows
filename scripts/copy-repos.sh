@@ -10,6 +10,8 @@ dir="$PWD/tmp/repos"
 zip_dir="$PWD/$dir/zips"
 mkdir -p "$dir" "$zip_dir"
 
+git config --global gc.auto 0
+
 for i in "${items[@]}"; do
     repo=$(echo "$i" | cut -d'/' -f 5)
     defaultBranchRef=$(echo "$i" | cut -d'/' -f 6)
