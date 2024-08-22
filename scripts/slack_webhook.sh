@@ -19,65 +19,66 @@ json="{
         }"
 PART=1
 if [ "$TESTING" = "true" ]; then
-    echo "testing" >chunk_aa
+    echo "testinggasdsadsadsadsadasdasdasdas
+testinggasdsadsadsadsadasdasdasdas
+testinggasdsadsadsadsadasdasdasdas
+testinggasdsadsadsadsadasdasdasdas
+testinggasdsadsadsadsadasdasdasdas
+testinggasdsadsadsadsadasdasdasdas
+testinggasdsadsadsadsadasdasdasdas
+testinggasdsadsadsadsadasdasdasdas
+testinggasdsadsadsadsadasdasdasdas
+testinggasdsadsadsadsadasdasdasdas
+testinggasdsadsadsadsadasdasdasdas
+testinggasdsadsadsadsadasdasdasdas
+testinggasdsadsadsadsadasdasdasdas
+testinggasdsadsadsadsadasdasdasdas
+testinggasdsadsadsadsadasdasdasdas
+testinggasdsadsadsadsadasdasdasdas
+testinggasdsadsadsadsadasdasdasdas
+testinggasdsadsadsadsadasdasdasdas
+testinggasdsadsadsadsadasdasdasdas" >chunk_aa
+
 fi
-for chunk in chunk_*; do
-    PART=$((PART + 1))
-    json="$json,
-    {
-        \"type\": \"actions\",
-        \"elements\": [
-            {
+
+json="$json,
+        {
+            \"type\": \"section\",
+            \"text\": {
+                \"type\": \"mrkdwn\",
+                \"text\": \"Please review run at\"
+            },
+            \"accessory\": {
                 \"type\": \"button\",
                 \"text\": {
                     \"type\": \"plain_text\",
-                    \"text\": \"Show Details\"
+                    \"text\": \"$TITLE\",
+                    \"emoji\": true
                 },
-                \"action_id\": \"show_details\",
-                \"value\": \"details\"
+                \"value\": \"click_me_123\",
+                \"url\": \"https://github.com/$REPOSITORY/actions/runs/$RUN_ID}\",
+                \"action_id\": \"button-action\"
             }
+        }"
+json="$json
         ]
     }"
-    # ,
-    # {
-    #     \"title\": \"Part $PART\",
-    #     \"type\": \"rich_text\",
-    #     \"elements\": [{
-    #         \"type\": \"rich_text_preformatted\",
-    #         \"elements\": [{
-    #             \"type\": \"text\",
-    #             \"text\": \"$(cat "$chunk")\"
-    #         }]
-    #     }]
-    # }"
+
+for chunk in chunk_*; do
+    PART=$((PART + 1))
+    json="$json,
+        {
+            \"color\": \"#f4c030\",
+            \"text\": \"\`\`\`$(cat "$chunk")\`\`\`\"
+        }"
 done
 
-json="$json,
-    {
-        \"type\": \"section\",
-        \"text\": {
-            \"type\": \"mrkdwn\",
-            \"text\": \"Please review run at\"
-        },
-        \"accessory\": {
-            \"type\": \"button\",
-            \"text\": {
-                \"type\": \"plain_text\",
-                \"text\": \"$TITLE\",
-                \"emoji\": true
-            },
-            \"value\": \"click_me_123\",
-            \"url\": \"https://github.com/$REPOSITORY/actions/runs/$RUN_ID}\",
-            \"action_id\": \"button-action\"
-        }
-    }"
 json="$json
-            ]
-        }]
-    }"
+    ]
+}"
 
 if [ "$TESTING" = "true" ]; then
     rm chunk_aa
+    echo "$json"
 fi
-
 curl -H 'Content-Type: application/json' -X POST -d "$json" "$WEBHOOK"
