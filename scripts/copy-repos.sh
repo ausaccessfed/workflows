@@ -25,6 +25,7 @@ for i in "${items[@]}"; do
     fi
     echo "backing up $repo"
     cd "$repoFolder"
+    ls -lah "$repoFolder"
     zip -qr "../zips/$repo.zip" .
     cd -
 done

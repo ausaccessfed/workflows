@@ -54,7 +54,7 @@ jobs:
         if: always() && steps.failure_check.outputs.SUCCESS != 'true'
         with:
           OUTPUT_FILE: '/tmp/output.txt'
-          ENABLE_ACTION_SUMMARY: false
+          ENABLE_ACTION_SUMMARY: true
           SLACK_WEBHOOK_URL: ${{ secrets.DEV_OPS_SLACK_URL }}
           TITLE: 'Repo backup failed!!!!'
           SUCCESS: 'failure'
