@@ -18,16 +18,15 @@ for i in "${items[@]}"; do
         echo "Pulling $repo"
         cd "$repoFolder"
         git fetch origin "$defaultBranchRef" && git reset --hard "$defaultBranchRef"
-        cd -
+        cd "$dir"
     else
         echo "Repo not found cloning $repo"
         git clone -b "$defaultBranchRef" "https://${GH_TOKEN}@github.com/ausaccessfed/${repo}.git" "$repoFolder"
     fi
     echo "backing up $repo"
     cd "$repoFolder"
-    ls -lah "$repoFolder"
-    zip -qr "../zips/$repo.zip" .
-    cd -
+    zip -qr "$zip_dir/$repo.zip" .
+    cd "$dir"
 done
 
 find "$zip_dir" -type f -size 0 -delete
