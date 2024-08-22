@@ -52,7 +52,7 @@ runs:
       shell: bash
       if: inputs.SLACK_WEBHOOK_URL != ''
       run: |
-        JSON=<<-JSONCONTENT
+        JSON=<<JSONCONTENT
           {
             "attachments": [{
               "color": "#f4c030",
@@ -69,7 +69,7 @@ runs:
 
         for chunk in chunk_*; do
           PART=$(echo $chunk | sed 's/[^0-9]*//g')
-          JSON=<<-JSONCONTENT
+          JSON=<<JSONCONTENT
             $JSON,
             {
               "title": "Part $PART",
@@ -92,7 +92,13 @@ runs:
                   "type": "rich_text_preformatted",
                   "elements": [{
                       "type": "text",
-                      "text": "$(cat $chunk)"
+          JSONCONTENT
+
+          JSON="$JSON,
+                \"text\": \"$(cat $chunk)\""
+
+          JSON=<<JSONCONTENT
+                  $JSON
                   }]
               }],
               "actions": [{
@@ -102,12 +108,12 @@ runs:
                 "value": "collapse"
               }],
               "collapsible": true,
-                "collapsed": true
+              "collapsed": true
             }
           JSONCONTENT
         done
 
-        JSON=<<-JSONCONTENT
+        JSON=<<JSONCONTENT
           $JSON,
             {
               "type": "section",
@@ -128,6 +134,7 @@ runs:
               }
             }
         JSONCONTENT
+
         JSON="$JSON]}]}"
 
         curl -H 'Content-Type: application/json' -X POST -d "$JSON" ${{ inputs.SLACK_WEBHOOK_URL }}
