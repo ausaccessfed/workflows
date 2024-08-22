@@ -52,71 +52,8 @@ runs:
       shell: bash
       if: inputs.SLACK_WEBHOOK_URL != ''
       run: |
-        json="{
-            \"attachments\": [{
-              \"color\": \"#f4c030\",
-              \"blocks\": [
-                {
-                  \"type\": \"header\",
-                  \"text\": {
-                    \"type\": \"plain_text\",
-                    \"text\": \"${{ inputs.TITLE }}\",
-                    \"emoji\": true
-                  }
-                }"
+        ./scripts/slack_webhook.sh "${{ inputs.TITLE }}" "${{ inputs.SLACK_WEBHOOK_URL }}" "${{github.repository}}" "${{github.run_id}}" "false"
 
-        for chunk in chunk_*; do
-          PART=$(echo $chunk | sed 's/[^0-9]*//g')
-          json="$json,
-            {
-              \"type\": \"actions\",
-              \"elements\": [
-                {
-                  \"type\": \"button\",
-                  \"text\": {
-                    \"type\": \"plain_text\",
-                    \"text\": \"Show Details\"
-                  },
-                  \"action_id\": \"show_details\",
-                  \"value\": \"details\"
-                }
-              ]
-            },
-            {
-              \"title\": \"Part $PART\",
-              \"type\": \"rich_text\",
-              \"elements\": [{
-                  \"type\": \"rich_text_preformatted\",
-                  \"elements\": [{
-                      \"type\": \"text\",
-                      \"text\": \"$(cat $chunk)\"
-                  }]
-              }]
-            }"
-        done
-
-        json="$json,
-            {
-              \"type\": \"section\",
-              \"text\": {
-                \"type\": \"mrkdwn\",
-                \"text\": \"Please review run at\"
-              },
-              \"accessory\": {
-                \"type\": \"button\",
-                \"text\": {
-                  \"type\": \"plain_text\",
-                  \"text\": \"${{ inputs.TITLE }}\",
-                  \"emoji\": true
-                },
-                \"value\": \"click_me_123\",
-                \"url\": \"https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}\",
-                \"action_id\": \"button-action\"
-              }
-            }"
-        json="$json]}]}"
-
-        curl -H 'Content-Type: application/json' -X POST -d "$json" ${{ inputs.SLACK_WEBHOOK_URL }}
     - id: summary_tab_1
       if: inputs.ENABLE_ACTION_SUMMARY == 'true'
       shell: bash
