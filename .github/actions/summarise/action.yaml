@@ -83,10 +83,14 @@ runs:
               ]
             },
             {
-              \"type\": \"context\",
+              \"title\": \"Part $PART\",
+              \"type\": \"rich_text\",
               \"elements\": [{
-                  \"type\": \"mrkdwn\",
-                  \"text\": \"```$(cat $chunk)```\"
+                  \"type\": \"rich_text_preformatted\",
+                  \"elements\": [{
+                      \"type\": \"text\",
+                      \"text\": \"$(cat $chunk)\"
+                  }]
               }]
             }"
         done
