@@ -52,55 +52,85 @@ runs:
       shell: bash
       if: inputs.SLACK_WEBHOOK_URL != ''
       run: |
-        json="{
-            \"attachments\": [{
-              \"color\": \"#f4c030\",
-              \"blocks\": [
+        JSON=<<-JSON
+          {
+            "attachments": [{
+              "color": "#f4c030",
+              "blocks": [
                 {
-                  \"type\": \"header\",
-                  \"text\": {
-                    \"type\": \"plain_text\",
-                    \"text\": \"${{ inputs.TITLE }}\",
-                    \"emoji\": true
+                  "type": "header",
+                  "text": {
+                    "type": "plain_text",
+                    "text": "${{ inputs.TITLE }}",
+                    "emoji": true
                   }
-                }"
+                }
+        JSON
 
         for chunk in chunk_*; do
-          json="$json,
+          PART=$(echo $chunk | sed 's/[^0-9]*//g')
+          JSON=<<-JSON
+            $JSON,
             {
-                \"type\": \"rich_text\",
-                \"elements\": [{
-                    \"type\": \"rich_text_preformatted\",
-                    \"elements\": [{
-                        \"type\": \"text\",
-                        \"text\": \"$(cat $chunk)\"
-                    }]
-                }]
-            }"
+              "title": "Part $PART",
+              "text": "Expand to view",
+              "fallback": "Expand to view",
+              "callback_id": "expand_message",
+              "actions": [
+                {
+                  "name": "expand",
+                  "text": "Expand",
+                  "type": "button",
+                  "value": "expand"
+                }
+              ]
+            },
+            {
+              "title": "Part $PART",
+              "type": "rich_text",
+              "elements": [{
+                  "type": "rich_text_preformatted",
+                  "elements": [{
+                      "type": "text",
+                      "text": "$(cat $chunk)"
+                  }]
+              }],
+              "actions": [{
+                "name": "collapse",
+                "text": "Collapse",
+                "type": "button",
+                "value": "collapse"
+              }],
+              "collapsible": true,
+                "collapsed": true
+            }
+          JSON
         done
 
-        json="$json,
+        JSON=<<-JSON
+          $JSON,
             {
-              \"type\": \"section\",
-              \"text\": {
-                \"type\": \"mrkdwn\",
-                \"text\": \"Please review run at\"
+              "type": "section",
+              "text": {
+                "type": "mrkdwn",
+                "text": "Please review run at"
               },
-              \"accessory\": {
-                \"type\": \"button\",
-                \"text\": {
-                  \"type\": \"plain_text\",
-                  \"text\": \"${{ inputs.TITLE }}\",
-                  \"emoji\": true
+              "accessory": {
+                "type": "button",
+                "text": {
+                  "type": "plain_text",
+                  "text": "${{ inputs.TITLE }}",
+                  "emoji": true
                 },
-                \"value\": \"click_me_123\",
-                \"url\": \"https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}\",
-                \"action_id\": \"button-action\"
+                "value": "click_me_123",
+                "url": "https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}",
+                "action_id": "button-action"
               }
-            }"
-        json="$json]}]}"
+            }
+        JSON
+        JSON="$JSON]}]}"
 
-        curl -H 'Content-Type: application/json' -X POST -d "$json" ${{ inputs.SLACK_WEBHOOK_URL }}
+        curl -H 'Content-Type: application/json' -X POST -d "$JSON" ${{ inputs.SLACK_WEBHOOK_URL }}
     - id: summary_tab_1
       if: inputs.ENABLE_ACTION_SUMMARY == 'true'
       shell: bash
