@@ -198,6 +198,8 @@ const handlePartial = ({ currentContentBase64, newContent: newContentF }) => {
 
 const parseFiles = (files) => {
   const parsedFiles = []
+  console.log('Parsing the following files')
+  console.log(files)
   for (const fileName of files) {
     // get last split assume its a file with no /
     const fileNameRaw = fileName.split('/').pop()
@@ -325,7 +327,7 @@ const getFileRemovals = async ({ repo, parsedFiles, baseBranch }) => {
     const bootstrappedFiles = distributionsRefContent.split('\n')
     const removalFiles = bootstrappedFiles.filter(
       (file) => !parsedFiles.find((parsedFile) => file == parsedFile.distributionsFilePath)
-    )
+    ).map(fileName => `.github/${fileName}`)
 
     return parseFiles(removalFiles)
   }
@@ -380,8 +382,6 @@ const createPR = async ({ repo, tree, baseBranch }) => {
 const run = async ({ github, signature, context, repositories, fs, gpgPrivateKey, gpgPrivateKeyPassword, diff }) => {
   setGlobals({ context, github, signature, fs, gpgPrivateKey, gpgPrivateKeyPassword, diff })
   const files = getFiles()
-  console.log('Procesing the following templates')
-  console.log(files)
   // parses files and then extracts the bootstrap file as its a special one
   let parsedFiles = parseFiles(files)
   const cacheFileContents = parsedFiles.map((file) => file.distributionsFilePath).join('\n')
