@@ -33,6 +33,9 @@ runs:
     - id: split_file
       shell: bash
       run: |
+        if [ ! -e "${{ inputs.OUTPUT_FILE }}" ]; then
+          echo "Output file not found." > ${{ inputs.OUTPUT_FILE }}
+        fi
         FILE_SIZE=$(stat -c%s "${{ inputs.OUTPUT_FILE }}")
         CHUNK_SIZE=$((900 * 1024)) # 700KB in bytes
 
