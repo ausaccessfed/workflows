@@ -87,7 +87,7 @@ const deleteFiles = async (files, { newCommitSha, repo, prBranch }) => {
 
   console.log(`Attempting Delete for ${prFilePaths.join(",")}`)
 
-  const { data: baseTree } = await GLOBALS.github.git.getTree({
+  const { data: baseTree } = await GLOBALS.github.rest.git.getTree({
     owner: GLOBALS.owner,
     repo,
     tree_sha: newCommitSha,
@@ -103,7 +103,7 @@ const deleteFiles = async (files, { newCommitSha, repo, prBranch }) => {
 
   const { newCommitSha: newestCommitSha } = await createCommit({ repo, baseSha: newCommitSha, tree: newTree, message })
 
-  await GLOBALS.github.git.updateRef({
+  await GLOBALS.github.rest.git.updateRef({
     owner: GLOBALS.owner,
     repo,
     ref: `heads/${prBranch}`,
