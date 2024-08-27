@@ -36,7 +36,7 @@ runs:
         if [ ! -e "${{ inputs.OUTPUT_FILE }}" ]; then
           echo "Output file not found." > ${{ inputs.OUTPUT_FILE }}
         fi
-        sed -i "s/\"/'/g" "${{ inputs.OUTPUT_FILE }}"
+        echo "TITLE=$(echo "${{ inputs.TITLE }}" | tr '"' "'")"  >> $GITHUB_OUTPUT
         FILE_SIZE=$(stat -c%s "${{ inputs.OUTPUT_FILE }}")
         CHUNK_SIZE=$((900 * 1024)) # 700KB in bytes
 
@@ -56,7 +56,7 @@ runs:
       shell: bash
       if: inputs.SLACK_WEBHOOK_URL != ''
       run: |
-        ./scripts/slack_webhook.sh "${{ inputs.TITLE }}" "${{ inputs.SLACK_WEBHOOK_URL }}" "${{github.repository}}" "${{github.run_id}}" "false"
+        ./scripts/slack_webhook.sh "${{ steps.split_file.outputs.TITLE }}" "${{ inputs.SLACK_WEBHOOK_URL }}" "${{github.repository}}" "${{github.run_id}}" "false"
 
     - id: summary_tab_1
       if: inputs.ENABLE_ACTION_SUMMARY == 'true'
@@ -64,7 +64,7 @@ runs:
       run: |
         if [ -s "chunk_aa" ]; then
           echo '<details>' >> $GITHUB_STEP_SUMMARY
-          echo "<summary>${{ inputs.TITLE }} (part 1)</summary>" >> $GITHUB_STEP_SUMMARY
+          echo "<summary>${{ steps.split_file.outputs.TITLE }} (part 1)</summary>" >> $GITHUB_STEP_SUMMARY
           echo '  ' >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
           echo "$(cat chunk_aa)" >> $GITHUB_STEP_SUMMARY
@@ -79,7 +79,7 @@ runs:
       run: |
         if [ -s "chunk_ab" ]; then
           echo '<details>' >> $GITHUB_STEP_SUMMARY
-          echo "<summary>${{ inputs.TITLE }} (part 1)</summary>" >> $GITHUB_STEP_SUMMARY
+          echo "<summary>${{ steps.split_file.outputs.TITLE }} (part 1)</summary>" >> $GITHUB_STEP_SUMMARY
           echo '  ' >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
           echo "$(cat chunk_ab)" >> $GITHUB_STEP_SUMMARY
@@ -92,7 +92,7 @@ runs:
       run: |
         if [ -s "chunk_ac" ]; then
           echo '<details>' >> $GITHUB_STEP_SUMMARY
-          echo "<summary>${{ inputs.TITLE }} (part 1)</summary>" >> $GITHUB_STEP_SUMMARY
+          echo "<summary>${{ steps.split_file.outputs.TITLE }} (part 1)</summary>" >> $GITHUB_STEP_SUMMARY
           echo '  ' >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
           echo "$(cat chunk_ac)" >> $GITHUB_STEP_SUMMARY
