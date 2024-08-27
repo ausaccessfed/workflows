@@ -2,10 +2,10 @@ name: 'Distribute Workflows'
 on:
   workflow_dispatch:
   push:
-    # paths:
-    #   - '.github/workflows/distributions/**'
+    paths:
+      - '.github/workflows/distributions/**'
     branches:
-      - feature/fix-file-deletion
+      - main
 jobs:
   distribution:
     runs-on: ubuntu-latest
