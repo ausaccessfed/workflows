@@ -77,41 +77,43 @@ const createSignature = async (commit) => {
 };
 
 
-const deleteFile = async ({ repo, file, prBranch, baseBranch }) => {
-  const {
-    data: { sha }
-  } = await getFile({ repo, path: file.prFilePath, ref: baseBranch })
-  if (sha) {
-    console.log(`Deleting ${file.prFilePath}`)
+const deleteFiles = async (files, { newCommitSha, repo, prBranch }) => {
 
-    const commit = {
-      message: file.message,
-      parents: [sha],
-      author: GLOBALS.committer,
-      committer: GLOBALS.committer
-    };
-
-    const signature = await createSignature(commit);
-
-    return await GLOBALS.github.request(`DELETE /repos/${GLOBALS.owner}/${repo}/contents/${file.prFilePath}`, {
-      owner: GLOBALS.owner,
-      repo,
-      file: file.prFilePath,
-      branch: prBranch,
-      message: file.message,
-      committer: GLOBALS.committer,
-      sha,
-      ...signature,
-      headers: {
-        'X-GitHub-Api-Version': '2022-11-28'
-      }
-    })
+  if (files.length == 0) {
+    return
   }
+
+  const prFilePaths = files.map(file => file.prFilePath)
+
+  console.log(`Attempting Delete for ${prFilePaths.join(",")}`)
+
+  const { data: baseTree } = await GLOBALS.github.git.getTree({
+    owner: GLOBALS.owner,
+    repo,
+    tree_sha: newCommitSha,
+    recursive: true
+  });
+  const message = files.map(file => file.message).join("\n")
+  const newTree = baseTree.tree.map(item => {
+    if (prFilePaths.includes(item.path)) {
+      item.sha = null
+    }
+    return item
+  });
+
+  const { newCommitSha: newestCommitSha } = await createCommit({ repo, baseSha: newCommitSha, tree: newTree, message })
+
+  await GLOBALS.github.git.updateRef({
+    owner: GLOBALS.owner,
+    repo,
+    ref: `heads/${prBranch}`,
+    sha: newestCommitSha
+  });
 }
 
 const createCommit = async ({ repo, baseSha, tree, message }) => {
   const {
-    data: { sha: treeSha }
+    data: { sha: newTreeSha }
   } = await GLOBALS.github.rest.git.createTree({
     owner: GLOBALS.owner,
     repo,
@@ -121,7 +123,7 @@ const createCommit = async ({ repo, baseSha, tree, message }) => {
 
   const commit = {
     message,
-    tree: treeSha,
+    tree: newTreeSha,
     parents: [baseSha],
     author: GLOBALS.committer,
     committer: GLOBALS.committer
@@ -138,7 +140,7 @@ const createCommit = async ({ repo, baseSha, tree, message }) => {
     ...signature
   })
 
-  return { newCommitSha, isDiff: baseSha !== treeSha }
+  return { newCommitSha, isDiff: baseSha !== newTreeSha }
 }
 
 const deleteBranch = async ({ repo, branch }) => {
@@ -377,6 +379,8 @@ const createPR = async ({ repo, tree, baseBranch }) => {
       body: message
     })
   }
+
+  return newCommitSha
 }
 
 const run = async ({ github, signature, context, repositories, fs, gpgPrivateKey, gpgPrivateKeyPassword, diff }) => {
@@ -419,11 +423,9 @@ const run = async ({ github, signature, context, repositories, fs, gpgPrivateKey
     console.log(`Updating/adding ${tree.length} files`)
     console.log(`deleting ${filesToBeRemoved.length} files`)
 
-    await createPR({ repo, tree, baseBranch })
+    const newCommitSha = await createPR({ repo, tree, baseBranch })
 
-    for (const file of filesToBeRemoved) {
-      await deleteFile({ repo, file, prBranch: CONSTANTS.prBranchName, baseBranch })
-    }
+    deleteFiles(filesToBeRemoved, { newCommitSha, repo, prBranch: CONSTANTS.prBranchName })
 
     console.log(`finished ${repository}`)
   }
