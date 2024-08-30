@@ -37,7 +37,7 @@ runs:
         ROLE: ${{ inputs.ROLE }}
         ECR_REPOSITORY: ${{ inputs.ECR_REPOSITORY }}
         GITHUB_TOKEN: ${{ inputs.GITHUB_TOKEN }}
-        GITHUB_ACTOR: ${{ inputs.actor }}
+        GITHUB_ACTOR: ${{ inputs.GITHUB_ACTOR }}
 
     - name: Run
       shell: bash
