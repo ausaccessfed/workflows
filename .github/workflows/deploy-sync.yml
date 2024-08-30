@@ -368,7 +368,7 @@ jobs:
     strategy:
       matrix:
         arch: ${{ (inputs.commands != '["skip"]' && needs.init.outputs.IS_SLASH_DEPLOY == 'false' &&  fromJSON(inputs.platforms)) || fromJSON('["linux/amd64"]') }}
-        command: ${{ fromJSON(inputs.commands) }}
+        command: ${{ needs.init.outputs.IS_SLASH_DEPLOY == 'true' && fromJSON('["skip"]') || fromJSON(inputs.commands) }}
     runs-on: ${{ (matrix.arch == 'linux/amd64' && ((contains(matrix.command, 'BETTER_RUNNER') && needs.init.outputs.INTEL_RUNNER) || needs.init.outputs.INTEL_RUNNER_CHEAP)) || ((contains(matrix.command, 'BETTER_RUNNER') && needs.init.outputs.ARM_RUNNER) || needs.init.outputs.ARM_RUNNER_CHEAP) }}
     name: ${{ format(matrix.command, '') }} (${{ matrix.arch }})
     services:
@@ -380,7 +380,7 @@ jobs:
           - '3306:3306'
     steps:
       - uses: ausaccessfed/workflows/.github/actions/init@main
-        if: inputs.commands != '["skip"]' && needs.init.outputs.IS_SLASH_DEPLOY == 'false'
+        if: matrix.command != 'skip'
         with:
           BRANCH_NAME: ${{ needs.init.outputs.BRANCH_NAME }}
           ROLE: ${{ secrets.ROLE }}
@@ -390,7 +390,7 @@ jobs:
 
       - name: Run
         id: run
-        if: inputs.commands != '["skip"]' && needs.init.outputs.IS_SLASH_DEPLOY == 'false'
+        if: matrix.command != 'skip'
         run: |
           docker pull ${{ needs.init.outputs.GITHUB_BRANCH_TEST_IMAGE_ID_TAG }}
           ${{ format(matrix.command, needs.init.outputs.GITHUB_BRANCH_TEST_IMAGE_ID_TAG) }} | tee /tmp/output.txt
@@ -398,7 +398,7 @@ jobs:
           echo "SUCCESS=$SUCCESS" >> $GITHUB_OUTPUT
 
       - uses: ausaccessfed/workflows/.github/actions/summarise@main
-        if: inputs.commands != '["skip"]' && needs.init.outputs.IS_SLASH_DEPLOY == 'false'
+        if: matrix.command != 'skip'
         with:
           OUTPUT_FILE: '/tmp/output.txt'
           TITLE: 'Output for: ${{ matrix.command }}'
@@ -427,13 +427,13 @@ jobs:
     needs: [init, post-build-production]
     strategy:
       matrix:
-        arch: ${{ (inputs.production_commands != '["skip"]' && needs.init.outputs.IS_SLASH_DEPLOY == 'false' &&  fromJSON(inputs.platforms)) || fromJSON('["linux/amd64"]') }}
-        command: ${{ fromJSON(inputs.production_commands) }}
+        arch: ${{ (inputs.production_commands != '["skip"]' &&  fromJSON(inputs.platforms)) || fromJSON('["linux/amd64"]') }}
+        command: ${{ needs.init.outputs.IS_SLASH_DEPLOY == 'true' && fromJSON('["skip"]') || fromJSON(inputs.production_commands) }}
     runs-on: ${{ (matrix.arch == 'linux/amd64' && ((contains(matrix.command, 'BETTER_RUNNER') && needs.init.outputs.INTEL_RUNNER) || needs.init.outputs.INTEL_RUNNER_CHEAP)) || ((contains(matrix.command, 'BETTER_RUNNER') && needs.init.outputs.ARM_RUNNER) || needs.init.outputs.ARM_RUNNER_CHEAP) }}
     name: ${{ format(matrix.command, '') }} (${{ matrix.arch }})
     steps:
       - uses: ausaccessfed/workflows/.github/actions/init@main
-        if: inputs.production_commands != '["skip"]' && needs.init.outputs.IS_SLASH_DEPLOY == 'false'
+        if: matrix.command != 'skip'
         with:
           BRANCH_NAME: ${{ needs.init.outputs.BRANCH_NAME }}
           ROLE: ${{ secrets.ROLE }}
@@ -443,7 +443,7 @@ jobs:
 
       - name: Run
         id: run
-        if: inputs.production_commands != '["skip"]' && needs.init.outputs.IS_SLASH_DEPLOY == 'false'
+        if: matrix.command != 'skip'
         run: |
           docker pull ${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}
           ${{ format(matrix.command, needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG) }} | tee /tmp/output.txt
@@ -451,7 +451,7 @@ jobs:
           echo "SUCCESS=$SUCCESS" >> $GITHUB_OUTPUT
 
       - uses: ausaccessfed/workflows/.github/actions/summarise@main
-        if: inputs.commands != '["skip"]' && needs.init.outputs.IS_SLASH_DEPLOY == 'false'
+        if: matrix.command != 'skip'
         with:
           OUTPUT_FILE: '/tmp/output.txt'
           TITLE: 'Output for: ${{ matrix.command }}'
