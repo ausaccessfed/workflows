@@ -44,7 +44,7 @@ runs:
       id: run
       run: |
         docker pull ${{ inputs.IMAGE_ID_TAG }}
-        ${{ format(inputs.COMMAND, inputs.IMAGE_ID_TAG }} | tee /tmp/output.txt
+        ${{ format(inputs.COMMAND, inputs.IMAGE_ID_TAG) }} | tee /tmp/output.txt
         SUCCESS="$([[ "${PIPESTATUS[0]}" == "0" ]] && echo "success" || echo "failure")"
         echo "SUCCESS=$SUCCESS" >> $GITHUB_OUTPUT
 
