@@ -58,7 +58,7 @@ jobs:
             } = context
 
             await github.rest.pulls.createReview({
-                event: "APPROVE"
+                event: "APPROVE",
                 owner,
                 repo,
                 pull_number
