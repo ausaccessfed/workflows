@@ -1,0 +1,75 @@
+name: 'Command Runner'
+description: 'Runs commands, handles outputs and screenshots'
+inputs:
+  COMMAND:
+    description: 'Command to run'
+    required: true
+  BRANCH_NAME:
+    description: 'branch to checkout'
+    required: true
+  ROLE:
+    description: 'aws role to be used'
+    required: true
+  ECR_REPOSITORY:
+    description: 'ecr repository to login to'
+    required: true
+  GITHUB_TOKEN:
+    description: 'github token used to auth to ghcr'
+    required: true
+  GITHUB_ACTOR:
+    description: 'github actor used to auth to ghcr and used for checking out if the default token isnt good enough'
+    required: true
+  IS_DEFAULT_BRANCH_PUSH:
+    description: 'is this a push to the default branch'
+    required: true
+  SAVE_ARTIFACTS:
+    description: 'should we save artifacts'
+    default: 'false'
+  IMAGE_ID_TAG:
+    description: 'github image id tag to use'
+    required: true
+runs:
+  using: 'composite'
+  steps:
+    - uses: ausaccessfed/workflows/.github/actions/init@main
+      with:
+        BRANCH_NAME: ${{ inputs.BRANCH_NAME }}
+        ROLE: ${{ inputs.ROLE }}
+        ECR_REPOSITORY: ${{ inputs.ECR_REPOSITORY }}
+        GITHUB_TOKEN: ${{ inputs.GITHUB_TOKEN }}
+        GITHUB_ACTOR: ${{ inputs.actor }}
+
+    - name: Run
+      shell: bash
+      id: run
+      run: |
+        docker pull ${{ inputs.IMAGE_ID_TAG }}
+        ${{ format(inputs.COMMAND, inputs.IMAGE_ID_TAG }} | tee /tmp/output.txt
+        SUCCESS="$([[ "${PIPESTATUS[0]}" == "0" ]] && echo "success" || echo "failure")"
+        echo "SUCCESS=$SUCCESS" >> $GITHUB_OUTPUT
+
+    - uses: ausaccessfed/workflows/.github/actions/summarise@main
+      with:
+        OUTPUT_FILE: '/tmp/output.txt'
+        TITLE: 'Output for: ${{ inputs.COMMAND }}'
+        SUCCESS: ${{ steps.run.outputs.SUCCESS }}
+
+    - name: zip artifacts
+      shell: bash
+      id: zip_failures
+      if: always() && steps.run.outcome == 'failure' && inputs.IS_DEFAULT_BRANCH_PUSH != 'true' && inputs.SAVE_ARTIFACTS == 'true'
+      run: |
+        if [ -n "$(find /tmp/screenshots -mindepth 1 -print -quit)" ]; then
+          zip -r screenshots.zip /tmp/screenshots
+          echo "UPLOAD_FAILURES=true" >> $GITHUB_OUTPUT
+          COMMAND_CLEANED=$(echo "${{inputs.COMMAND}}" | tr '[:space:]/\:*?"<>|' '_' )
+          echo "UPLOAD_UUID=$(uuidgen)-${COMMAND_CLEANED:0:200}" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Upload screenshots
+      uses: actions/upload-artifact@0b2256b8c012f0828dc542b3febcab082c67f72b # v4.3.4
+      if: always() && steps.zip_failures.outputs.UPLOAD_FAILURES == 'true' && inputs.IS_DEFAULT_BRANCH_PUSH != 'true' && inputs.SAVE_ARTIFACTS == 'true'
+      with:
+        name: failed_images-${{steps.zip_failures.outputs.UPLOAD_UUID}}
+        path: screenshots.zip
+        retention-days: 7
