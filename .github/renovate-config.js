@@ -9,6 +9,10 @@ module.exports = {
   platform: 'github',
   forkProcessing: 'disabled',
   labels: ['dependencies'],
+  lockFileMaintenance: {
+    enabled: true,
+    schedule: ["every day"],
+  },
   ignorePaths: [
     '**/node_modules/**',
     '**/bower_components/**',
