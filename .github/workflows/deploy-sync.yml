@@ -5,6 +5,9 @@ on:
       ecr_repository:
         required: true
         type: string
+      base_image_repository:
+        default: 'ruby-base'
+        type: string
       dev_url:
         default: ''
         type: string
@@ -202,7 +205,7 @@ jobs:
 
           RUBY_VERSION=$(${{ inputs.version_command }})
           echo "RUBY_VERSION=$RUBY_VERSION" >> $GITHUB_OUTPUT
-          BASE_IMAGE="$GITHUB_REGISTRY_ROOT_REF/ruby-base:${RUBY_VERSION}"
+          BASE_IMAGE="$GITHUB_REGISTRY_ROOT_REF/${{ inputs.base_image_repository }}:${RUBY_VERSION}"
           echo "BASE_IMAGE=$BASE_IMAGE" >> $GITHUB_OUTPUT
 
           # Strip git ref prefix from version
