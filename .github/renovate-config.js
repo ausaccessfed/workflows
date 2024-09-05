@@ -87,11 +87,11 @@ module.exports = {
     },
   ],
   packageRules: [
-    //{
-    //matchPackageNames: ['cost-analyzer'],
-    // sourceUrl: 'https://github.com/kubecost/cost-analyzer-helm-chart',
-    //registryUrl: 'https://kubecost.github.io/cost-analyzer'
-    // },
+    {
+      matchPackageNames: ['cost-analyzer'],
+      sourceUrl: 'https://github.com/kubecost/cost-analyzer-helm-chart',
+      registryUrl: 'https://kubecost.github.io/cost-analyzer'
+    },
     {
       matchDatasources: ["docker"],
       matchPackageNames: ["rockylinux"],
