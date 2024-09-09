@@ -93,6 +93,12 @@ module.exports = {
       registryUrl: 'https://kubecost.github.io/cost-analyzer'
     },
     {
+      matchPackageNames: ['loki'],
+      sourceUrl: 'https://github.com/grafana/loki/tree/main/production/helm/loki',
+      registryUrl: 'https://grafana.github.io/helm-charts',
+      changelogUrl: 'https://github.com/grafana/loki/blob/main/production/helm/loki/CHANGELOG.md'
+    },
+    {
       matchDatasources: ["docker"],
       matchPackageNames: ["rockylinux"],
       versioning: "semver"
