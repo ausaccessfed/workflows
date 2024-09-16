@@ -11,7 +11,6 @@ module.exports = {
   labels: ['dependencies'],
   lockFileMaintenance: {
     enabled: true,
-    schedule: ["every day"],
   },
   ignorePaths: [
     '**/node_modules/**',
@@ -85,6 +84,13 @@ module.exports = {
       ],
       datasourceTemplate: 'helm',
     },
+    {
+      fileMatch: ["kustomization.yaml"],
+      matchStrings: [
+        "image:\\s*(?<depName>\\S+):(?<currentValue>\\S+)"
+      ],
+      datasourceTemplate: "docker"
+    },
   ],
   packageRules: [
     {
@@ -102,13 +108,6 @@ module.exports = {
       matchDatasources: ["docker"],
       matchPackageNames: ["rockylinux"],
       versioning: "semver"
-    },
-    {
-      fileMatch: ["kustomization.yaml"],
-      matchStrings: [
-        "image:\\s*(?<depName>\\S+):(?<currentValue>\\S+)"
-      ],
-      datasourceTemplate: "docker"
     },
     {
       matchDatasources: ['endoflife-date'],
