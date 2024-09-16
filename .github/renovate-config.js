@@ -96,12 +96,12 @@ module.exports = {
     {
       matchPackageNames: ['cost-analyzer'],
       sourceUrl: 'https://github.com/kubecost/cost-analyzer-helm-chart',
-      registryUrl: 'https://kubecost.github.io/cost-analyzer'
+      registryUrls: ['https://kubecost.github.io/cost-analyzer']
     },
     {
       matchPackageNames: ['loki'],
       sourceUrl: 'https://github.com/grafana/loki/tree/main/production/helm/loki',
-      registryUrl: 'https://grafana.github.io/helm-charts',
+      registryUrls: ['https://grafana.github.io/helm-charts'],
       changelogUrl: 'https://github.com/grafana/loki/blob/main/production/helm/loki/CHANGELOG.md'
     },
     {
