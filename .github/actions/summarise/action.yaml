@@ -63,7 +63,7 @@ runs:
           const fs = require("fs");
 
           const create_comment = "true" == "${{ inputs.CREATE_COMMENT }}"
-          const output = fs.readFileSync("${{ inputs.output_file }}", "utf8");
+          let output = fs.readFileSync("${{ inputs.output_file }}", "utf8");
           const task_failed =  "false" == "${{ inputs.SUCCESS }}"
           const title = "${{ inputs.title }}"
           const issue_number = "${{ inputs.pr_number }}"
