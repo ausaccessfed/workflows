@@ -78,8 +78,6 @@ runs:
             return comment.user.type === 'Bot' && comment.body.includes(title)
           })
 
-          const fs = require("fs");
-
           const MAX_GITHUB_COMMENT_LENGTH = 65536 - 100;
           output = output.slice(0, MAX_GITHUB_COMMENT_LENGTH)
           if (output.length == MAX_GITHUB_COMMENT_LENGTH) {
