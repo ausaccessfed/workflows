@@ -60,6 +60,8 @@ runs:
       with:
         github-token: ${{ github.token }}
         script: |
+          const fs = require("fs");
+
           const create_comment = "true" == "${{ inputs.CREATE_COMMENT }}"
           const output = fs.readFileSync("${{ inputs.output_file }}", "utf8");
           const task_failed =  "false" == "${{ inputs.SUCCESS }}"
