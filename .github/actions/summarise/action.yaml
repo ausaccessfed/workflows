@@ -89,7 +89,7 @@ runs:
             output_title = "Show Failed Output"
           }
 
-          let body = `${title}
+          const body = `${title}
           <details><summary>${output_title}</summary>
 
           \`\`\`\n
@@ -118,7 +118,7 @@ runs:
               issue_number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: output
+              body
             })
           }
 
