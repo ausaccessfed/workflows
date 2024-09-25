@@ -61,8 +61,7 @@ runs:
         github-token: ${{ github.token }}
         script: |
           const create_comment = "true" == "${{ inputs.CREATE_COMMENT }}"
-          const output = fs.readFileSync("${{ inputs.output_file }}, "utf8");
-          let output_cleaned = output.split(/(Terraform used the selected providers|No changes)/).slice(1).join("").split("Note:")[0]
+          const output = fs.readFileSync("${{ inputs.output_file }}", "utf8");
           const task_failed =  "false" == "${{ inputs.SUCCESS }}"
           const title = "${{ inputs.title }}"
           const issue_number = "${{ inputs.pr_number }}"
@@ -79,13 +78,10 @@ runs:
 
           const fs = require("fs");
 
-          if (output_cleaned.length == 0 ) {
-            output_cleaned = output
-          }
           const MAX_GITHUB_COMMENT_LENGTH = 65536 - 100;
-          output_cleaned = output_cleaned.slice(0, MAX_GITHUB_COMMENT_LENGTH)
-          if (output_cleaned.length == MAX_GITHUB_COMMENT_LENGTH) {
-            output_cleaned += "...\nPlease review the output in github actions logs because it's too long"
+          output = output.slice(0, MAX_GITHUB_COMMENT_LENGTH)
+          if (output.length == MAX_GITHUB_COMMENT_LENGTH) {
+            output += "...\nPlease review the output in github actions logs because it's too long"
           }
 
           let output_title = "Show Output"
@@ -97,7 +93,7 @@ runs:
           <details><summary>${output_title}</summary>
 
           \`\`\`\n
-          ${output_cleaned}
+          ${output}
           \`\`\`
 
           </details>`
