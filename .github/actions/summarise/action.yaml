@@ -13,6 +13,12 @@ inputs:
   ENABLE_PR:
     description: 'If true, will post pr as comment (STILL TODO)'
     default: 'false'
+  CREATE_COMMENT:
+    description: 'If true, will create a new comment, if false will delete existing comment'
+    default: 'true'
+  PR_NUMBER:
+    description: 'PR number to post comment to'
+    default: ''
   ENABLE_ACTION_SUMMARY:
     description: 'If true, will post to summary tab in flow'
     default: 'true'
@@ -47,11 +53,80 @@ runs:
           cp "${{ inputs.OUTPUT_FILE }}" chunk_aa
           echo "File is small enough, no need to split."
         fi
-    - id: pr_comment
-      shell: bash
+
+    - shell: bash
       if: inputs.ENABLE_PR == 'true'
-      run: |
-        echo "TODO:"
+      uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+      id: update-pull-request
+      with:
+        github-token: ${{ github.token }}
+        script: |
+          const create_comment = "true" == "${{ inputs.CREATE_COMMENT }}"
+          const output = fs.readFileSync("${{ inputs.output_file }}, "utf8");
+          let output_cleaned = output.split(/(Terraform used the selected providers|No changes)/).slice(1).join("").split("Note:")[0]
+          const task_failed =  "false" == "${{ inputs.SUCCESS }}"
+          const title = "${{ inputs.title }}"
+          const issue_number = "${{ inputs.pr_number }}"
+
+          // Retrieve existing bot comments for the PR
+          const { data: comments } = await github.rest.issues.listComments({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            issue_number,
+          })
+          const botComment = comments.find(comment => {
+            return comment.user.type === 'Bot' && comment.body.includes(title)
+          })
+
+          const fs = require("fs");
+
+          if (output_cleaned.length == 0 ) {
+            output_cleaned = output
+          }
+          const MAX_GITHUB_COMMENT_LENGTH = 65536 - 100;
+          output_cleaned = output_cleaned.slice(0, MAX_GITHUB_COMMENT_LENGTH)
+          if (output_cleaned.length == MAX_GITHUB_COMMENT_LENGTH) {
+            output_cleaned += "...\nPlease review the output in github actions logs because it's too long"
+          }
+
+          let output_title = "Show Output"
+          if (task_failed == "true") {
+            output_title = "Show Failed Output"
+          }
+
+          let body = `${title}
+          <details><summary>${output_title}</summary>
+
+          \`\`\`\n
+          ${output_cleaned}
+          \`\`\`
+
+          </details>`
+
+          if (botComment) {
+            if (create_comment) {
+              github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body
+              })
+            } else {
+             github.rest.issues.deleteComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+              })
+            }
+          } else if (create_comment){
+            github.rest.issues.createComment({
+              issue_number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: output
+            })
+          }
+
     - id: slack_message
       shell: bash
       if: inputs.SLACK_WEBHOOK_URL != ''
