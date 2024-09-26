@@ -44,6 +44,8 @@ runs:
             echo "$file" >> "$OUTPUT_FILE"
             cat "$file" >> "$OUTPUT_FILE"
             echo "Appended $file to $OUTPUT_FILE"
+          else
+            echo "$file does not exist or is empty."
           fi
         done
 
