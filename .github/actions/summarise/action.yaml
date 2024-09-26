@@ -54,10 +54,10 @@ runs:
         # Finish early if CLEANED_MESSAGE is empty
         if [ -z "$CLEANED_MESSAGE" ]; then
           echo "Empty output"
-          HAS_OUTPUT=true
+          HAS_OUTPUT=false
         else
           echo "Output file created."
-          HAS_OUTPUT=false
+          HAS_OUTPUT=true
         fi
         echo "HAS_OUTPUT=$HAS_OUTPUT" >> $GITHUB_OUTPUT
 
