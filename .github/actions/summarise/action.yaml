@@ -40,12 +40,12 @@ runs:
         index=0
         for file in $(echo "${{ inputs.OUTPUT_FILES }},/tmp/output_message.txt" | tr ',' ' '); do
           if [ -e "$file" ] && [ "$(cat "$file" | tr -d '[:space:]')" != "" ]; then
-            FILE_SIZE=$((FILE_SIZE + $(stat -c%s "$file")))
+            FILE_SIZE=$(stat -c%s "$file")
             if [ $FILE_SIZE -gt $CHUNK_SIZE ]; then
-              split -b $CHUNK_SIZE "$file" chunk_${index}_
+              split -b $CHUNK_SIZE "$file" "chunk_${index}_"
               echo "$file split into chunks."
             else
-              cp "$file" chunk_${index}_aa
+              cp "$file" "chunk_${index}_aa"
               echo "$file is small enough, no need to split."
             fi
             index=$((index + 1))
