@@ -142,14 +142,15 @@ runs:
         chmod +x /tmp/slack_webhook.sh
         /tmp/slack_webhook.sh "${{ steps.split_file.outputs.TITLE }}" "${{ inputs.SLACK_WEBHOOK_URL }}" "${{github.repository}}" "${{github.run_id}}" "false"
 
-    - id: summary_tab_0
-      if: inputs.ENABLE_ACTION_SUMMARY == 'true' && parseInt(steps.create_output.outputs.FILE_COUNT) >= 0
+    - id: summary_tab
+      if: inputs.ENABLE_ACTION_SUMMARY == 'true' && steps.create_output.outputs.FILE_COUNT != '0'
       shell: bash
       run: |
-        for chunk in chunk_0_*; do
+        part=1
+        for chunk in chunk_*; do
           if [ -s "$chunk" ]; then
             echo '<details>' >> $GITHUB_STEP_SUMMARY
-            echo "<summary>${{ steps.split_file.outputs.TITLE }} (part 0)</summary>" >> $GITHUB_STEP_SUMMARY
+            echo "<summary>${{ steps.split_file.outputs.TITLE }} (part $part)</summary>" >> $GITHUB_STEP_SUMMARY
             echo '  ' >> $GITHUB_STEP_SUMMARY
             echo '```' >> $GITHUB_STEP_SUMMARY
             echo "$(cat $chunk)" >> $GITHUB_STEP_SUMMARY
@@ -158,47 +159,9 @@ runs:
           else
             echo "Output file is empty, skipping summary."
           fi
+          part=$((part + 1))
         done
-    - id: summary_tab_1
-      if: inputs.ENABLE_ACTION_SUMMARY == 'true' && parseInt(steps.create_output.outputs.FILE_COUNT) >= 1
-      shell: bash
-      run: |
-        for chunk in chunk_1_*; do
-          if [ -s "$chunk" ]; then
-            echo '<details>' >> $GITHUB_STEP_SUMMARY
-            echo "<summary>${{ steps.split_file.outputs.TITLE }} (part 1)</summary>" >> $GITHUB_STEP_SUMMARY
-            echo '  ' >> $GITHUB_STEP_SUMMARY
-            echo '```' >> $GITHUB_STEP_SUMMARY
-            echo "$(cat $chunk)" >> $GITHUB_STEP_SUMMARY
-            echo '```' >> $GITHUB_STEP_SUMMARY
-            echo '</details>' >> $GITHUB_STEP_SUMMARY
-          else
-            echo "Output file is empty, skipping summary."
-          fi
-        done
-    - id: summary_tab_2
-      if: inputs.ENABLE_ACTION_SUMMARY == 'true' && parseInt(steps.create_output.outputs.FILE_COUNT) >= 2
-      shell: bash
-      run: |
-        for chunk in chunk_2_*; do
-          if [ -s "$chunk" ]; then
-            echo '<details>' >> $GITHUB_STEP_SUMMARY
-            echo "<summary>${{ steps.split_file.outputs.TITLE }} (part 2)</summary>" >> $GITHUB_STEP_SUMMARY
-            echo '  ' >> $GITHUB_STEP_SUMMARY
-            echo '```' >> $GITHUB_STEP_SUMMARY
-            echo "$(cat $chunk)" >> $GITHUB_STEP_SUMMARY
-            echo '```' >> $GITHUB_STEP_SUMMARY
-            echo '</details>' >> $GITHUB_STEP_SUMMARY
-          else
-            echo "Output file is empty, skipping summary."
-          fi
-        done
-    - id: verify_size
-      if: steps.create_output.outputs.FILE_COUNT >= parseInt(steps.create_output.outputs.FILE_COUNT) >= 3
-      shell: bash
-      run: |
-        echo "We shouldn't be getting outputs this big!"
-        exit 1
+
     - id: throw_error
       shell: bash
       if: inputs.SUCCESS == 'failure' || inputs.SUCCESS == 'false'
