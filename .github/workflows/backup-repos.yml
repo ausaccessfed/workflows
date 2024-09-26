@@ -48,7 +48,7 @@ jobs:
       - uses: ausaccessfed/workflows/.github/actions/summarise@main
         if: always() && steps.failure_check.outputs.SUCCESS != 'true'
         with:
-          OUTPUT_FILE: '/tmp/output.txt'
+          OUTPUT_FILES: '/tmp/output.txt'
           ENABLE_ACTION_SUMMARY: true
           SLACK_WEBHOOK_URL: ${{ secrets.DEV_OPS_SLACK_URL }}
           TITLE: 'Repo backup failed!!!!'

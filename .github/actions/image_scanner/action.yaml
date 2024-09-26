@@ -96,6 +96,6 @@ runs:
 
     - uses: ausaccessfed/workflows/.github/actions/summarise@main
       with:
-        OUTPUT_FILE: '/tmp/output.txt'
+        OUTPUT_FILES: '/tmp/output.txt'
         TITLE: ${{ inputs.SCAN_NAME }} Check ${{ (inputs.SUPPRESS_FAILURE == 'true' && steps.task.outcome == 'failure' && '(Failed, but marked as skippable)') || '' }}
         SUCCESS: ${{ inputs.SUPPRESS_FAILURE == 'true' || steps.task.outcome }}
