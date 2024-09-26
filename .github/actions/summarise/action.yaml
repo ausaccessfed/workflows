@@ -62,7 +62,7 @@ runs:
         echo "HAS_OUTPUT=$HAS_OUTPUT" >> $GITHUB_OUTPUT
 
     - id: split_file
-      if: steps.create_output.outputs.HAS_OUTPUT == "true"
+      if: steps.create_output.outputs.HAS_OUTPUT == 'true'
       shell: bash
       run: |
         echo "TITLE=$(echo "${{ inputs.TITLE }}" | tr '()' '  ' | tr '"' "'")" >> $GITHUB_OUTPUT
@@ -77,7 +77,7 @@ runs:
           echo "File is small enough, no need to split."
         fi
 
-    - if: inputs.ENABLE_PR == 'true' && steps.create_output.outputs.HAS_OUTPUT == "true"
+    - if: inputs.ENABLE_PR == 'true' && steps.create_output.outputs.HAS_OUTPUT == 'true'
       id: update-pull-request
       uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
       with:
@@ -85,7 +85,7 @@ runs:
         script: |
           const fs = require("fs");
 
-          const create_comment = "true" == "${{ inputs.CREATE_COMMENT }}"
+          const create_comment = 'true' == "${{ inputs.CREATE_COMMENT }}"
           let output = fs.readFileSync("${{ steps.create_output.outputs.OUTPUT_FILE }}", "utf8");
           const task_failed =  "false" == "${{ inputs.SUCCESS }}"
           const title = "${{ inputs.title }}"
@@ -108,7 +108,7 @@ runs:
           }
 
           let output_title = "Show Output"
-          if (task_failed == "true") {
+          if (task_failed == 'true') {
             output_title = "Show Failed Output"
           }
 
@@ -147,14 +147,14 @@ runs:
 
     - id: slack_message
       shell: bash
-      if: inputs.SLACK_WEBHOOK_URL != '' && steps.create_output.outputs.HAS_OUTPUT == "true"
+      if: inputs.SLACK_WEBHOOK_URL != '' && steps.create_output.outputs.HAS_OUTPUT == 'true'
       run: |
         wget -O /tmp/slack_webhook.sh https://raw.githubusercontent.com/ausaccessfed/workflows/main/scripts/slack_webhook.sh
         chmod +x /tmp/slack_webhook.sh
         /tmp/slack_webhook.sh "${{ steps.split_file.outputs.TITLE }}" "${{ inputs.SLACK_WEBHOOK_URL }}" "${{github.repository}}" "${{github.run_id}}" "false"
 
     - id: summary_tab_1
-      if: inputs.ENABLE_ACTION_SUMMARY == 'true' && steps.create_output.outputs.HAS_OUTPUT == "true"
+      if: inputs.ENABLE_ACTION_SUMMARY == 'true' && steps.create_output.outputs.HAS_OUTPUT == 'true'
       shell: bash
       run: |
         if [ -s "chunk_aa" ]; then
@@ -169,7 +169,7 @@ runs:
           echo "Output file is empty, skipping summary."
         fi
     - id: summary_tab_2
-      if: inputs.ENABLE_ACTION_SUMMARY == 'true' && steps.create_output.outputs.HAS_OUTPUT == "true"
+      if: inputs.ENABLE_ACTION_SUMMARY == 'true' && steps.create_output.outputs.HAS_OUTPUT == 'true'
       shell: bash
       run: |
         if [ -s "chunk_ab" ]; then
@@ -182,7 +182,7 @@ runs:
           echo '</details>' >> $GITHUB_STEP_SUMMARY
         fi
     - id: summary_tab_3
-      if: inputs.ENABLE_ACTION_SUMMARY == 'true' && steps.create_output.outputs.HAS_OUTPUT == "true"
+      if: inputs.ENABLE_ACTION_SUMMARY == 'true' && steps.create_output.outputs.HAS_OUTPUT == 'true'
       shell: bash
       run: |
         if [ -s "chunk_ac" ]; then
@@ -195,7 +195,7 @@ runs:
           echo '</details>' >> $GITHUB_STEP_SUMMARY
         fi
     - id: verify_size
-      if: steps.create_output.outputs.HAS_OUTPUT == "true"
+      if: steps.create_output.outputs.HAS_OUTPUT == 'true'
       shell: bash
       run: |
         if [ -s "chunk_ad" ]; then
