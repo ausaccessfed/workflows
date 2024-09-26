@@ -84,7 +84,7 @@ runs:
             return comment.user.type === 'Bot' && comment.body.includes(title)
           })
 
-          let body = chunks.reduce((acc, chunk) => {
+          let body = chunks.reduce((acc, chunk, i) => {
             let output = fs.readFileSync(chunk, "utf8");
 
             let output_title = "Show Output"
@@ -93,7 +93,7 @@ runs:
             }
 
             const body = `## ${title}
-            <details><summary>${output_title} (${chunk})</summary>
+            <details><summary>${output_title} (part ${i})</summary>
 
             \`\`\`\n
             ${output}
