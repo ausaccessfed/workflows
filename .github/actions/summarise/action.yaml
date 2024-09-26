@@ -49,7 +49,7 @@ runs:
           fi
         done
 
-        CLEANED_MESSAGE=$(echo "${{ inputs.OUTPUT_MESSAGE }}" | tr -d '[:space:]')
+        CLEANED_MESSAGE=$(cat "$OUTPUT_FILE" | tr -d '[:space:]')
         # Finish early if CLEANED_MESSAGE is empty
         if [ -z "$CLEANED_MESSAGE" ]; then
           echo "Empty output"
