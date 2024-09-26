@@ -89,7 +89,7 @@ runs:
             output_title = "Show Failed Output"
           }
 
-          const body = `${title}
+          const body = `## ${title}
           <details><summary>${output_title}</summary>
 
           \`\`\`\n
