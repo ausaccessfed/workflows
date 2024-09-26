@@ -56,7 +56,7 @@ runs:
 
         echo "FILE_COUNT=$index" >> $GITHUB_OUTPUT
 
-    - if: inputs.ENABLE_PR == 'true' && steps.create_output.outputs.FILE_COUNT != '0'
+    - if: inputs.ENABLE_PR == 'true' && steps.split_file.outputs.FILE_COUNT != '0'
       id: update-pull-request
       uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
       with:
@@ -136,14 +136,14 @@ runs:
 
     - id: slack_message
       shell: bash
-      if: inputs.SLACK_WEBHOOK_URL != '' && steps.create_output.outputs.FILE_COUNT != '0'
+      if: inputs.SLACK_WEBHOOK_URL != '' && steps.split_file.outputs.FILE_COUNT != '0'
       run: |
         wget -O /tmp/slack_webhook.sh https://raw.githubusercontent.com/ausaccessfed/workflows/main/scripts/slack_webhook.sh
         chmod +x /tmp/slack_webhook.sh
         /tmp/slack_webhook.sh "${{ steps.split_file.outputs.TITLE }}" "${{ inputs.SLACK_WEBHOOK_URL }}" "${{github.repository}}" "${{github.run_id}}" "false"
 
     - id: summary_tab
-      if: inputs.ENABLE_ACTION_SUMMARY == 'true' && steps.create_output.outputs.FILE_COUNT != '0'
+      if: inputs.ENABLE_ACTION_SUMMARY == 'true' && steps.split_file.outputs.FILE_COUNT != '0'
       shell: bash
       run: |
         part=1
