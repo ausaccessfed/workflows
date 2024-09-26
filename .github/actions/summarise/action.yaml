@@ -39,8 +39,7 @@ runs:
         OUTPUT_FILE="/tmp/$(uuidgen).txt"
         echo "OUTPUT_FILE=$OUTPUT_FILE" >> $GITHUB_OUTPUT
         echo "${{ inputs.OUTPUT_MESSAGE }}" > $OUTPUT_FILE
-        files=(${OUTPUT_FILES//,/ })
-        for file in "${files[@]}"; do
+        for file in $(echo "$OUTPUT_FILES" | tr ',' ' '); do
           if [ -e "$file" ]; then
             echo "$file" >> "$OUTPUT_FILE"
             cat "$file" >> "$OUTPUT_FILE"
