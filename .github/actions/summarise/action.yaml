@@ -65,7 +65,7 @@ runs:
           const fs = require("fs");
 
           const create_comment = 'true' == "${{ inputs.CREATE_COMMENT }}"
-          # get all files named chunk_*
+          // get all files named chunk_*
           const chunks = fs.readdirSync(".").filter(fn => fn.includes('chunk_'));
           const task_failed =  "false" == "${{ inputs.SUCCESS }}"
           const issue_number = "${{ inputs.pr_number }}"
@@ -80,28 +80,12 @@ runs:
           const MAX_GITHUB_COMMENT_LENGTH = 65536 - 100;
 
           const title = `${{ inputs.title }}`
-          const botComments = comments.find(comment => {
+          const botComment = comments.find(comment => {
             return comment.user.type === 'Bot' && comment.body.includes(title)
           })
 
-          botComments.forEach(botComment => github.rest.issues.deleteComment(
-              {
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                comment_id: botComment.id,
-              })
-          )
-
-          chunks.forEach(chunk) => {
+          let body = chunks.reduce((acc, chunk) => {
             let output = fs.readFileSync(chunk, "utf8");
-
-            title = `${{ inputs.title }} (${chunk})`
-
-            output = output.slice(0, MAX_GITHUB_COMMENT_LENGTH)
-            # TODO: we could sub split and loop those also, will wait until i see this happen
-            if (output.length == MAX_GITHUB_COMMENT_LENGTH) {
-              output += "...\nPlease review the output in github actions logs because it's too long"
-            }
 
             let output_title = "Show Output"
             if (task_failed == 'true') {
@@ -109,21 +93,46 @@ runs:
             }
 
             const body = `## ${title}
-            <details><summary>${output_title}</summary>
+            <details><summary>${output_title} (${chunk})</summary>
 
             \`\`\`\n
             ${output}
             \`\`\`
 
-            </details>`
+            </details>\n`
 
+            return acc + body
+          }, "")
+
+          body = body.slice(0, MAX_GITHUB_COMMENT_LENGTH)
+          // TODO: we could sub split and loop those also, will wait until i see this happen
+          if (body.length == MAX_GITHUB_COMMENT_LENGTH) {
+            body += "...\nPlease review the output in github actions logs because it's too long"
+          }
+
+          if (botComment) {
+            if (create_comment) {
+              github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body
+              })
+            } else {
+            github.rest.issues.deleteComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+              })
+            }
+          } else if (create_comment){
             github.rest.issues.createComment({
               issue_number,
               owner: context.repo.owner,
               repo: context.repo.repo,
               body
             })
-          })
+          }
 
     - id: slack_message
       shell: bash
