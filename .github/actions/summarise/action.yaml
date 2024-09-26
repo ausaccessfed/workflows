@@ -26,57 +26,37 @@ inputs:
     description: 'Summary Title'
   SUCCESS:
     description: 'If the task was successful'
-outputs:
-  GITHUB_OUTPUT_FILE:
-    description: 'output file'
-    value: ${{ steps.create_output.outputs.OUTPUT_FILE }}
 runs:
   using: 'composite'
   steps:
-    - id: create_output
+    - id: split_file
       shell: bash
       run: |
-        OUTPUT_FILE="/tmp/$(uuidgen).txt"
-        echo "OUTPUT_FILE=$OUTPUT_FILE" >> $GITHUB_OUTPUT
-        echo "${{ inputs.OUTPUT_MESSAGE }}" > $OUTPUT_FILE
-        for file in $(echo "${{ inputs.OUTPUT_FILES }}" | tr ',' ' '); do
+        echo "TITLE=$(echo "${{ inputs.TITLE }}" | tr '()' '  ' | tr '"' "'")" >> $GITHUB_OUTPUT
+        CHUNK_SIZE=$((900 * 1024)) # 700KB in bytes
+
+        echo "${{ inputs.OUTPUT_MESSAGE }}" > /tmp/output_message.txt
+
+        index=0
+        for file in $(echo "${{ inputs.OUTPUT_FILES }},/tmp/output_message.txt" | tr ',' ' '); do
           if [ -e "$file" ] && [ "$(cat "$file" | tr -d '[:space:]')" != "" ]; then
-            echo "$file" >> "$OUTPUT_FILE"
-            cat "$file" >> "$OUTPUT_FILE"
-            echo "Appended $file to $OUTPUT_FILE"
+            FILE_SIZE=$((FILE_SIZE + $(stat -c%s "$file")))
+            if [ $FILE_SIZE -gt $CHUNK_SIZE ]; then
+              split -b $CHUNK_SIZE "$file" chunk_${index}_
+              echo "$file split into chunks."
+            else
+              cp "$file" chunk_${index}_aa
+              echo "$file is small enough, no need to split."
+            fi
+            index=$((index + 1))
           else
             echo "$file does not exist or is empty."
           fi
         done
 
-        CLEANED_MESSAGE=$(cat "$OUTPUT_FILE" | tr -d '[:space:]')
-        # Finish early if CLEANED_MESSAGE is empty
-        if [ -z "$CLEANED_MESSAGE" ]; then
-          echo "Empty output"
-          HAS_OUTPUT=false
-        else
-          echo "Output file created."
-          HAS_OUTPUT=true
-        fi
-        echo "HAS_OUTPUT=$HAS_OUTPUT" >> $GITHUB_OUTPUT
+        echo "FILE_COUNT=$index" >> $GITHUB_OUTPUT
 
-    - id: split_file
-      if: steps.create_output.outputs.HAS_OUTPUT == 'true'
-      shell: bash
-      run: |
-        echo "TITLE=$(echo "${{ inputs.TITLE }}" | tr '()' '  ' | tr '"' "'")" >> $GITHUB_OUTPUT
-        FILE_SIZE=$(stat -c%s "${{ steps.create_output.outputs.OUTPUT_FILE }}")
-        CHUNK_SIZE=$((900 * 1024)) # 700KB in bytes
-
-        if [ $FILE_SIZE -gt $CHUNK_SIZE ]; then
-          split -b $CHUNK_SIZE "${{ steps.create_output.outputs.OUTPUT_FILE }}" chunk_
-          echo "File split into chunks."
-        else
-          cp "${{ steps.create_output.outputs.OUTPUT_FILE }}" chunk_aa
-          echo "File is small enough, no need to split."
-        fi
-
-    - if: inputs.ENABLE_PR == 'true' && steps.create_output.outputs.HAS_OUTPUT == 'true'
+    - if: inputs.ENABLE_PR == 'true' && steps.create_output.outputs.FILE_COUNT != '0'
       id: update-pull-request
       uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
       with:
@@ -85,9 +65,9 @@ runs:
           const fs = require("fs");
 
           const create_comment = 'true' == "${{ inputs.CREATE_COMMENT }}"
-          let output = fs.readFileSync("${{ steps.create_output.outputs.OUTPUT_FILE }}", "utf8");
+          // get all files named chunk_*
+          const chunks = fs.readdirSync(".").filter(fn => fn.includes('chunk_'));
           const task_failed =  "false" == "${{ inputs.SUCCESS }}"
-          const title = "${{ inputs.title }}"
           const issue_number = "${{ inputs.pr_number }}"
 
           // Retrieve existing bot comments for the PR
@@ -96,29 +76,39 @@ runs:
             repo: context.repo.repo,
             issue_number,
           })
+
+          const MAX_GITHUB_COMMENT_LENGTH = 65536 - 100;
+
+          const title = `${{ inputs.title }}`
           const botComment = comments.find(comment => {
             return comment.user.type === 'Bot' && comment.body.includes(title)
           })
 
-          const MAX_GITHUB_COMMENT_LENGTH = 65536 - 100;
-          output = output.slice(0, MAX_GITHUB_COMMENT_LENGTH)
-          if (output.length == MAX_GITHUB_COMMENT_LENGTH) {
-            output += "...\nPlease review the output in github actions logs because it's too long"
+          let body = chunks.reduce((acc, chunk) => {
+            let output = fs.readFileSync(chunk, "utf8");
+
+            let output_title = "Show Output"
+            if (task_failed == 'true') {
+              output_title = "Show Failed Output"
+            }
+
+            const body = `## ${title}
+            <details><summary>${output_title} (${chunk})</summary>
+
+            \`\`\`\n
+            ${output}
+            \`\`\`
+
+            </details>\n`
+
+            return acc + body
+          }, "")
+
+          body = body.slice(0, MAX_GITHUB_COMMENT_LENGTH)
+          // TODO: we could sub split and loop those also, will wait until i see this happen
+          if (body.length == MAX_GITHUB_COMMENT_LENGTH) {
+            body += "...\nPlease review the output in github actions logs because it's too long"
           }
-
-          let output_title = "Show Output"
-          if (task_failed == 'true') {
-            output_title = "Show Failed Output"
-          }
-
-          const body = `## ${title}
-          <details><summary>${output_title}</summary>
-
-          \`\`\`\n
-          ${output}
-          \`\`\`
-
-          </details>`
 
           if (botComment) {
             if (create_comment) {
@@ -129,7 +119,7 @@ runs:
                 body
               })
             } else {
-             github.rest.issues.deleteComment({
+            github.rest.issues.deleteComment({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 comment_id: botComment.id,
@@ -146,64 +136,37 @@ runs:
 
     - id: slack_message
       shell: bash
-      if: inputs.SLACK_WEBHOOK_URL != '' && steps.create_output.outputs.HAS_OUTPUT == 'true'
+      if: inputs.SLACK_WEBHOOK_URL != '' && steps.create_output.outputs.FILE_COUNT != '0'
       run: |
         wget -O /tmp/slack_webhook.sh https://raw.githubusercontent.com/ausaccessfed/workflows/main/scripts/slack_webhook.sh
         chmod +x /tmp/slack_webhook.sh
         /tmp/slack_webhook.sh "${{ steps.split_file.outputs.TITLE }}" "${{ inputs.SLACK_WEBHOOK_URL }}" "${{github.repository}}" "${{github.run_id}}" "false"
 
-    - id: summary_tab_1
-      if: inputs.ENABLE_ACTION_SUMMARY == 'true' && steps.create_output.outputs.HAS_OUTPUT == 'true'
+    - id: summary_tab
+      if: inputs.ENABLE_ACTION_SUMMARY == 'true' && steps.create_output.outputs.FILE_COUNT != '0'
       shell: bash
       run: |
-        if [ -s "chunk_aa" ]; then
-          echo '<details>' >> $GITHUB_STEP_SUMMARY
-          echo "<summary>${{ steps.split_file.outputs.TITLE }} (part 1)</summary>" >> $GITHUB_STEP_SUMMARY
-          echo '  ' >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
-          echo "$(cat chunk_aa)" >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
-          echo '</details>' >> $GITHUB_STEP_SUMMARY
-        else
-          echo "Output file is empty, skipping summary."
-        fi
-    - id: summary_tab_2
-      if: inputs.ENABLE_ACTION_SUMMARY == 'true' && steps.create_output.outputs.HAS_OUTPUT == 'true'
-      shell: bash
-      run: |
-        if [ -s "chunk_ab" ]; then
-          echo '<details>' >> $GITHUB_STEP_SUMMARY
-          echo "<summary>${{ steps.split_file.outputs.TITLE }} (part 1)</summary>" >> $GITHUB_STEP_SUMMARY
-          echo '  ' >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
-          echo "$(cat chunk_ab)" >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
-          echo '</details>' >> $GITHUB_STEP_SUMMARY
-        fi
-    - id: summary_tab_3
-      if: inputs.ENABLE_ACTION_SUMMARY == 'true' && steps.create_output.outputs.HAS_OUTPUT == 'true'
-      shell: bash
-      run: |
-        if [ -s "chunk_ac" ]; then
-          echo '<details>' >> $GITHUB_STEP_SUMMARY
-          echo "<summary>${{ steps.split_file.outputs.TITLE }} (part 1)</summary>" >> $GITHUB_STEP_SUMMARY
-          echo '  ' >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
-          echo "$(cat chunk_ac)" >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
-          echo '</details>' >> $GITHUB_STEP_SUMMARY
-        fi
-    - id: verify_size
-      if: steps.create_output.outputs.HAS_OUTPUT == 'true'
-      shell: bash
-      run: |
-        if [ -s "chunk_ad" ]; then
-          echo "We shouldn't be getting outputs this big!"
-          exit 1
-        fi
+        part=1
+        for chunk in chunk_*; do
+          if [ -s "$chunk" ]; then
+            echo '<details>' >> $GITHUB_STEP_SUMMARY
+            echo "<summary>${{ steps.split_file.outputs.TITLE }} (part $part)</summary>" >> $GITHUB_STEP_SUMMARY
+            echo '  ' >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            echo "$(cat $chunk)" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            echo '</details>' >> $GITHUB_STEP_SUMMARY
+          else
+            echo "Output file is empty, skipping summary."
+          fi
+          part=$((part + 1))
+        done
+
     - id: throw_error
       shell: bash
       if: inputs.SUCCESS == 'failure' || inputs.SUCCESS == 'false'
       run: |
-        cat "${{ steps.create_output.outputs.OUTPUT_FILE }}"
+        for chunk in chunk_*; do
+          cat $chunk
+        done
         exit 1
