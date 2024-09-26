@@ -40,12 +40,10 @@ runs:
         echo "OUTPUT_FILE=$OUTPUT_FILE" >> $GITHUB_OUTPUT
         echo "${{ inputs.OUTPUT_MESSAGE }}" > $OUTPUT_FILE
         for file in $(echo "${{ inputs.OUTPUT_FILES }}" | tr ',' ' '); do
-          if [ -e "$file" ]; then
+          if [ -e "$file" ] && [ -s "$file" ]; then
             echo "$file" >> "$OUTPUT_FILE"
             cat "$file" >> "$OUTPUT_FILE"
             echo "Appended $file to $OUTPUT_FILE"
-          else
-            echo "$file does not exist."
           fi
         done
 
