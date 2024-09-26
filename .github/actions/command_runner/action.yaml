@@ -50,7 +50,7 @@ runs:
 
     - uses: ausaccessfed/workflows/.github/actions/summarise@main
       with:
-        OUTPUT_FILE: '/tmp/output.txt'
+        OUTPUT_FILES: '/tmp/output.txt'
         TITLE: 'Output for: ${{ inputs.COMMAND }}'
         SUCCESS: ${{ steps.run.outputs.SUCCESS }}
 
