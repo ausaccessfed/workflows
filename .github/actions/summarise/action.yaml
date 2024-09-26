@@ -139,7 +139,9 @@ runs:
       shell: bash
       if: inputs.SLACK_WEBHOOK_URL != ''
       run: |
-        ./scripts/slack_webhook.sh "${{ steps.split_file.outputs.TITLE }}" "${{ inputs.SLACK_WEBHOOK_URL }}" "${{github.repository}}" "${{github.run_id}}" "false"
+        wget -O /tmp/slack_webhook.sh https://raw.githubusercontent.com/ausaccessfed/workflows/main/scripts/slack_webhook.sh
+        chmod +x /tmp/slack_webhook.sh
+        /tmp/slack_webhook.sh "${{ steps.split_file.outputs.TITLE }}" "${{ inputs.SLACK_WEBHOOK_URL }}" "${{github.repository}}" "${{github.run_id}}" "false"
 
     - id: summary_tab_1
       if: inputs.ENABLE_ACTION_SUMMARY == 'true'
