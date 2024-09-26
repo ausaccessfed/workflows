@@ -38,12 +38,12 @@ runs:
       run: |
         OUTPUT_FILE="/tmp/$(uuidgen).txt"
         echo "OUTPUT_FILE=$OUTPUT_FILE" >> $GITHUB_OUTPUT
-        echo "${{ inputs.OUTPUT_MESSAGE }}\n" > $OUTPUT_FILE
-        IFS=',' read -r -a files <<< "$OUTPUT_FILES"
+        echo "${{ inputs.OUTPUT_MESSAGE }}" > $OUTPUT_FILE
+        files=(${OUTPUT_FILES//,/ })
         for file in "${files[@]}"; do
           if [ -e "$file" ]; then
-            echo "$file\n" >> "$OUTPUT_FILE"
-            cat "$file\n" >> "$OUTPUT_FILE"
+            echo "$file" >> "$OUTPUT_FILE"
+            cat "$file" >> "$OUTPUT_FILE"
             echo "Appended $file to $OUTPUT_FILE"
           else
             echo "$file does not exist."
