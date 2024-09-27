@@ -86,8 +86,8 @@ on:
           If true, the image will be pushed to the ecr repository with the latest tag,
           skipping the republish manifest hack as ecr doesnt support re writing of manifests at all
           NOTE: this does mean that the image can only be built for one platform ecr side
-        default: false
-        type: boolean
+        default: 'false'
+        type: string
     secrets:
       ROLE:
         required: true
