@@ -533,7 +533,7 @@ jobs:
       - id: image-check
         run: |
           ECR_IMAGE_ID_TAG="${{ needs.init.outputs.ECR_IMAGE_ID_TAG }}"
-          if [ "${{ inputs.IS_LAMBDA }}" == "true" ]; then
+          if [ "${{ inputs.is_lambda }}" == "true" ]; then
             ECR_IMAGE_ID_TAG="${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}"
           fi
       - uses: ausaccessfed/workflows/.github/actions/build@main
@@ -582,7 +582,7 @@ jobs:
 
       - uses: ausaccessfed/workflows/.github/actions/publish_manifest@main
         name: Updating ECR manifests
-        if: inputs.IS_LAMBDA == 'false'
+        if: inputs.is_lambda == 'false'
         with:
           BRANCH_NAME: ${{ needs.init.outputs.BRANCH_NAME }}
           ROLE: ${{ secrets.ROLE }}
