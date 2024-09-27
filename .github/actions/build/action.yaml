@@ -16,7 +16,7 @@ inputs:
   GITHUB_ACTOR:
     description: 'github actor used to auth to ghcr'
     default: ''
-  IMAGE_PLATFORMS:
+  IMAGE_PLATFORM:
     description: 'cache from strings'
     required: true
   IMAGE_BUILD_ARGS:
@@ -74,7 +74,7 @@ runs:
       id: envs
       shell: bash
       run: |
-        MATRIX_CLEANED="$(echo "${{ inputs.IMAGE_PLATFORMS }}" | tr / _)"
+        MATRIX_CLEANED="$(echo "${{ inputs.IMAGE_PLATFORM }}" | tr / _)"
 
         if [ "${{inputs.IMAGE_CACHE_FROM}}" != "" ]; then
           echo "IMAGE_CACHE_FROM<<EOF" >> $GITHUB_OUTPUT
@@ -106,7 +106,6 @@ runs:
         cache-from: ${{ steps.envs.outputs.IMAGE_CACHE_FROM }}
         cache-to: ${{ steps.envs.outputs.IMAGE_CACHE_TO }}
         build-args: ${{ inputs.IMAGE_BUILD_ARGS }}
-        platforms: ${{ inputs.IMAGE_PLATFORMS }}
         provenance: false
         sbom: false
 

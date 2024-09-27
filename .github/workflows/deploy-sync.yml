@@ -280,7 +280,7 @@ jobs:
           ECR_REPOSITORY: ${{ inputs.ecr_repository }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_ACTOR: ${{ github.actor }}
-          IMAGE_PLATFORMS: ${{ matrix.arch }}
+          IMAGE_PLATFORM: ${{ matrix.arch }}
           IMAGE_BUILD_ARGS: |
             RUBY_VERSION=${{ needs.init.outputs.IMAGE_VERSION }}
             BASE_IMAGE=${{ needs.init.outputs.BASE_IMAGE }}
@@ -322,7 +322,7 @@ jobs:
           ECR_REPOSITORY: ${{ inputs.ecr_repository }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_ACTOR: ${{ github.actor }}
-          IMAGE_PLATFORMS: ${{ matrix.arch }}
+          IMAGE_PLATFORM: ${{ matrix.arch }}
           IMAGE_BUILD_ARGS: |
             RUBY_VERSION=${{ needs.init.outputs.IMAGE_VERSION }}
             BASE_IMAGE=${{ needs.init.outputs.BASE_IMAGE }}
@@ -530,7 +530,7 @@ jobs:
           ECR_REPOSITORY: ${{ inputs.ecr_repository }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_ACTOR: ${{ github.actor }}
-          IMAGE_PLATFORMS: ${{ matrix.arch }}
+          IMAGE_PLATFORM: ${{ matrix.arch }}
           IMAGE_BUILD_ARGS: |
             RUBY_VERSION=${{ needs.init.outputs.IMAGE_VERSION }}
             BASE_IMAGE=${{ needs.init.outputs.BASE_IMAGE }}
