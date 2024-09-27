@@ -534,7 +534,7 @@ jobs:
         run: |
           ECR_IMAGE_ID_TAG="${{ needs.init.outputs.ECR_IMAGE_ID_TAG }}"
           if [ "${{ inputs.is_lambda }}" == "true" ]; then
-            ECR_IMAGE_ID_TAG="${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}"
+            ECR_IMAGE_ID_TAG="${{ needs.init.outputs.LATEST_IMAGE_ID_TAG }}"
           fi
           echo "ECR_IMAGE_ID_TAG=$ECR_IMAGE_ID_TAG" >> $GITHUB_OUTPUT
       - uses: ausaccessfed/workflows/.github/actions/build@main
