@@ -417,8 +417,10 @@ jobs:
     env:
       DOCKLE_HOST: 'unix:///var/run/docker.sock'
     name: Image scans
+    # TODO: can we have custom commit statuses to link back to the run step?
     steps:
       - uses: ausaccessfed/workflows/.github/actions/image_scanner@main
+        name: 'Trivy Repo Scan'
         with:
           BRANCH_NAME: ${{ needs.init.outputs.BRANCH_NAME }}
           SCAN_NAME: trivy_repo
@@ -426,6 +428,7 @@ jobs:
           GITHUB_ACTOR: ${{ github.actor }}
           SUPPRESS_FAILURE: true
       - uses: ausaccessfed/workflows/.github/actions/image_scanner@main
+        name: 'Dockle Scan'
         with:
           BRANCH_NAME: ${{ needs.init.outputs.BRANCH_NAME }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -433,6 +436,7 @@ jobs:
           IMAGE_TAG_FOR_SCAN: ${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}
           SCAN_NAME: dockle
       - uses: ausaccessfed/workflows/.github/actions/image_scanner@main
+        name: 'Hadolint Scan'
         with:
           BRANCH_NAME: ${{ needs.init.outputs.BRANCH_NAME }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -440,6 +444,7 @@ jobs:
           IMAGE_TAG_FOR_SCAN: ${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}
           SCAN_NAME: hadolint
       - uses: ausaccessfed/workflows/.github/actions/image_scanner@main
+        name: 'Snyk Scan'
         with:
           BRANCH_NAME: ${{ needs.init.outputs.BRANCH_NAME }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -450,6 +455,7 @@ jobs:
           SUPPRESS_FAILURE: true
 
       - uses: ausaccessfed/workflows/.github/actions/image_scanner@main
+        name: 'Grype Scan'
         with:
           BRANCH_NAME: ${{ needs.init.outputs.BRANCH_NAME }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -460,6 +466,7 @@ jobs:
           SUPPRESS_FAILURE: true
 
       - uses: ausaccessfed/workflows/.github/actions/image_scanner@main
+        name: 'Trivy image Scan'
         with:
           BRANCH_NAME: ${{ needs.init.outputs.BRANCH_NAME }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
