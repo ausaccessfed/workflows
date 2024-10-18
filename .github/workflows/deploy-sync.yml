@@ -357,22 +357,6 @@ jobs:
           IMAGE_TAG_SOURCE: ${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}
           JOB_ID: ${{inputs.workflow_id}}-production
 
-  trivy-repo-scan:
-    needs: [init, post-build-test]
-    strategy:
-      matrix:
-        arch: ${{ fromJSON(inputs.platforms) }}
-    runs-on: ${{ (matrix.arch == 'linux/amd64' && needs.init.outputs.INTEL_RUNNER_CHEAP) || needs.init.outputs.ARM_RUNNER_CHEAP }}
-    name: Trivy repo scan
-    steps:
-      - uses: ausaccessfed/workflows/.github/actions/image_scanner@main
-        with:
-          BRANCH_NAME: ${{ needs.init.outputs.BRANCH_NAME }}
-          SCAN_NAME: trivy_repo
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITHUB_ACTOR: ${{ github.actor }}
-          SUPPRESS_FAILURE: true
-
   test-image-commands:
     needs: [init, post-build-test]
     strategy:
@@ -424,7 +408,7 @@ jobs:
           SAVE_ARTIFACTS: ${{inputs.save_test_artifacts && 'true' || 'false'}}
           IMAGE_ID_TAG: ${{needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG}}
 
-  dockle-lint:
+  image-scans:
     needs: [init, post-build-production]
     strategy:
       matrix:
@@ -432,8 +416,15 @@ jobs:
     runs-on: ${{ (matrix.arch == 'linux/amd64' && needs.init.outputs.INTEL_RUNNER_CHEAP) || needs.init.outputs.ARM_RUNNER_CHEAP }}
     env:
       DOCKLE_HOST: 'unix:///var/run/docker.sock'
-    name: Dockle
+    name: Image scans
     steps:
+      - uses: ausaccessfed/workflows/.github/actions/image_scanner@main
+        with:
+          BRANCH_NAME: ${{ needs.init.outputs.BRANCH_NAME }}
+          SCAN_NAME: trivy_repo
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_ACTOR: ${{ github.actor }}
+          SUPPRESS_FAILURE: true
       - uses: ausaccessfed/workflows/.github/actions/image_scanner@main
         with:
           BRANCH_NAME: ${{ needs.init.outputs.BRANCH_NAME }}
@@ -441,15 +432,6 @@ jobs:
           GITHUB_ACTOR: ${{ github.actor }}
           IMAGE_TAG_FOR_SCAN: ${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}
           SCAN_NAME: dockle
-
-  hadolint:
-    needs: [init, post-build-production]
-    strategy:
-      matrix:
-        arch: ${{ fromJSON(inputs.platforms) }}
-    runs-on: ${{ (matrix.arch == 'linux/amd64' && needs.init.outputs.INTEL_RUNNER_CHEAP) || needs.init.outputs.ARM_RUNNER_CHEAP }}
-    name: Hadolint
-    steps:
       - uses: ausaccessfed/workflows/.github/actions/image_scanner@main
         with:
           BRANCH_NAME: ${{ needs.init.outputs.BRANCH_NAME }}
@@ -457,15 +439,6 @@ jobs:
           GITHUB_ACTOR: ${{ github.actor }}
           IMAGE_TAG_FOR_SCAN: ${{ needs.init.outputs.GITHUB_BRANCH_LATEST_IMAGE_ID_TAG }}
           SCAN_NAME: hadolint
-
-  snyk-cve-scan:
-    needs: [init, post-build-production]
-    strategy:
-      matrix:
-        arch: ${{ fromJSON(inputs.platforms) }}
-    runs-on: ${{ (matrix.arch == 'linux/amd64' && needs.init.outputs.INTEL_RUNNER_CHEAP) || needs.init.outputs.ARM_RUNNER_CHEAP }}
-    name: Snyk
-    steps:
       - uses: ausaccessfed/workflows/.github/actions/image_scanner@main
         with:
           BRANCH_NAME: ${{ needs.init.outputs.BRANCH_NAME }}
@@ -476,14 +449,6 @@ jobs:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
           SUPPRESS_FAILURE: true
 
-  grype-cve-scan:
-    needs: [init, post-build-production]
-    strategy:
-      matrix:
-        arch: ${{ fromJSON(inputs.platforms) }}
-    runs-on: ${{ (matrix.arch == 'linux/amd64' && needs.init.outputs.INTEL_RUNNER_CHEAP) || needs.init.outputs.ARM_RUNNER_CHEAP }}
-    name: Grype
-    steps:
       - uses: ausaccessfed/workflows/.github/actions/image_scanner@main
         with:
           BRANCH_NAME: ${{ needs.init.outputs.BRANCH_NAME }}
@@ -494,14 +459,6 @@ jobs:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
           SUPPRESS_FAILURE: true
 
-  trivy-cve-scan:
-    needs: [init, post-build-production]
-    strategy:
-      matrix:
-        arch: ${{ fromJSON(inputs.platforms) }}
-    runs-on: ${{ (matrix.arch == 'linux/amd64' && needs.init.outputs.INTEL_RUNNER_CHEAP) || needs.init.outputs.ARM_RUNNER_CHEAP }}
-    name: Trivy image scan
-    steps:
       - uses: ausaccessfed/workflows/.github/actions/image_scanner@main
         with:
           BRANCH_NAME: ${{ needs.init.outputs.BRANCH_NAME }}
@@ -512,17 +469,7 @@ jobs:
           SUPPRESS_FAILURE: true
 
   push-to-ecr:
-    needs:
-      [
-        init,
-        test-image-commands,
-        trivy-cve-scan,
-        grype-cve-scan,
-        snyk-cve-scan,
-        hadolint,
-        dockle-lint,
-        production-image-commands
-      ]
+    needs: [init, test-image-commands, image-scans, production-image-commands]
     if: needs.init.outputs.SHOULD_PUSH_IMAGE_TO_ECR == 'true'
     strategy:
       matrix:
@@ -643,11 +590,7 @@ jobs:
         build-production,
         test-image-commands,
         production-image-commands,
-        hadolint,
-        dockle-lint,
-        trivy-cve-scan,
-        grype-cve-scan,
-        snyk-cve-scan,
+        image-scans,
         push-to-ecr,
         update-production-manifests,
         update-terraform-manifests
@@ -715,12 +658,7 @@ jobs:
         build-production,
         test-image-commands,
         production-image-commands,
-        hadolint,
-        dockle-lint,
-        trivy-cve-scan,
-        grype-cve-scan,
-        snyk-cve-scan,
-        trivy-repo-scan,
+        image-scans,
         push-to-ecr,
         update-production-manifests,
         update-terraform-manifests
@@ -731,5 +669,5 @@ jobs:
     steps:
       - name: check for failures
         run: |
-          STRING="${{ needs.init.result }}${{ needs.build-test.result }}${{ needs.build-production.result }}${{ needs.test-image-commands.result }}${{ needs.production-image-commands.result }}${{ needs.hadolint.result }}${{ needs.dockle-lint.result }}${{ needs.trivy-repo-scan.result }}${{ needs.trivy-cve-scan.result }}${{ needs.grype-cve-scan.result }}${{ needs.snyk-cve-scan.result }}${{ needs.push-to-ecr.result }}${{ needs.update-production-manifests.result }}${{ needs.update-terraform-manifests.result }}"
+          STRING="${{ needs.init.result }}${{ needs.build-test.result }}${{ needs.build-production.result }}${{ needs.test-image-commands.result }}${{ needs.production-image-commands.result }}${{ needs.image-scans.result }}${{ needs.push-to-ecr.result }}${{ needs.update-production-manifests.result }}${{ needs.update-terraform-manifests.result }}"
           echo "$STRING" | grep -E '^(success|skipped)+$'
