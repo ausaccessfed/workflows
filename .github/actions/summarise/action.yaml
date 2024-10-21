@@ -2,11 +2,7 @@ name: 'Summarise'
 description: ''
 inputs:
   OUTPUT_FILES:
-    description: 'combines into a single output file'
-    default: ''
-  OUTPUT_MESSAGE:
-    description: 'Will be used to generate the OUTPUT_FILE, note will override OUTPUT_FILE if provided'
-    default: ''
+    description: 'Output files, csv'
   SLACK_WEBHOOK_URL:
     description: 'If not null, will post to slack'
     default: ''
@@ -22,8 +18,8 @@ inputs:
   ENABLE_ACTION_SUMMARY:
     description: 'If true, will post to summary tab in flow'
     default: 'true'
-  TITLE:
-    description: 'Summary Title'
+  TITLES:
+    description: 'Summary Titles, csv'
   SUCCESS:
     description: 'If the task was successful'
 runs:
@@ -32,13 +28,10 @@ runs:
     - id: split_file
       shell: bash
       run: |
-        echo "TITLE=$(echo "${{ inputs.TITLE }}" | tr '()' '  ' | tr '"' "'")" >> $GITHUB_OUTPUT
         CHUNK_SIZE=$((900 * 1024)) # 700KB in bytes
 
-        echo "${{ inputs.OUTPUT_MESSAGE }}" > /tmp/output_message.txt
-
         index=0
-        for file in $(echo "${{ inputs.OUTPUT_FILES }},/tmp/output_message.txt" | tr ',' ' '); do
+        for file in $(echo "${{ inputs.OUTPUT_FILES }}" | tr ',' ' '); do
           if [ -e "$file" ] && [ "$(cat "$file" | tr -d '[:space:]')" != "" ]; then
             FILE_SIZE=$(stat -c%s "$file")
             if [ $FILE_SIZE -gt $CHUNK_SIZE ]; then
@@ -62,77 +55,13 @@ runs:
       with:
         github-token: ${{ github.token }}
         script: |
-          const fs = require("fs");
-
+          const fs = require('fs')
+          const run = require('https://raw.githubusercontent.com/ausaccessfed/workflows/main/scripts/scripts/pr_commenter.js')
           const create_comment = 'true' == "${{ inputs.CREATE_COMMENT }}"
-          // get all files named chunk_*
-          const chunks = fs.readdirSync(".").filter(fn => fn.includes('chunk_'));
-          const task_failed =  "false" == "${{ inputs.SUCCESS }}"
+          const titles = "${{ inputs.TITLES }}".split(",")
+          const task_failed = "false" == "${{ inputs.SUCCESS }}"
           const issue_number = "${{ inputs.pr_number }}"
-
-          // Retrieve existing bot comments for the PR
-          const { data: comments } = await github.rest.issues.listComments({
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            issue_number,
-          })
-
-          const MAX_GITHUB_COMMENT_LENGTH = 65536 - 100;
-
-          const title = `${{ inputs.title }}`
-          const botComment = comments.find(comment => {
-            return comment.user.type === 'Bot' && comment.body.includes(title)
-          })
-
-          let body = chunks.reduce((acc, chunk, i) => {
-            let output = fs.readFileSync(chunk, "utf8");
-
-            let output_title = "Show Output"
-            if (task_failed == 'true') {
-              output_title = "Show Failed Output"
-            }
-
-            const body = `## ${title}
-            <details><summary>${output_title} (part ${i})</summary>
-
-            \`\`\`\n
-            ${output}
-            \`\`\`
-
-            </details>\n`
-
-            return acc + body
-          }, "")
-
-          body = body.slice(0, MAX_GITHUB_COMMENT_LENGTH)
-          // TODO: we could sub split and loop those also, will wait until i see this happen
-          if (body.length == MAX_GITHUB_COMMENT_LENGTH) {
-            body += "...\nPlease review the output in github actions logs because it's too long"
-          }
-
-          if (botComment) {
-            if (create_comment) {
-              github.rest.issues.updateComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                comment_id: botComment.id,
-                body
-              })
-            } else {
-            github.rest.issues.deleteComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                comment_id: botComment.id,
-              })
-            }
-          } else if (create_comment){
-            github.rest.issues.createComment({
-              issue_number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body
-            })
-          }
+          await run({github, context, fs, create_comment, titles, task_failed, issue_number})
 
     - id: slack_message
       shell: bash
@@ -140,27 +69,15 @@ runs:
       run: |
         wget -O /tmp/slack_webhook.sh https://raw.githubusercontent.com/ausaccessfed/workflows/main/scripts/slack_webhook.sh
         chmod +x /tmp/slack_webhook.sh
-        /tmp/slack_webhook.sh "${{ steps.split_file.outputs.TITLE }}" "${{ inputs.SLACK_WEBHOOK_URL }}" "${{github.repository}}" "${{github.run_id}}" "false"
+        /tmp/slack_webhook.sh "${{ inputs.TITLES }}" "${{ inputs.SLACK_WEBHOOK_URL }}" "${{github.repository}}" "${{github.run_id}}" "false"
 
     - id: summary_tab
       if: inputs.ENABLE_ACTION_SUMMARY == 'true' && steps.split_file.outputs.FILE_COUNT != '0'
       shell: bash
       run: |
-        part=1
-        for chunk in chunk_*; do
-          if [ -s "$chunk" ]; then
-            echo '<details>' >> $GITHUB_STEP_SUMMARY
-            echo "<summary>${{ steps.split_file.outputs.TITLE }} (part $part)</summary>" >> $GITHUB_STEP_SUMMARY
-            echo '  ' >> $GITHUB_STEP_SUMMARY
-            echo '```' >> $GITHUB_STEP_SUMMARY
-            echo "$(cat $chunk)" >> $GITHUB_STEP_SUMMARY
-            echo '```' >> $GITHUB_STEP_SUMMARY
-            echo '</details>' >> $GITHUB_STEP_SUMMARY
-          else
-            echo "Output file is empty, skipping summary."
-          fi
-          part=$((part + 1))
-        done
+        wget -O /tmp/slack_webhook.sh https://raw.githubusercontent.com/ausaccessfed/workflows/main/scripts/action_summary.sh
+        chmod +x /tmp/action_summary.sh
+        /tmp/action_summary.sh "${{ inputs.TITLES }}""
 
     - id: throw_error
       shell: bash

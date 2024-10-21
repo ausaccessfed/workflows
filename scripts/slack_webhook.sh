@@ -1,6 +1,8 @@
 #!/bin/bash
 
-TITLE=$1
+TITLES=$1
+TITLE="$(echo "$TITLES" | tr '()' '  ' | tr '"' "'" | cut -d',' -f0 || echo "Title missing!!!")"
+
 WEBHOOK=$2
 REPOSITORY=$3
 RUN_ID=$4
@@ -17,7 +19,6 @@ json="{
                 \"emoji\": true
             }
         }"
-PART=1
 if [ "$TESTING" = "true" ]; then
     echo "testinggasdsadsadsadsadasdasdasdas
 testinggasdsadsadsadsadasdasdasdas
@@ -65,8 +66,17 @@ json="$json
     }"
 
 for chunk in chunk_*; do
-    PART=$((PART + 1))
+    file_index=$(echo "$chunk" | cut -d'_' -f2)
+    # 1 is start of lists in bash
+    file_index=$((file_index + 1))
+    part=$(echo "$chunk" | cut -d'_' -f3)
+    TITLE="$(echo "$TITLES" | tr '()' '  ' | tr '"' "'" | cut -d',' -f$file_index || echo "Title missing!!!")"
+
     json="$json,
+        {
+            \"color\": \"#f4c030\",
+            \"text\": \"$TITLE (part $part)\"
+        },
         {
             \"color\": \"#f4c030\",
             \"text\": \"\`\`\`$(cat "$chunk")\`\`\`\"
