@@ -73,6 +73,13 @@ on:
         default: '["skip"]'
         description: 'An array of commands to be run agaisnt the development layer of the docker image'
         type: string
+      same_runner_commands:
+        default: '["skip"]'
+        description: |
+          An array of commands to be run agaisnt the development layer of the docker image
+          These are considered fast commands and will always be run on the cheap runner, but also all will
+          be run synchronously (1 by 1) to reduce the overall bill
+        type: string
       production_commands:
         default: '["skip"]'
         description: 'An array of commands to be run agaisnt the production layer of the docker image'
@@ -386,6 +393,28 @@ jobs:
           SAVE_ARTIFACTS: ${{inputs.save_test_artifacts && 'true' || 'false'}}
           IMAGE_ID_TAG: ${{needs.init.outputs.GITHUB_BRANCH_TEST_IMAGE_ID_TAG}}
 
+  test-image-fast-commands:
+    needs: [init, post-build-test]
+    strategy:
+      matrix:
+        arch: ${{ (inputs.same_runner_commands != '["skip"]' && needs.init.outputs.IS_SLASH_DEPLOY == 'false' &&  fromJSON(inputs.platforms)) || fromJSON('["linux/amd64"]') }}
+    runs-on: ${{ (matrix.arch == 'linux/amd64' && needs.init.outputs.INTEL_RUNNER_CHEAP) || needs.init.outputs.ARM_RUNNER_CHEAP }}
+    name: ${{ matrix.arch }}
+    steps:
+      # TODO: can we have custom commit statuses to link back to the run step?
+      - uses: ausaccessfed/workflows/.github/actions/command_runner@main
+        if: inputs.same_runner_commands != '["skip"]'
+        with:
+          COMMAND: ${{ inputs.same_runner_commands }}
+          BRANCH_NAME: ${{ needs.init.outputs.BRANCH_NAME }}
+          ROLE: ${{ secrets.ROLE }}
+          ECR_REPOSITORY: ${{ inputs.ecr_repository }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_ACTOR: ${{ github.actor }}
+          IS_DEFAULT_BRANCH_PUSH: ${{ needs.init.outputs.IS_DEFAULT_BRANCH_PUSH }}
+          SAVE_ARTIFACTS: ${{inputs.save_test_artifacts && 'true' || 'false'}}
+          IMAGE_ID_TAG: ${{needs.init.outputs.GITHUB_BRANCH_TEST_IMAGE_ID_TAG}}
+
   production-image-commands:
     needs: [init, post-build-production]
     strategy:
@@ -476,7 +505,7 @@ jobs:
           SUPPRESS_FAILURE: true
 
   push-to-ecr:
-    needs: [init, test-image-commands, image-scans, production-image-commands]
+    needs: [init, test-image-commands, test-image-fast-commands, image-scans, production-image-commands]
     if: needs.init.outputs.SHOULD_PUSH_IMAGE_TO_ECR == 'true'
     strategy:
       matrix:
@@ -596,6 +625,7 @@ jobs:
         build-test,
         build-production,
         test-image-commands,
+        test-image-fast-commands,
         production-image-commands,
         image-scans,
         push-to-ecr,
@@ -627,7 +657,11 @@ jobs:
             OUTPUT="${OUTPUT}Some of the test-image-commands have failed!"
           fi
 
-           if [ "${{ needs.production-image-commands.result }}" == "failure" ]; then
+          if [ "${{ needs.test-image-fast-commands.result }}" == "failure" ]; then
+            OUTPUT="${OUTPUT}Some of the test-image-fast-commands have failed!"
+          fi
+
+          if [ "${{ needs.production-image-commands.result }}" == "failure" ]; then
             OUTPUT="${OUTPUT}Some of the production-image-commands have failed!"
           fi
 
@@ -664,6 +698,7 @@ jobs:
         build-test,
         build-production,
         test-image-commands,
+        test-image-fast-commands,
         production-image-commands,
         image-scans,
         push-to-ecr,
@@ -676,5 +711,5 @@ jobs:
     steps:
       - name: check for failures
         run: |
-          STRING="${{ needs.init.result }}${{ needs.build-test.result }}${{ needs.build-production.result }}${{ needs.test-image-commands.result }}${{ needs.production-image-commands.result }}${{ needs.image-scans.result }}${{ needs.push-to-ecr.result }}${{ needs.update-production-manifests.result }}${{ needs.update-terraform-manifests.result }}"
+          STRING="${{ needs.init.result }}${{ needs.build-test.result }}${{ needs.build-production.result }}${{ needs.test-image-commands.result }}${{ needs.test-image-fast-commands.result }}${{ needs.production-image-commands.result }}${{ needs.image-scans.result }}${{ needs.push-to-ecr.result }}${{ needs.update-production-manifests.result }}${{ needs.update-terraform-manifests.result }}"
           echo "$STRING" | grep -E '^(success|skipped)+$'

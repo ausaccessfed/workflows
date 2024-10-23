@@ -1,8 +1,8 @@
 name: 'Command Runner'
 description: 'Runs commands, handles outputs and screenshots'
 inputs:
-  COMMAND:
-    description: 'Command to run'
+  COMMANDS:
+    description: 'Commands to run'
     required: true
   BRANCH_NAME:
     description: 'branch to checkout'
@@ -39,6 +39,7 @@ runs:
         GITHUB_TOKEN: ${{ inputs.GITHUB_TOKEN }}
         GITHUB_ACTOR: ${{ inputs.GITHUB_ACTOR }}
 
+    # TODO: we add logic to get all commands, then loop them
     - name: Run
       shell: bash
       id: run
@@ -48,10 +49,13 @@ runs:
         SUCCESS="$([[ "${PIPESTATUS[0]}" == "0" ]] && echo "success" || echo "failure")"
         echo "SUCCESS=$SUCCESS" >> $GITHUB_OUTPUT
 
+    # TODO: we CO*ULD just provide all outputs but the name will be misleading
+    # TODO: we could add the commit status logic inside summarise also
+    # TODO: maybe instead we say IF fail and more than 1 command, comment on pr for visibility?
     - uses: ausaccessfed/workflows/.github/actions/summarise@main
       with:
         OUTPUT_FILES: '/tmp/output.txt'
-        TITLE: 'Output for: ${{ inputs.COMMAND }}'
+        TITLES: 'Output for: ${{ inputs.COMMAND }}'
         SUCCESS: ${{ steps.run.outputs.SUCCESS }}
 
     - name: zip artifacts
