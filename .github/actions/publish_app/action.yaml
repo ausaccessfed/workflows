@@ -22,6 +22,9 @@ inputs:
   PUBLISH_IMAGE_TAG:
     description: 'Tag to update manifests with'
     required: true
+  IS_ADHOC:
+    description: 'If true, override the provided PUBLISH_ENVIRONMENTS, irrelevant of adhoc-ness'
+    default: 'false'
 runs:
   using: 'composite'
   steps:
@@ -51,4 +54,5 @@ runs:
           -e IMAGE_TAG="${{ inputs.PUBLISH_IMAGE_TAG }}" \
           -e ENVIRONMENTS="${{ inputs.PUBLISH_ENVIRONMENTS }}" \
           -e ECR_REPOSITORY="${{ inputs.ECR_REPOSITORY }}" \
+          -e IS_ADHOC="${{ inputs.IS_ADHOC }}" \
           ghcr.io/ausaccessfed/publish_app:latest
