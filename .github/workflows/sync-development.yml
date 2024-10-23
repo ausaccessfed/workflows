@@ -29,3 +29,4 @@ jobs:
           PUBLISH_ENVIRONMENTS: development
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_ACTOR: ${{ github.actor }}
+          IS_ADHOC: 'true'
