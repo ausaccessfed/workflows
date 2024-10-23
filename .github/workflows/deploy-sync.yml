@@ -57,14 +57,11 @@ on:
         description: 'if true, powerful runner will be used for build docker images'
         default: false
         type: boolean
-      development_environments:
+      adhoc_environments:
         default: 'development'
         type: string
-      test_environments:
-        default: ''
-        type: string
       production_environments:
-        default: 'test,production'
+        default: 'development,test,production'
         type: string
       save_test_artifacts:
         default: false
@@ -565,29 +562,18 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_ACTOR: ${{ github.actor }}
 
-      - name: Update GitOps Repo to trigger deploys for test
-        if: inputs.test_environments != '' && needs.init.outputs.IS_DEFAULT_DEVELOPMENT_BRANCH_PUSH == 'true'
-        uses: ausaccessfed/workflows/.github/actions/publish_app@main
-        with:
-          ROLE: ${{ secrets.ROLE }}
-          ECR_REPOSITORY: ${{ inputs.ecr_repository }}
-          PUBLISH_IMAGE_TAG: ${{ needs.init.outputs.ECR_IMAGE_TAG }}
-          PUBLISH_APPS: ${{ needs.init.outputs.PROJECTS }}
-          PUBLISH_ENVIRONMENTS: ${{ inputs.test_environments }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITHUB_ACTOR: ${{ github.actor }}
-
       - name: Update GitOps Repo to trigger deploys for development
-        if: inputs.development_environments != '' && needs.init.outputs.IS_SLASH_DEPLOY == 'true'
+        if: inputs.adhoc_environments != '' && needs.init.outputs.IS_SLASH_DEPLOY == 'true'
         uses: ausaccessfed/workflows/.github/actions/publish_app@main
         with:
           ROLE: ${{ secrets.ROLE }}
           ECR_REPOSITORY: ${{ inputs.ecr_repository }}
           PUBLISH_IMAGE_TAG: ${{ needs.init.outputs.ECR_IMAGE_TAG }}
           PUBLISH_APPS: ${{ needs.init.outputs.PROJECTS }}
-          PUBLISH_ENVIRONMENTS: ${{ inputs.development_environments }}
+          PUBLISH_ENVIRONMENTS: ${{ inputs.adhoc_environments }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_ACTOR: ${{ github.actor }}
+          IS_ADHOC: 'true'
 
   update-comments:
     needs:
