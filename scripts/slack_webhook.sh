@@ -81,4 +81,8 @@ if [ "$TESTING" = "true" ]; then
     rm chunk_aa
     echo "$json"
 fi
-curl -H 'Content-Type: application/json' -X POST -d "$json" "$WEBHOOK"
+
+json_file=$(mktemp)
+echo "$json" >"$json_file"
+
+curl -H 'Content-Type: application/json' -X POST -d @"$json_file" "$WEBHOOK"
