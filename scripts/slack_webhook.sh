@@ -68,7 +68,6 @@ for chunk in chunk_*; do
     PART=$((PART + 1))
     json="$json,
         {
-            \"color\": \"#f4c030\",
             \"text\": \"\`\`\`$(cat "$chunk")\`\`\`\"
         }"
 done
