@@ -287,7 +287,7 @@ jobs:
 #          MESSAGE: "*${{ github.repository }}* is being deployed to development by *${{ github.actor }}* via *${{ github.sha }}*"
 #          WEBHOOK_URL: ${{ secrets.SLACK_DEPLOYMENTS_WEBHOOK_URL }}
 
-      - uses: ausaccessfed/workflows/.github/actions/summarise@main
+      - uses: ausaccessfed/workflows/.github/actions/summarise@chore/add-more-info-to-dev-deploys
         with:
           OUTPUT_MESSAGE: "Deployment started by ${{ github.actor }} via ${{ github.sha }}. Please message them to verify the status"
           TITLE: "${{ github.repository }} is being deployed"
