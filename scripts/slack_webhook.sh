@@ -5,9 +5,24 @@ WEBHOOK=$2
 REPOSITORY=$3
 RUN_ID=$4
 TESTING=$5
+COLOUR=$6
+
+declare -A COLOR_MAP=(
+    ["red"]="#FF0000"
+    ["green"]="#00FF00"
+    ["blue"]="#0000FF"
+    ["yellow"]="#f4c030"
+    ["orange"]="#FFA500"
+    ["purple"]="#800080"
+    ["black"]="#000000"
+    ["white"]="#FFFFFF"
+)
+
+COLOR=${COLOR_MAP[$COLOUR]}
+
 json="{
         \"attachments\": [{
-        \"color\": \"#f4c030\",
+        \"color\": \"$COLOR\",
         \"blocks\": [
         {
             \"type\": \"header\",
@@ -68,6 +83,7 @@ for chunk in chunk_*; do
     PART=$((PART + 1))
     json="$json,
         {
+            \"color\": \"$COLOR\",
             \"text\": \"\`\`\`$(cat "$chunk")\`\`\`\"
         }"
 done
