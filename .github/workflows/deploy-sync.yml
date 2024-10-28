@@ -274,7 +274,7 @@ jobs:
 
 
   notify_slack:
-    name: init
+    name: notify-slack
     runs-on: ubuntu-latest
 #    if: inputs.event_name != 'issue_comment' || (contains(inputs.event_comment_body, '/deploy') && contains(fromJSON(vars.ALLOWED_ACTORS), github.event.comment.user.login))
     steps:
@@ -283,6 +283,14 @@ jobs:
         with:
           MESSAGE: "*${{ github.repository }}* is being deployed to development by *${{ github.actor }}* via *${{ github.sha }}*"
           WEBHOOK_URL: ${{ secrets.SLACK_DEPLOYMENTS_WEBHOOK_URL }}
+
+      - name: Add summary
+        run: |
+          echo "## Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "* Repository: ${{ github.repository }}" >> $GITHUB_STEP_SUMMARY
+          echo "* Actor: ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo "* Commit: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+
   build-test:
     needs: [init]
     strategy:
