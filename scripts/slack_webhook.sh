@@ -11,7 +11,7 @@ declare -A COLOR_MAP=(
     ["failure"]="#FF0000"
     ["success"]="#00FF00"
     ["warning"]="#f4c030"
-    ["info"]="#0284C7"
+    ["info"]="#D3D3D3"
 )
 
 COLOR=${COLOR_MAP[$COLOUR]}
