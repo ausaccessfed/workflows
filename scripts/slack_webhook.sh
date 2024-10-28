@@ -5,17 +5,13 @@ WEBHOOK=$2
 REPOSITORY=$3
 RUN_ID=$4
 TESTING=$5
-COLOUR=$6
+COLOUR=${6:-"warning"}
 
 declare -A COLOR_MAP=(
-    ["red"]="#FF0000"
-    ["green"]="#00FF00"
-    ["blue"]="#0000FF"
-    ["yellow"]="#f4c030"
-    ["orange"]="#FFA500"
-    ["purple"]="#800080"
-    ["black"]="#000000"
-    ["white"]="#FFFFFF"
+    ["failure"]="#FF0000"
+    ["success"]="#00FF00"
+    ["warning"]="#f4c030"
+    ["info"]="#0000FF"
 )
 
 COLOR=${COLOR_MAP[$COLOUR]}
