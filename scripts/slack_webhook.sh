@@ -5,7 +5,7 @@ WEBHOOK=$2
 REPOSITORY=$3
 RUN_ID=$4
 TESTING=$5
-COLOUR=${6:-"warning"}
+COLOUR=${6:-"info"}
 
 declare -A COLOR_MAP=(
     ["failure"]="#FF0000"
