@@ -276,7 +276,7 @@ jobs:
   notify_slack:
     name: init
     runs-on: ubuntu-latest
-    if: inputs.event_name != 'issue_comment' || (contains(inputs.event_comment_body, '/deploy') && contains(fromJSON(vars.ALLOWED_ACTORS), github.event.comment.user.login))
+#    if: inputs.event_name != 'issue_comment' || (contains(inputs.event_comment_body, '/deploy') && contains(fromJSON(vars.ALLOWED_ACTORS), github.event.comment.user.login))
     steps:
       - uses: ausaccessfed/workflows/.github/actions/notify_slack_webhook@main
         id: notify_slack
@@ -664,7 +664,7 @@ jobs:
           WEBHOOK_URL: ${{ secrets.SLACK_DEPLOYMENTS_WEBHOOK_URL }}
 
       - name: Add summary
-        if: needs.init.outputs.IS_SLASH_DEPLOY == 'true' && steps.final_slack_notify.outcome == 'success'
+#        if: needs.init.outputs.IS_SLASH_DEPLOY == 'true' && steps.final_slack_notify.outcome == 'success'
         run: |
           echo "## Deployment Summary" >> $GITHUB_STEP_SUMMARY
           echo "* Repository: ${{ github.repository }}" >> $GITHUB_STEP_SUMMARY
