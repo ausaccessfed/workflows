@@ -158,6 +158,7 @@ jobs:
         id: validate_issue_comment
 
       - uses: ausaccessfed/workflows/.github/actions/notify_slack_webhook@main
+        id: notify_slack
         if: inputs.event_name == 'issue_comment'
         with:
           MESSAGE: "*${{ github.repository }}* is being deployed to development by *${{ github.actor }}* via *${{ github.sha }}*"
@@ -652,10 +653,19 @@ jobs:
           context: 'Dev federation deploy'
 
       - uses: ausaccessfed/workflows/.github/actions/notify_slack_webhook@main
+        id: final_slack_notify
         if: needs.init.outputs.IS_SLASH_DEPLOY == 'true'
         with:
           MESSAGE: "*${{ github.repository }}* has been deployed to development by *${{ github.actor }}* via *${{ github.sha }}*"
           WEBHOOK_URL: ${{ secrets.SLACK_DEPLOYMENTS_WEBHOOK_URL }}
+
+      - name: Add summary
+        if: needs.init.outputs.IS_SLASH_DEPLOY == 'true' && steps.final_slack_notify.outcome == 'success'
+        run: |
+          echo "## Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "* Repository: ${{ github.repository }}" >> $GITHUB_STEP_SUMMARY
+          echo "* Actor: ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo "* Commit: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
 
   finish:
     needs:
