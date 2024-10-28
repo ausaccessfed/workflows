@@ -157,7 +157,8 @@ jobs:
           BRANCH_NAME: ${{ steps.branch.outputs.BRANCH_NAME }}
         id: validate_issue_comment
 
-      - uses: ausaccessfed/workflows/.github/actions/alert_webhook@feature/add-slack-of-dev-deployments
+      - uses: ausaccessfed/workflows/.github/actions/alert_webhook@main
+        if: needs.init.outputs.IS_SLASH_DEPLOY == 'true'
         with:
           MESSAGE: "*${{ github.repository }}* is being deployed to development by *${{ github.actor }}* via *${{ github.sha }}*"
           WEBHOOK_URL: ${{ secrets.SLACK_DEPLOYMENTS_WEBHOOK_URL }}
@@ -650,7 +651,8 @@ jobs:
           description: ${{ steps.failure-check.outputs.ADHOC_OUTPUT }}
           context: 'Dev federation deploy'
 
-      - uses: ausaccessfed/workflows/.github/actions/alert_webhook@feature/add-slack-of-dev-deployments
+      - uses: ausaccessfed/workflows/.github/actions/alert_webhook@main
+        if: needs.init.outputs.IS_SLASH_DEPLOY == 'true'
         with:
           MESSAGE: "*${{ github.repository }}* has been deployed to development by *${{ github.actor }}* via *${{ github.sha }}*"
           WEBHOOK_URL: ${{ secrets.SLACK_DEPLOYMENTS_WEBHOOK_URL }}
