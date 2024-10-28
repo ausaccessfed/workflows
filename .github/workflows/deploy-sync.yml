@@ -289,7 +289,7 @@ jobs:
 
       - uses: ausaccessfed/workflows/.github/actions/summarise@chore/add-more-info-to-dev-deploys
         with:
-          OUTPUT_MESSAGE: "Deployment started by ${{ github.actor }} via ${{ github.sha }}. Please message them to verify the status"
+          OUTPUT_MESSAGE: "Deployment started by ${{ github.actor }} via ${{ steps.branch.outputs.BRANCH_NAME }}. Please message them to verify the status"
           TITLE: "${{ github.repository }} is being deployed"
           SLACK_WEBHOOK_URL: ${{  secrets.SLACK_DEPLOYMENTS_WEBHOOK_URL }}
           ENABLE_ACTION_SUMMARY: 'true'
