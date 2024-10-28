@@ -157,13 +157,6 @@ jobs:
           BRANCH_NAME: ${{ steps.branch.outputs.BRANCH_NAME }}
         id: validate_issue_comment
 
-      - uses: ausaccessfed/workflows/.github/actions/notify_slack_webhook@main
-        id: notify_slack
-        if: inputs.event_name == 'issue_comment'
-        with:
-          MESSAGE: "*${{ github.repository }}* is being deployed to development by *${{ github.actor }}* via *${{ github.sha }}*"
-          WEBHOOK_URL: ${{ secrets.SLACK_DEPLOYMENTS_WEBHOOK_URL }}
-
       - uses: ausaccessfed/workflows/.github/actions/init@main
         with:
           BRANCH_NAME: ${{ steps.branch.outputs.BRANCH_NAME }}
@@ -279,6 +272,17 @@ jobs:
           echo "ARM_RUNNER=arm64-${{inputs.runner_cores}}-cores" >> $GITHUB_OUTPUT
           echo "ARM_RUNNER_CHEAP=arm64-2-cores" >> $GITHUB_OUTPUT
 
+
+  notify_slack:
+    name: init
+    runs-on: ubuntu-latest
+    if: inputs.event_name != 'issue_comment' || (contains(inputs.event_comment_body, '/deploy') && contains(fromJSON(vars.ALLOWED_ACTORS), github.event.comment.user.login))
+    steps:
+      - uses: ausaccessfed/workflows/.github/actions/notify_slack_webhook@main
+        id: notify_slack
+        with:
+          MESSAGE: "*${{ github.repository }}* is being deployed to development by *${{ github.actor }}* via *${{ github.sha }}*"
+          WEBHOOK_URL: ${{ secrets.SLACK_DEPLOYMENTS_WEBHOOK_URL }}
   build-test:
     needs: [init]
     strategy:
@@ -656,7 +660,7 @@ jobs:
         id: final_slack_notify
         if: needs.init.outputs.IS_SLASH_DEPLOY == 'true'
         with:
-          MESSAGE: "*${{ github.repository }}* has been deployed to development by *${{ github.actor }}* via *${{ github.sha }}*"
+          MESSAGE: "*${{ github.repository }}* has been deployed to development by *${{ github.actor }}* via *${{ github.sha }}* with status *${{ steps.failure-check.outputs.ADHOC_STATUS }}*"
           WEBHOOK_URL: ${{ secrets.SLACK_DEPLOYMENTS_WEBHOOK_URL }}
 
       - name: Add summary
