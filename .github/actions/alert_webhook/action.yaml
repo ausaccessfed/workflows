@@ -1,0 +1,17 @@
+name: 'Notify Webhook'
+description: 'A reusable action to notify a webhook with a custom message'
+inputs:
+  MESSAGE:
+    description: 'The message to send to the webhook'
+    required: true
+    default: 'Default message'
+  WEBHOOK_URL:
+    description: 'The URL of the webhook to notify'
+    required: true
+runs:
+  using: 'composite'
+  steps:
+    - name: Send notification to webhook
+      shell: bash
+      run: |
+        curl -X POST -H 'Content-type: application/json' --data "{\"text\":\"${{ inputs.message }}\"}" "${{ inputs.webhook_url }}"

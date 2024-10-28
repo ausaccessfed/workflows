@@ -90,6 +90,8 @@ on:
         required: true
       SNYK_TOKEN:
         required: true
+      SLACK_DEPLOYMENTS_WEBHOOK_URL:
+       required: true
 jobs:
   init:
     outputs:
@@ -154,6 +156,11 @@ jobs:
         with:
           BRANCH_NAME: ${{ steps.branch.outputs.BRANCH_NAME }}
         id: validate_issue_comment
+
+      - uses: ausaccessfed/workflows/.github/actions/alert_webhook@feature/add-slack-of-dev-deployments
+        with:
+          MESSAGE: "*${{ github.repository }}* is being deployed to development by *${{ github.actor }}* via *${{ github.sha }}*"
+          WEBHOOK_URL: ${{ secrets.SLACK_DEPLOYMENTS_WEBHOOK_URL }}
 
       - uses: ausaccessfed/workflows/.github/actions/init@main
         with:
@@ -642,6 +649,11 @@ jobs:
           targetUrl: ${{ steps.failure-check.outputs.ADHOC_URL }}
           description: ${{ steps.failure-check.outputs.ADHOC_OUTPUT }}
           context: 'Dev federation deploy'
+
+      - uses: ausaccessfed/workflows/.github/actions/alert_webhook@feature/add-slack-of-dev-deployments
+        with:
+          MESSAGE: "*${{ github.repository }}* has been deployed to development by *${{ github.actor }}* via *${{ github.sha }}*"
+          WEBHOOK_URL: ${{ secrets.SLACK_DEPLOYMENTS_WEBHOOK_URL }}
 
   finish:
     needs:
