@@ -85,6 +85,9 @@ on:
           NOTE: this does mean that the image can only be built for one platform ecr side
         default: 'false'
         type: string
+      argocd_url:
+        default: ''
+        type: string
     secrets:
       ROLE:
         required: true
@@ -276,21 +279,20 @@ jobs:
   notify_slack:
     name: notify-slack
     runs-on: ubuntu-latest
-#    if: inputs.event_name != 'issue_comment' || (contains(inputs.event_comment_body, '/deploy') && contains(fromJSON(vars.ALLOWED_ACTORS), github.event.comment.user.login))
+    if: inputs.event_name != 'issue_comment' || (contains(inputs.event_comment_body, '/deploy') && contains(fromJSON(vars.ALLOWED_ACTORS), github.event.comment.user.login))
     steps:
-      - uses: ausaccessfed/workflows/.github/actions/notify_slack_webhook@main
-        id: notify_slack
+#      - uses: ausaccessfed/workflows/.github/actions/notify_slack_webhook@main
+#        id: notify_slack
+#        with:
+#          MESSAGE: "*${{ github.repository }}* is being deployed to development by *${{ github.actor }}* via *${{ github.sha }}*"
+#          WEBHOOK_URL: ${{ secrets.SLACK_DEPLOYMENTS_WEBHOOK_URL }}
+
+      - uses: ausaccessfed/workflows/.github/actions/summarise@main
         with:
-          MESSAGE: "*${{ github.repository }}* is being deployed to development by *${{ github.actor }}* via *${{ github.sha }}*"
-          WEBHOOK_URL: ${{ secrets.SLACK_DEPLOYMENTS_WEBHOOK_URL }}
-
-      - name: Add summary
-        run: |
-
-          echo "## Deployment Summary" >> $GITHUB_STEP_SUMMARY
-          echo "* Repository: ${{ github.repository }}" >> $GITHUB_STEP_SUMMARY
-          echo "* Actor: ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
-          echo "* View progress in ArgoCD: [ArgoCD Link](https://argocd.private.services.aaf.edu.au/applications/argocd/$(echo ${{ github.repository }} | cut -d'/' -f2)-development?resource=)" >> $GITHUB_STEP_SUMMARY
+          OUTPUT_MESSAGE: '"*${{ github.repository }}* is being deployed to development by *${{ github.actor }}* via *${{ github.sha }}*"'
+          TITLE: 'Deployment to development'
+          SLACK_WEBHOOK_URL: ${{  secrets.SLACK_DEPLOYMENTS_WEBHOOK_URL }}
+          ENABLE_ACTION_SUMMARY: 'true'
 
   build-test:
     needs: [init]
