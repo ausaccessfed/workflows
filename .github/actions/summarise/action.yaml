@@ -140,7 +140,7 @@ runs:
       run: |
         wget -O /tmp/slack_webhook.sh https://raw.githubusercontent.com/ausaccessfed/workflows/chore/add-more-info-to-dev-deploys/scripts/slack_webhook.sh
         chmod +x /tmp/slack_webhook.sh
-        /tmp/slack_webhook.sh "${{ steps.split_file.outputs.TITLE }}" "${{ inputs.SLACK_WEBHOOK_URL }}" "${{github.repository}}" "${{github.run_id}}" "false" "red"
+        /tmp/slack_webhook.sh "${{ steps.split_file.outputs.TITLE }}" "${{ inputs.SLACK_WEBHOOK_URL }}" "${{github.repository}}" "${{github.run_id}}" "false" "${{ inputs.SUCCESS }}"
 
     - id: summary_tab
       if: inputs.ENABLE_ACTION_SUMMARY == 'true' && steps.split_file.outputs.FILE_COUNT != '0'
