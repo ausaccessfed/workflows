@@ -289,8 +289,8 @@ jobs:
 
       - uses: ausaccessfed/workflows/.github/actions/summarise@main
         with:
-          OUTPUT_MESSAGE: "${{ github.repository }} is being deployed to development by ${{ github.actor }} via ${{ github.sha }}"
-          TITLE: "placeholder"
+          OUTPUT_MESSAGE: "Deployment started by ${{ github.actor }} via ${{ github.sha }}. Please message them to verify the status"
+          TITLE: "${{ github.repository }} is being deployed"
           SLACK_WEBHOOK_URL: ${{  secrets.SLACK_DEPLOYMENTS_WEBHOOK_URL }}
           ENABLE_ACTION_SUMMARY: 'true'
 
