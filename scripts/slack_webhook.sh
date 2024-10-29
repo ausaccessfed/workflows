@@ -9,7 +9,9 @@ COLOUR=${6:-"info"}
 
 declare -A COLOR_MAP=(
     ["failure"]="#FF0000"
+    ["false"]="#FF0000"
     ["success"]="#00FF00"
+    ["true"]="#00FF00"
     ["warning"]="#f4c030"
     ["info"]="#D3D3D3"
 )
