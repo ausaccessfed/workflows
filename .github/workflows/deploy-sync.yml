@@ -158,7 +158,7 @@ jobs:
         id: validate_issue_comment
 
       - uses: ausaccessfed/workflows/.github/actions/notify_slack_webhook@main
-        if: needs.init.outputs.IS_SLASH_DEPLOY == 'true'
+        if: inputs.event_name == 'issue_comment'
         with:
           MESSAGE: "*${{ github.repository }}* is being deployed to development by *${{ github.actor }}* via *${{ github.sha }}*"
           WEBHOOK_URL: ${{ secrets.SLACK_DEPLOYMENTS_WEBHOOK_URL }}
