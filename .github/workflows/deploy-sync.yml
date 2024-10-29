@@ -157,12 +157,6 @@ jobs:
           BRANCH_NAME: ${{ steps.branch.outputs.BRANCH_NAME }}
         id: validate_issue_comment
 
-      - uses: ausaccessfed/workflows/.github/actions/notify_slack_webhook@main
-        if: inputs.event_name == 'issue_comment'
-        with:
-          MESSAGE: "*${{ github.repository }}* is being deployed to development by *${{ github.actor }}* via *${{ github.sha }}*"
-          WEBHOOK_URL: ${{ secrets.SLACK_DEPLOYMENTS_WEBHOOK_URL }}
-
       - uses: ausaccessfed/workflows/.github/actions/init@main
         with:
           BRANCH_NAME: ${{ steps.branch.outputs.BRANCH_NAME }}
