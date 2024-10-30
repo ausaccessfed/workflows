@@ -49,6 +49,10 @@ on:
       platforms:
         default: "['linux/amd64']"
         type: string
+      all_platforms:
+        default: "['linux/amd64', 'linux/arm64']"
+        type: string
+        description: 'This is used in master commits to always build for all platforms'
       runner_cores:
         description: 'Provide the amount of cores wanted, if the powerful runner is requested, defaults to 8'
         default: '8'
@@ -272,7 +276,7 @@ jobs:
     needs: [init]
     strategy:
       matrix:
-        arch: ${{ fromJSON(inputs.platforms) }}
+        arch: ${{ needs.init.outputs.SHOULD_PUSH_IMAGE_TO_ECR == 'true' && fromJSON(inputs.all_platforms) || fromJSON(inputs.platforms) }}
     runs-on: ${{ (matrix.arch == 'linux/amd64' && needs.init.outputs.INTEL_RUNNER_CHEAP) || needs.init.outputs.ARM_RUNNER_CHEAP }}
     name: Build Test Image
     steps:
@@ -314,7 +318,7 @@ jobs:
     needs: [init, post-build-test]
     strategy:
       matrix:
-        arch: ${{ fromJSON(inputs.platforms) }}
+        arch: ${{ needs.init.outputs.SHOULD_PUSH_IMAGE_TO_ECR == 'true' && fromJSON(inputs.all_platforms) || fromJSON(inputs.platforms) }}
     runs-on: ${{ (matrix.arch == 'linux/amd64' && needs.init.outputs.INTEL_RUNNER_CHEAP) || needs.init.outputs.ARM_RUNNER_CHEAP }}
     name: Build Production Image
     steps:
@@ -475,7 +479,7 @@ jobs:
     if: needs.init.outputs.SHOULD_PUSH_IMAGE_TO_ECR == 'true'
     strategy:
       matrix:
-        arch: ${{ fromJSON(inputs.platforms) }}
+        arch: ${{ fromJSON(inputs.all_platforms) }}
     runs-on: ${{ (matrix.arch == 'linux/amd64' && needs.init.outputs.INTEL_RUNNER_CHEAP) || needs.init.outputs.ARM_RUNNER_CHEAP }}
     name: Pushing images to ecr
     steps:
@@ -644,7 +648,7 @@ jobs:
       - uses: ausaccessfed/workflows/.github/actions/notify_slack_webhook@main
         if: needs.init.outputs.IS_SLASH_DEPLOY == 'true'
         with:
-          MESSAGE: "*${{ github.repository }}* has been deployed to development by *${{ github.actor }}* via *${{ github.sha }}*"
+          MESSAGE: '*${{ github.repository }}* has been deployed to development by *${{ github.actor }}* via *${{ github.sha }}*'
           WEBHOOK_URL: ${{ secrets.SLACK_DEPLOYMENTS_WEBHOOK_URL }}
 
   finish:
