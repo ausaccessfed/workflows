@@ -53,10 +53,6 @@ on:
         description: 'Provide the amount of cores wanted, if the powerful runner is requested, defaults to 8'
         default: '8'
         type: string
-      use_better_runner_for_builds:
-        description: 'if true, powerful runner will be used for build docker images'
-        default: false
-        type: boolean
       adhoc_environments:
         default: 'development'
         type: string
@@ -91,7 +87,7 @@ on:
       SNYK_TOKEN:
         required: true
       SLACK_DEPLOYMENTS_WEBHOOK_URL:
-       required: true
+        required: true
 jobs:
   init:
     outputs:
@@ -277,7 +273,7 @@ jobs:
     strategy:
       matrix:
         arch: ${{ fromJSON(inputs.platforms) }}
-    runs-on: ${{ (matrix.arch == 'linux/amd64' && ((inputs.use_better_runner_for_builds && needs.init.outputs.INTEL_RUNNER) || needs.init.outputs.INTEL_RUNNER_CHEAP)) || ((inputs.use_better_runner_for_builds && needs.init.outputs.ARM_RUNNER) || needs.init.outputs.ARM_RUNNER_CHEAP) }}
+    runs-on: ${{ (matrix.arch == 'linux/amd64' && needs.init.outputs.INTEL_RUNNER_CHEAP) || needs.init.outputs.ARM_RUNNER_CHEAP }}
     name: Build Test Image
     steps:
       - uses: ausaccessfed/workflows/.github/actions/build@main
@@ -319,7 +315,7 @@ jobs:
     strategy:
       matrix:
         arch: ${{ fromJSON(inputs.platforms) }}
-    runs-on: ${{ (matrix.arch == 'linux/amd64' && ((inputs.use_better_runner_for_builds && needs.init.outputs.INTEL_RUNNER) || needs.init.outputs.INTEL_RUNNER_CHEAP)) || ((inputs.use_better_runner_for_builds && needs.init.outputs.ARM_RUNNER) || needs.init.outputs.ARM_RUNNER_CHEAP) }}
+    runs-on: ${{ (matrix.arch == 'linux/amd64' && needs.init.outputs.INTEL_RUNNER_CHEAP) || needs.init.outputs.ARM_RUNNER_CHEAP }}
     name: Build Production Image
     steps:
       - uses: ausaccessfed/workflows/.github/actions/build@main
