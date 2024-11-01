@@ -58,7 +58,7 @@ runs:
       if: ${{ inputs.POST_PROCESSOR_COMMAND != '' }}
       shell: bash
       run: |
-        ${{ inputs.POST_PROCESSOR_COMMAND }} /tmp/output.txt
+        ${{ inputs.POST_PROCESSOR_COMMAND }}
 
     - uses: ausaccessfed/workflows/.github/actions/summarise@feature/update-cmd-runner-to-be-more-configurable
       with:
