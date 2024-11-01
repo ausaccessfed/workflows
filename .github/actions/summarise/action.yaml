@@ -26,6 +26,9 @@ inputs:
     description: 'Summary Title'
   SUCCESS:
     description: 'If the task was successful'
+  USE_CODE_BLOCK:
+    description: 'If true, output will be placed in a code block'
+    default: 'true'
 runs:
   using: 'composite'
   steps:
@@ -92,12 +95,12 @@ runs:
               output_title = "Show Failed Output"
             }
 
+            let formatted_output = use_code_block ? `\`\`\`\n${output}\n\`\`\`` : output;
+
             const body = `## ${title}
             <details><summary>${output_title} (part ${i})</summary>
 
-            \`\`\`\n
-            ${output}
-            \`\`\`
+            ${formatted_output}
 
             </details>\n`
 

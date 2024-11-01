@@ -28,6 +28,9 @@ inputs:
   IMAGE_ID_TAG:
     description: 'github image id tag to use'
     required: true
+  POST_PROCESSOR_COMMAND:
+    description: 'Optional command to post-process the output file'
+    required: false
 runs:
   using: 'composite'
   steps:
@@ -48,11 +51,18 @@ runs:
         SUCCESS="$([[ "${PIPESTATUS[0]}" == "0" ]] && echo "success" || echo "failure")"
         echo "SUCCESS=$SUCCESS" >> $GITHUB_OUTPUT
 
-    - uses: ausaccessfed/workflows/.github/actions/summarise@main
+    - name: Post-process output
+      if: ${{ inputs.POST_PROCESSOR_COMMAND != '' }}
+      shell: bash
+      run: |
+        ${{ inputs.POST_PROCESSOR_COMMAND }} /tmp/output.txt
+
+    - uses: ausaccessfed/workflows/.github/actions/summarise@feature/update-cmd-runner-to-be-more-configurable
       with:
         OUTPUT_FILES: '/tmp/output.txt'
         TITLE: 'Output for: ${{ inputs.COMMAND }}'
         SUCCESS: ${{ steps.run.outputs.SUCCESS }}
+        USE_CODE_BLOCK: 'false'
 
     - name: zip artifacts
       shell: bash
