@@ -156,13 +156,9 @@ runs:
             echo '<details>' >> $GITHUB_STEP_SUMMARY
             echo "<summary>${{ steps.split_file.outputs.TITLE }} (part $part)</summary>" >> $GITHUB_STEP_SUMMARY
             echo '  ' >> $GITHUB_STEP_SUMMARY
-            if [ "${{ inputs.USE_CODE_BLOCK }}" == "true" ]; then
-             echo '```' >> $GITHUB_STEP_SUMMARY
-            fi
+            echo '<pre>' >> $GITHUB_STEP_SUMMARY
             echo "$(cat $chunk)" >> $GITHUB_STEP_SUMMARY
-            if [ "${{ inputs.USE_CODE_BLOCK }}" == "true" ]; then
-             echo '```' >> $GITHUB_STEP_SUMMARY
-            fi
+            echo '</pre>' >> $GITHUB_STEP_SUMMARY
             echo '</details>' >> $GITHUB_STEP_SUMMARY
           else
             echo "Output file is empty, skipping summary."
