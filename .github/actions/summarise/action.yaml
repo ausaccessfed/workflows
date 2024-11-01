@@ -95,6 +95,7 @@ runs:
               output_title = "Show Failed Output"
             }
 
+            const use_code_block = 'true' == "${{ inputs.USE_CODE_BLOCK }}";
             let formatted_output = use_code_block ? `\`\`\`\n${output}\n\`\`\`` : output;
 
             const body = `## ${title}
