@@ -31,6 +31,9 @@ inputs:
   POST_PROCESSOR_COMMAND:
     description: 'Optional command to post-process the output file'
     required: false
+  USE_CODE_BLOCK_FOR_OUTPUT:
+    description: 'If true, output will be placed in a code block'
+    default: 'true'
 runs:
   using: 'composite'
   steps:
@@ -62,7 +65,7 @@ runs:
         OUTPUT_FILES: '/tmp/output.txt'
         TITLE: 'Output for: ${{ inputs.COMMAND }}'
         SUCCESS: ${{ steps.run.outputs.SUCCESS }}
-        USE_CODE_BLOCK: 'false'
+        USE_CODE_BLOCK:  ${{inputs.USE_CODE_BLOCK_FOR_OUTPUT}}
 
     - name: zip artifacts
       shell: bash
