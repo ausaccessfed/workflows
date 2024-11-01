@@ -95,13 +95,13 @@ runs:
               output_title = "Show Failed Output"
             }
 
-#            const use_code_block = "${{ inputs.USE_CODE_BLOCK }}";
-#            let formatted_output = use_code_block ? `\`\`\`\n${output}\n\`\`\`` : ${output};
+            const use_code_block = "${{ inputs.USE_CODE_BLOCK }}";
+            let formatted_output = use_code_block ? `\`\`\`\n${output}\n\`\`\`` : ${output};
 
             const body = `## ${title}
             <details><summary>${output_title} (part ${i})</summary>
 
-            ${output}
+            ${formatted_output}
 
             </details>\n`
 
