@@ -98,7 +98,7 @@ runs:
             const body = `## ${title}
             <details><summary>${output_title} (part ${i})</summary>
 
-            <pre>
+            <pre>\n
             ${output}
            </pre>
 
