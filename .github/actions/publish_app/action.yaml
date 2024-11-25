@@ -42,6 +42,10 @@ runs:
         for i in {1..5}; do
           aws ecr describe-images --repository-name "${{ inputs.ECR_REPOSITORY }}" \
             --image-ids imageTag=${{ inputs.PUBLISH_IMAGE_TAG }} && break
+          if [[ "$i" = "5" ]]; then
+            echo "No image found for tag ${{ inputs.PUBLISH_IMAGE_TAG }} in ECR repository ${{ inputs.ECR_REPOSITORY }}"
+            exit 1
+          fi
           sleep 120
         done
 
