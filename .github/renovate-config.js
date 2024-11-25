@@ -126,14 +126,14 @@ module.exports = {
       "addLabels": ["dockerDependencies"]
     },
     {
-      "matchDatasources": ["rubygems, npm"],
-      "matchPackageNames": ["/^aws/i"],
+      "matchDatasources": ["rubygems", "npm"],
+      "matchPackageNames": ["/aws/i"],
       "groupName": "aws",
     },
     {
       "groupName": "lint",
       "addLabels": ["devDependencies"],
-      "matchPackageNames": ["/^eslint/i", "/^prettier/i"]
+      "matchPackageNames": ["/eslint/i", "/prettier/i"]
     },
     { "matchFileNames": ["helm/**"], "addLabels": ["helm"] },
     { "matchFileNames": ["Dockerfile"], "addLabels": ["dockerDependencies"] },
