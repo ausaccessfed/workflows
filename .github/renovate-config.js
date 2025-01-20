@@ -8,7 +8,7 @@ module.exports = {
   "platform": "github",
   "forkProcessing": "disabled",
   "labels": ["dependencies"],
-  "lockFileMaintenance": { "enabled": true },
+  "lockFileMaintenance": { "enabled": false },
   "ignorePaths": [
     "**/node_modules/**",
     "**/bower_components/**",
