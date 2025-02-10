@@ -69,7 +69,7 @@ jobs:
           echo "REPOSITORIES=$REPOSITORIES" >> $GITHUB_OUTPUT
 
       - name: Renovate
-        uses: renovatebot/github-action@80eaf969abf68ad62aa94d9ab392421b31621634 # v40.3.4
+        uses: renovatebot/github-action@e084b5ac6fd201023db6dd7743aec023babb02c8 # v41.0.13
         with:
           configurationFile: .github/renovate-config.js
           token: ${{ secrets.ALL_REPO_SCOPED_TOKEN }}
