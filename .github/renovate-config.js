@@ -101,6 +101,10 @@ module.exports = {
       "changelogUrl": "https://github.com/grafana/loki/blob/main/production/helm/loki/CHANGELOG.md"
     },
     {
+      "matchPackageNames": ["puma"],
+      "sourceUrl": "https://github.com/puma/puma",
+    },
+    {
       "matchDatasources": ["docker"],
       "matchPackageNames": ["rockylinux"],
       "versioning": "semver"
