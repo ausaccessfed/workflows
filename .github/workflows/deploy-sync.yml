@@ -286,7 +286,7 @@ jobs:
         id: diff_check
         run: |
           # Convert JSON array to bash array
-          contexts=$(echo "${{inputs.force_up_to_date_contexts}}" | jq -r '.[]')
+          contexts=$(echo '${{inputs.force_up_to_date_contexts}}' | jq -r '.[]')
 
           # Create a pattern for grep
           pattern=$(echo "$contexts" | tr '\n' '|')
