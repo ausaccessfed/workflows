@@ -292,9 +292,7 @@ jobs:
           BEHIND_COMMITS=$(git rev-list --count HEAD..origin/${{inputs.default_branch}})
 
           ALL_FILES_CHANGED="$(git diff --name-only origin/${{inputs.default_branch}})"
-          echo "$pattern"
-          echo "$ALL_FILES_CHANGED"
-          CONTEXT_FILES_CHANGED="$(echo "$ALL_FILES_CHANGED" | grep -E "$pattern")"
+          CONTEXT_FILES_CHANGED="$(echo "$ALL_FILES_CHANGED" | grep -E "$pattern" || echo "")"
 
           if [ -n "$CONTEXT_FILES_CHANGED" ] && [ "$BEHIND_COMMITS" -gt 0 ]; then
             echo "Changes found in the ${{inputs.force_up_to_date_contexts}} contexts BLOCKING!!!"
