@@ -276,12 +276,6 @@ jobs:
           echo "ARM_RUNNER=arm64-${{inputs.runner_cores}}-cores" >> $GITHUB_OUTPUT
           echo "ARM_RUNNER_CHEAP=arm64-2-cores" >> $GITHUB_OUTPUT
 
-  force-up-to-date-check:
-    if: needs.init.outputs.SHOULD_PUSH_IMAGE_TO_ECR == 'false' && inputs.force_up_to_date_contexts != '[]'
-    needs: [init]
-    runs-on: ubuntu-latest
-    name: Check for changes
-    steps:
       - name: Check for diff
         id: diff_check
         run: |
