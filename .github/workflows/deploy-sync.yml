@@ -287,6 +287,7 @@ jobs:
           pattern=$(echo "$contexts" | tr '\n' '|')
           pattern=${pattern%|} # Remove the trailing '|'
 
+          git fetch origin ${{inputs.default_branch}}
           # Check if the PR branch is behind the default branch
           BEHIND_COMMITS=$(git rev-list --count HEAD..origin/${{inputs.default_branch}})
 
