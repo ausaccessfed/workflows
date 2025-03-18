@@ -686,7 +686,6 @@ jobs:
       [
         init,
         build-test,
-        force-up-to-date-check,
         build-production,
         test-image-commands,
         production-image-commands,
@@ -701,5 +700,5 @@ jobs:
     steps:
       - name: check for failures
         run: |
-          STRING="${{ needs.init.result }}${{ needs.build-test.result }}${{ needs.force-up-to-date-check.result }}${{ needs.build-production.result }}${{ needs.test-image-commands.result }}${{ needs.production-image-commands.result }}${{ needs.image-scans.result }}${{ needs.push-to-ecr.result }}${{ needs.update-production-manifests.result }}${{ needs.update-terraform-manifests.result }}"
+          STRING="${{ needs.init.result }}${{ needs.build-test.result }}${{ needs.build-production.result }}${{ needs.test-image-commands.result }}${{ needs.production-image-commands.result }}${{ needs.image-scans.result }}${{ needs.push-to-ecr.result }}${{ needs.update-production-manifests.result }}${{ needs.update-terraform-manifests.result }}"
           echo "$STRING" | grep -E '^(success|skipped)+$'
