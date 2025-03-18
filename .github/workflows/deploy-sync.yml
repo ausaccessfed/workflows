@@ -291,6 +291,7 @@ jobs:
           BEHIND_COMMITS=$(git rev-list --count HEAD..origin/${{inputs.default_branch}})
 
           ALL_FILES_CHANGED="$(git diff --name-only origin/${{inputs.default_branch}})"
+          echo "$pattern"
           CONTEXT_FILES_CHANGED="$(echo "$ALL_FILES_CHANGED" | grep -E "$pattern")"
 
           if [ -n "$CONTEXT_FILES_CHANGED" ] && [ "$BEHIND_COMMITS" -gt 0 ]; then
