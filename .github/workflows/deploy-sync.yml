@@ -277,6 +277,7 @@ jobs:
           echo "ARM_RUNNER_CHEAP=arm64-2-cores" >> $GITHUB_OUTPUT
 
       - name: Check for diff
+        if: inputs.force_up_to_date_contexts != '[]' && steps.env.outputs.SHOULD_PUSH_IMAGE_TO_ECR == 'false'
         id: diff_check
         run: |
           # Convert JSON array to bash array
