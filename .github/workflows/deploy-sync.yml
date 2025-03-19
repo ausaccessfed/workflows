@@ -78,6 +78,10 @@ on:
         description: 'This is an id that is used for things like artifacts, needed when being called in a matrix'
         default: ''
         type: string
+      force_up_to_date_contexts:
+        default: '["db/migrate/", "db/schema.rb"]'
+        description: 'An array of files or folders if changes are found to block a pr run if the pr branch is behind default branch'
+        type: string
       is_lambda:
         description: |
           If true, the image will be pushed to the ecr repository with the latest tag,
@@ -162,6 +166,7 @@ jobs:
           BRANCH_NAME: ${{ steps.branch.outputs.BRANCH_NAME }}
           ROLE: ${{ secrets.ROLE }}
           ECR_REPOSITORY: ${{ inputs.ecr_repository }}
+          FETCH_DEPTH: '0'
 
       - name: set more envs
         id: env
@@ -271,6 +276,29 @@ jobs:
           echo "INTEL_RUNNER_CHEAP=ubuntu-latest" >> $GITHUB_OUTPUT
           echo "ARM_RUNNER=arm64-${{inputs.runner_cores}}-cores" >> $GITHUB_OUTPUT
           echo "ARM_RUNNER_CHEAP=arm64-2-cores" >> $GITHUB_OUTPUT
+
+      - name: Check for diff
+        if: inputs.force_up_to_date_contexts != '[]' && steps.env.outputs.SHOULD_PUSH_IMAGE_TO_ECR == 'false'
+        id: diff_check
+        run: |
+          # Convert JSON array to bash array
+          contexts=$(echo '${{inputs.force_up_to_date_contexts}}' | jq -r '.[]')
+
+          # Create a pattern for grep
+          pattern=$(echo "$contexts" | tr '\n' '|')
+          pattern=${pattern%|} # Remove the trailing '|'
+
+          # Check if the PR branch is behind the default branch
+          BEHIND_COMMITS=$(git rev-list --count HEAD..origin/${{inputs.default_branch}})
+
+          ALL_FILES_CHANGED="$(git diff --name-only origin/${{inputs.default_branch}})"
+          CONTEXT_FILES_CHANGED="$(echo "$ALL_FILES_CHANGED" | grep -E "$pattern" || echo "")"
+
+          if [ -n "$CONTEXT_FILES_CHANGED" ] && [ "$BEHIND_COMMITS" -gt 0 ]; then
+            echo "Changes found in the ${{inputs.force_up_to_date_contexts}} contexts AND branch is behind ${{inputs.default_branch}} by $BEHIND_COMMITS commits BLOCKING!!!"
+            echo "$CONTEXT_FILES_CHANGED"
+            exit 1
+          fi
 
   build-test:
     needs: [init]
