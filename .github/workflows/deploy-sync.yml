@@ -295,7 +295,7 @@ jobs:
           CONTEXT_FILES_CHANGED="$(echo "$ALL_FILES_CHANGED" | grep -E "$pattern" || echo "")"
 
           if [ -n "$CONTEXT_FILES_CHANGED" ] && [ "$BEHIND_COMMITS" -gt 0 ]; then
-            echo "Changes found in the ${{inputs.force_up_to_date_contexts}} contexts AND branch is behind ${{inputs.default_branch}} by  $BEHIND_COMMITS commits BLOCKING!!!"
+            echo "Changes found in the ${{inputs.force_up_to_date_contexts}} contexts AND branch is behind ${{inputs.default_branch}} by $BEHIND_COMMITS commits BLOCKING!!!"
             echo "$CONTEXT_FILES_CHANGED"
             exit 1
           else
