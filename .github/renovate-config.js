@@ -63,15 +63,25 @@ module.exports = {
       ]
     },
     {
+      // # renovate: datasource=yum repo=epel-9-everything-x86_64
       "customType": "regex",
       "fileMatch": ["Dockerfile"],
       "matchStrings": [
-        "\\s*#\\s*renovate:\\s*datasource=(?<datasource>[^\\s]+)\\s*repo=(?<registryUrl>[^\\s]+)\\s+(?<depName>[^\\s]+)-(?<currentValue>[^\\s-]+-[^\\s-]+)"
+        "\\s*#\\s*renovate:\\s*datasource=yum\\s*repo=(?<registryUrl>[^\\s]+)\\s+(?<depName>[^\\s]+)-(?<currentValue>[^\\s-]+-[^\\s-]+)"
       ],
       "datasourceTemplate": "npm",
       "depTypeTemplate": "yum",
       "versioningTemplate": "loose",
       "registryUrlTemplate": "https://yum2npm.io/repos/{{replace '/' '/modules/' registryUrl}}/packages"
+    },
+    {
+      // renovate: datasource=gradle-version depName=gradle versioning=gradle
+      // ENV GRADLE_VERSION=8.12
+      "customType": "regex",
+      "fileMatch": ["Dockerfile"],
+      "matchStrings": [
+        "\\s*#\\s*renovate:\\s*datasource=(?<datasource>[^\\s]+)\\s+depName=(?<depName>[^\\s]+)\\s+versioning=(?<versioning>[^\\s]+).*\n.*=(?<currentValue>.*)"
+      ]
     },
     {
       "customType": "regex",
