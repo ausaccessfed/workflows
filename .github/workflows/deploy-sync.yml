@@ -289,6 +289,7 @@ jobs:
 
           git fetch origin ${{inputs.default_branch}}
           git fetch origin ${{ steps.branch.outputs.BRANCH_NAME }}
+          git pull origin/${{ steps.branch.outputs.BRANCH_NAME }}
           # Check if the PR branch is behind the default branch
           BEHIND_COMMITS=$(git rev-list --count origin/${{ steps.branch.outputs.BRANCH_NAME }}..origin/${{inputs.default_branch}})
 
