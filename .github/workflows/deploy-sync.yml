@@ -304,7 +304,7 @@ jobs:
   notify-slack-if-dev-deploy:
     needs: [init]
     name: Notify Slack if development deploy
-    runs-on: {{needs.init.outputs.INTEL_RUNNER_CHEAP}}
+    runs-on: ${{ needs.init.outputs.INTEL_RUNNER_CHEAP }}
     steps:
       - uses: ausaccessfed/workflows/.github/actions/notify_slack_webhook@main
         if: needs.init.outputs.IS_SLASH_DEPLOY == 'true'
