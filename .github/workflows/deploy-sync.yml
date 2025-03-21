@@ -161,6 +161,7 @@ jobs:
           BRANCH_NAME: ${{ steps.branch.outputs.BRANCH_NAME }}
           HEAD_SHA: ${{ steps.comment-branch.outputs.HEAD_SHA }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          STATUS_CONTEXT: 'Dev federation deploy'
         id: validate_issue_comment
 
       - uses: ausaccessfed/workflows/.github/actions/init@main

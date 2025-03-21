@@ -7,12 +7,15 @@ inputs:
   CHECK_TRUSTED:
     description: 'Check if user is trusted'
     default: 'false'
-  HEAD_SHA:
-    description: 'head sha of commit that triggered this workflow'
-    default: ''
   GITHUB_TOKEN:
     description: 'github token used to auth to api'
     default: ''
+  HEAD_SHA:
+    description: 'head sha of commit that triggered this workflow'
+    default: ''
+  STATUS_CONTEXT:
+    description: 'context for the commit status to be updated if the verification fails'
+    default: 'Dev federation deploy'
 
 runs:
   using: 'composite'
@@ -57,4 +60,4 @@ runs:
         token: ${{ inputs.GITHUB_TOKEN }}
         status: failure
         description: 'Verify Commit step failed'
-        context: 'GPG Key Validation'
+        context: inputs.STATUS_CONTEXT
