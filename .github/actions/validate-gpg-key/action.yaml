@@ -10,6 +10,7 @@ inputs:
   HEAD_SHA:
     description: 'head sha of commit that triggered this workflow'
     default: ''
+
 runs:
   using: 'composite'
   steps:
@@ -50,7 +51,7 @@ runs:
       uses: myrotvorets/set-commit-status-action@3730c0a348a2ace3c110851bed53331bc6406e9f
       with:
         sha: ${{ inputs.HEAD_SHA }}
-        token: ${{ secrets.GITHUB_TOKEN }}
+        token: ${{ github.token }}
         status: failure
         description: 'Verify Commit step failed'
         context: 'GPG Key Validation'
