@@ -159,17 +159,8 @@ jobs:
         if: inputs.event_name == 'issue_comment'
         with:
           BRANCH_NAME: ${{ steps.branch.outputs.BRANCH_NAME }}
+          HEAD_SHA: ${{ steps.comment-branch.outputs.HEAD_SHA }}
         id: validate_issue_comment
-
-      - name: Set commit status as failed if gpg key is not trusted
-        uses: myrotvorets/set-commit-status-action@3730c0a348a2ace3c110851bed53331bc6406e9f
-        if: validate_issue_comment.outcome == 'failure'
-        with:
-          sha: ${{ steps.comment-branch.outputs.HEAD_SHA }}
-          token: ${{ secrets.GITHUB_TOKEN }}
-          status: pending
-          description: 'Verify Commit step failed'
-          context: 'GPG Key Validation'
 
       - uses: ausaccessfed/workflows/.github/actions/init@main
         with:
