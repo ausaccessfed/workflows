@@ -126,6 +126,8 @@ jobs:
       ARM_RUNNER_CHEAP: ${{ steps.env.outputs.ARM_RUNNER_CHEAP }}
     name: init
     runs-on: ubuntu-latest
+    env:
+      COMMIT_STATUS_CONTEXT_DEV_DEPLOY: 'Dev federation deploy'
     if: inputs.event_name != 'issue_comment' || (contains(inputs.event_comment_body, '/deploy') && contains(fromJSON(vars.ALLOWED_ACTORS), github.event.comment.user.login))
     steps:
       - uses: xt0rted/pull-request-comment-branch@d97294d304604fa98a2600a6e2f916a84b596dc7 # v2.0.0
@@ -140,7 +142,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           status: pending
           description: 'testing, building and pushing image'
-          context: 'Dev federation deploy'
+          context: env.COMMIT_STATUS_CONTEXT_DEV_DEPLOY
 
       - id: branch
         name: set envs
@@ -161,7 +163,7 @@ jobs:
           BRANCH_NAME: ${{ steps.branch.outputs.BRANCH_NAME }}
           HEAD_SHA: ${{ steps.comment-branch.outputs.HEAD_SHA }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          STATUS_CONTEXT: 'Dev federation deploy'
+          STATUS_CONTEXT: env.COMMIT_STATUS_CONTEXT_DEV_DEPLOY
         id: validate_issue_comment
 
       - uses: ausaccessfed/workflows/.github/actions/init@main
