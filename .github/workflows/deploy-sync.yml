@@ -300,13 +300,11 @@ jobs:
             exit 1
           fi
 
-      - name: Notify Slack if development deploy
-        steps:
-          - uses: ausaccessfed/workflows/.github/actions/notify_slack_webhook@main
-            if: steps.env.outputs.IS_SLASH_DEPLOY == 'true'
-            with:
-              MESSAGE: '*${{ github.repository }}* is being deployed to development by *${{ github.actor }}* via *${{ github.sha }}*'
-              WEBHOOK_URL: ${{ secrets.SLACK_DEPLOYMENTS_WEBHOOK_URL }}
+      - uses: ausaccessfed/workflows/.github/actions/notify_slack_webhook@main
+        if: steps.env.outputs.IS_SLASH_DEPLOY == 'true'
+        with:
+          MESSAGE: '*${{ github.repository }}* is being deployed to development by *${{ github.actor }}* via *${{ github.sha }}*'
+          WEBHOOK_URL: ${{ secrets.SLACK_DEPLOYMENTS_WEBHOOK_URL }}
 
   build-test:
     needs: [init]
