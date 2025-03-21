@@ -159,6 +159,7 @@ jobs:
         if: inputs.event_name == 'issue_comment'
         with:
           BRANCH_NAME: ${{ steps.branch.outputs.BRANCH_NAME }}
+          HEAD_SHA: ${{ steps.comment-branch.outputs.HEAD_SHA }}
         id: validate_issue_comment
 
       - uses: ausaccessfed/workflows/.github/actions/init@main
