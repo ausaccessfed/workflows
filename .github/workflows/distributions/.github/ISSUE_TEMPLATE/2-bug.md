@@ -23,4 +23,4 @@ labels: bug
 
 ## Technical details
 
-<!-- A section for AAF developers to spitball resolution options and add links to relevant code and documentation. -->
+<!-- A section for AAF developers to propose resolution options and add links to relevant code and documentation. -->
