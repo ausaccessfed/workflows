@@ -15,4 +15,4 @@ about: Software could be improved by adding, changing, or deleting features.
 
 ## Technical details
 
-<!-- A section for AAF developers to spitball implementation options and add links to relevant code and documentation. -->
+<!-- A section for AAF developers to propose implementation options and add links to relevant code and documentation. -->
