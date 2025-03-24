@@ -124,6 +124,7 @@ jobs:
       ARM_RUNNER: ${{ steps.env.outputs.ARM_RUNNER }}
       INTEL_RUNNER_CHEAP: ${{ steps.env.outputs.INTEL_RUNNER_CHEAP }}
       ARM_RUNNER_CHEAP: ${{ steps.env.outputs.ARM_RUNNER_CHEAP }}
+      COMMIT_STATUS_CONTEXT_DEV_DEPLOY: ${{ steps.env.outputs.COMMIT_STATUS_CONTEXT_DEV_DEPLOY }}
     name: init
     runs-on: ubuntu-latest
     env:
