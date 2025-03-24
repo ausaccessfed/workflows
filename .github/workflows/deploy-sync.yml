@@ -281,6 +281,7 @@ jobs:
           echo "INTEL_RUNNER_CHEAP=ubuntu-latest" >> $GITHUB_OUTPUT
           echo "ARM_RUNNER=arm64-${{inputs.runner_cores}}-cores" >> $GITHUB_OUTPUT
           echo "ARM_RUNNER_CHEAP=arm64-2-cores" >> $GITHUB_OUTPUT
+         echo "COMMIT_STATUS_CONTEXT_DEV_DEPLOY=${{env.COMMIT_STATUS_CONTEXT_DEV_DEPLOY}} >> $GITHUB_OUTPUT
 
       - name: Check for diff
         if: inputs.force_up_to_date_contexts != '[]' && steps.env.outputs.SHOULD_PUSH_IMAGE_TO_ECR == 'false'
@@ -682,7 +683,7 @@ jobs:
           status: ${{ steps.failure-check.outputs.ADHOC_STATUS }}
           targetUrl: ${{ steps.failure-check.outputs.ADHOC_URL }}
           description: ${{ steps.failure-check.outputs.ADHOC_OUTPUT }}
-          context: ${{ needs.init.env.COMMIT_STATUS_CONTEXT_DEV_DEPLOY}}
+          context: ${{ needs.init.outputs.COMMIT_STATUS_CONTEXT_DEV_DEPLOY}}
 
   finish:
     needs:
