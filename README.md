@@ -18,3 +18,6 @@ Notes for when adding new files to be bootstrapped, support new repos,
 
 Once a change is merged to any files in the distributions folder, the action should kick off and create prs. to find those prs for approval simply go [here](https://github.com/search?q=org%3Aausaccessfed++is%3Apr+is%3Aopen++Updating+distribution+files&type=pullrequests&p=1) and action the relevant prs
 
+<!--
+    TODO: to make sure we dont get duplicatess
+ -->
