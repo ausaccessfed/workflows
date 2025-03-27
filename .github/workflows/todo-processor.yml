@@ -13,4 +13,4 @@ jobs:
       - uses: ausaccessfed/workflows/.github/actions/todo-processor@feature/testing-todo-workflow
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TODO: this is a test does it work!!
+          # TODO: this is a test does it work!!
