@@ -11,7 +11,9 @@ This repo contains a directory of files in `.github/workflows/distributions`, Wh
 * If it contains `#REPOSITORY_MATCH` then the provided repos are used as a subsetting filter, i.e `#REPOSITORY_MATCH repo1,repo2,repo3 #` will match 3 repos names repo1 repo2 repo3, all other repos will be ignored for said file
 * If none of these apply it simply is added.
 * If a file is removed from `.github/workflows/distributions` a pr is created to remove it
-
+<!-- 
+    TODO: test thing change
+ -->
 Notes for when adding new files to be bootstrapped, support new repos,
 
 * Due to how partials work it may create a pr that removes required lines i.e ordering of gitignore's, simply adjust the PR manually and add these lines BELOW the last untouched line and it should not be an issue moving forward
