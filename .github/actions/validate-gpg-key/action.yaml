@@ -54,7 +54,7 @@ runs:
 
     - name: Set commit status
       if: steps.verify-commit.outcome == 'failure' && inputs.HEAD_SHA != ''
-      uses: myrotvorets/set-commit-status-action@3730c0a348a2ace3c110851bed53331bc6406e9f
+      uses: myrotvorets/set-commit-status-action@0edbefd8da7272a51b0ba67c576616fcd457b374
       with:
         sha: ${{ inputs.HEAD_SHA }}
         token: ${{ inputs.GITHUB_TOKEN }}
