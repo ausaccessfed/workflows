@@ -13,6 +13,7 @@ This repo contains a directory of files in `.github/workflows/distributions`, Wh
 * If a file is removed from `.github/workflows/distributions` a pr is created to remove it
 <!-- 
     TODO: test thing change
+    Issue URL: https://github.com/ausaccessfed/workflows/issues/502
  -->
 Notes for when adding new files to be bootstrapped, support new repos,
 
