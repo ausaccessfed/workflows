@@ -1,6 +1,6 @@
 name: Todo processor
 on:
-  workflow_call:
+  workflow_dispatch:
 jobs:
   todo_processor:
     runs-on: ubuntu-latest
