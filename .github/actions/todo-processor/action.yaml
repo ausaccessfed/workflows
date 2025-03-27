@@ -4,6 +4,9 @@ inputs:
   GITHUB_TOKEN:
     description: 'github token used to auth to api'
     default: ''
+  PARENT_BRANCH_NAME:
+    description: 'branch to make pr merge into'
+    required: false
 runs:
   using: 'composite'
   steps:
@@ -23,3 +26,4 @@ runs:
         GITHUB_ACTOR: AAF CI[bot]
         GITHUB_ACTOR_EMAIL: ci[bot]@aaf.edu.au
         BRANCH_NAME: feature/add-todos
+        PARENT_BRANCH_NAME: ${{ inputs.PARENT_BRANCH_NAME }}
