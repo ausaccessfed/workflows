@@ -10,6 +10,6 @@ jobs:
       issues: write
       pull-requests: write
     steps:
-      - uses: ausaccessfed/workflows/.github/actions/todo-processor@feature/testing-todo-workflow
+      - uses: ausaccessfed/workflows/.github/actions/todo-processor@main
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
