@@ -4,12 +4,6 @@ This repo contains the reusable workflows used by many of the app repos througho
 
 ## Distribution
 
-<!--
-    TODO: Something
-    Issue URL: https://github.com/ausaccessfed/workflows/issues/521
-    ghmmm
- -->
-
 This repo contains a directory of files in `.github/workflows/distributions`, When a repo is in the list managed by AAF terraform or rather the github var `RENOVATE_REPOSITORIES` then bootstrapping begins on each master merge of this repo and will provisions files found in the above folder according to the following conventions;
 
 * If it contains `#ONCE#`, the file will only ever be added once, if its already found then nothing is done
