@@ -12,7 +12,7 @@ This repo contains a directory of files in `.github/workflows/distributions`, Wh
 * If none of these apply it simply is added.
 * If a file is removed from `.github/workflows/distributions` a pr is created to remove it
 <!--
-    TODO: test thing change
+    TODO: test thing change test
     test more changes
     Issue URL: https://github.com/ausaccessfed/workflows/issues/502
  -->
