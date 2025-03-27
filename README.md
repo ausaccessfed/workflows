@@ -11,8 +11,9 @@ This repo contains a directory of files in `.github/workflows/distributions`, Wh
 * If it contains `#REPOSITORY_MATCH` then the provided repos are used as a subsetting filter, i.e `#REPOSITORY_MATCH repo1,repo2,repo3 #` will match 3 repos names repo1 repo2 repo3, all other repos will be ignored for said file
 * If none of these apply it simply is added.
 * If a file is removed from `.github/workflows/distributions` a pr is created to remove it
-<!-- 
+<!--
     TODO: test thing change
+    test more changes
     Issue URL: https://github.com/ausaccessfed/workflows/issues/502
  -->
 Notes for when adding new files to be bootstrapped, support new repos,
