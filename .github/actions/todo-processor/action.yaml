@@ -20,5 +20,5 @@ runs:
     - uses: ausaccessfed/workflows/.github/actions/committer@feature/testing-todo-workflow
       with:
         GITHUB_TOKEN: ${{ inputs.GITHUB_TOKEN }}
-        GITHUB_ACTOR: AAF CI[bot]
-        GITHUB_ACTOR_EMAIL: ci[bot]@aaf.edu.au
+        GITHUB_ACTOR: aaf-terraform
+        GITHUB_ACTOR_EMAIL: aaf-terraform <fishwhack9000+terraform@gmail.com>
