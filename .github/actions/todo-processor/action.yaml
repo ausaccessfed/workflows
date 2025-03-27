@@ -22,3 +22,4 @@ runs:
         GITHUB_TOKEN: ${{ inputs.GITHUB_TOKEN }}
         GITHUB_ACTOR: AAF CI[bot]
         GITHUB_ACTOR_EMAIL: ci[bot]@aaf.edu.au
+        BRANCH_NAME: feature/add-todos
