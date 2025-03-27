@@ -1,6 +1,6 @@
 name: Todo processor
 on:
-  pull_request:
+  push:
 jobs:
   todo_processor:
     runs-on: ubuntu-latest
