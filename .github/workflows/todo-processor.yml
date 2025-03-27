@@ -5,10 +5,7 @@ jobs:
   todo_processor:
     runs-on: ubuntu-latest
     name: 'TODO Processing'
-    permissions:
-      contents: write
-      issues: write
-      pull-requests: write
+    permissions: write-all
     steps:
       - uses: ausaccessfed/workflows/.github/actions/todo-processor@feature/testing-todo-workflow
         with:
