@@ -1,0 +1,36 @@
+name: 'Committer'
+description: ''
+inputs:
+  GITHUB_TOKEN:
+    description: 'github token used to auth to ghcr'
+    required: true
+  GITHUB_ACTOR:
+    description: 'github actor used to commit as'
+    required: true
+  GITHUB_ACTOR_EMAIL:
+    description: 'github actor used to commit as'
+    required: true
+  DIRECTORIES:
+    description: 'csv of directory globs to git add by default its entire repo'
+    default: '.'
+    required: false
+runs:
+  using: 'composite'
+  steps:
+    - uses: ausaccessfed/workflows/.github/actions/init@main
+    - name: Set Git user
+      shell: bash
+      run: |
+        git config --global user.name "${{inputs.GITHUB_ACTOR}}"
+        git config --global user.email "${{inputs.GITHUB_ACTOR_EMAIL}}"
+    - name: Commit and Push Changes
+      shell: bash
+      run: |
+        git checkout -b feature/add-todos || git checkout feature/add-todos
+        git add -A ${{inputs.DIRECTORIES}}
+        if [[ `git status --porcelain` ]]; then
+          git commit -m "Automatically added GitHub issue links to TODOs"
+          git push
+        else
+          echo "No changes to commit"
+        fi
