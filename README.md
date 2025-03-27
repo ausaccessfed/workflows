@@ -4,6 +4,12 @@ This repo contains the reusable workflows used by many of the app repos througho
 
 ## Distribution
 
+<!--
+    TODO: Something
+    Issue URL: https://github.com/ausaccessfed/workflows/issues/521
+    ghmmm
+ -->
+
 This repo contains a directory of files in `.github/workflows/distributions`, When a repo is in the list managed by AAF terraform or rather the github var `RENOVATE_REPOSITORIES` then bootstrapping begins on each master merge of this repo and will provisions files found in the above folder according to the following conventions;
 
 * If it contains `#ONCE#`, the file will only ever be added once, if its already found then nothing is done
@@ -17,8 +23,3 @@ Notes for when adding new files to be bootstrapped, support new repos,
 * Due to how partials work it may create a pr that removes required lines i.e ordering of gitignore's, simply adjust the PR manually and add these lines BELOW the last untouched line and it should not be an issue moving forward
 
 Once a change is merged to any files in the distributions folder, the action should kick off and create prs. to find those prs for approval simply go [here](https://github.com/search?q=org%3Aausaccessfed++is%3Apr+is%3Aopen++Updating+distribution+files&type=pullrequests&p=1) and action the relevant prs
-
-<!--
-    TODO: to make sure we dont get duplicatess
-    Issue URL: https://github.com/ausaccessfed/workflows/issues/514
- -->
