@@ -13,3 +13,4 @@ jobs:
       - uses: ausaccessfed/workflows/.github/actions/todo-processor@feature/testing-todo-workflow
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GPG_PRIVATE_KEY: ${{ secrets.RENOVATE_GPG_PRIVATE_KEY }}

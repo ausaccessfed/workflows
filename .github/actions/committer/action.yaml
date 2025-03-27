@@ -20,14 +20,20 @@ inputs:
   PARENT_BRANCH_NAME:
     description: 'branch to make pr merge into'
     required: false
+  GPG_PRIVATE_KEY:
+    description: 'GPG key to sign commits with'
+    required: false
 runs:
   using: 'composite'
   steps:
     - name: Set Git user
       shell: bash
       run: |
+        echo "${{ inputs.GPG_PRIVATE_KEY }}" | base64 -d > /tmp/gpg_key
+        gpg --import /tmp/gpg_key
         git config --global user.name "${{inputs.GITHUB_ACTOR}}"
         git config --global user.email "${{inputs.GITHUB_ACTOR_EMAIL}}"
+        git config --global commit.gpgsign "1"
     - name: Commit and Push Changes
       shell: bash
       run: |
