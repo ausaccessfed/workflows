@@ -23,6 +23,6 @@ runs:
     - uses: ausaccessfed/workflows/.github/actions/committer@feature/testing-todo-workflow
       with:
         GITHUB_TOKEN: ${{ inputs.GITHUB_TOKEN }}
-        GITHUB_ACTOR: aaf-terraform
-        GITHUB_ACTOR_EMAIL: aaf-terraform <fishwhack9000+terraform@gmail.com>
+        GITHUB_ACTOR: Terraform
+        GITHUB_ACTOR_EMAIL: fishwhack9000+terraform@gmail.com
         GPG_PRIVATE_KEY: ${{ inputs.GPG_PRIVATE_KEY }}
