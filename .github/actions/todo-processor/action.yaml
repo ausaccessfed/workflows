@@ -4,6 +4,9 @@ inputs:
   GITHUB_TOKEN:
     description: 'github token used to auth to api'
     default: ''
+  GPG_PRIVATE_KEY:
+    description: 'GPG key to sign commits with'
+    required: true
 runs:
   using: 'composite'
   steps:
@@ -22,3 +25,4 @@ runs:
         GITHUB_TOKEN: ${{ inputs.GITHUB_TOKEN }}
         GITHUB_ACTOR: aaf-terraform
         GITHUB_ACTOR_EMAIL: aaf-terraform <fishwhack9000+terraform@gmail.com>
+        GPG_PRIVATE_KEY: ${{ inputs.GPG_PRIVATE_KEY }}

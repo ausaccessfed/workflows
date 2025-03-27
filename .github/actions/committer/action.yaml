@@ -22,7 +22,7 @@ inputs:
     required: false
   GPG_PRIVATE_KEY:
     description: 'GPG key to sign commits with'
-    required: false
+    required: true
 runs:
   using: 'composite'
   steps:
