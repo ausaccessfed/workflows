@@ -32,14 +32,14 @@ runs:
       shell: bash
       run: |
         if [[ "${{inputs.BRANCH_NAME}}" != "" ]]; then
-          git checkout -b ${{inputs.BRANCH_NAME}} || git checkout ${{inputs.BRANCH_NAME}}
+          git checkout -b ${{inputs.BRANCH_NAME}}
         fi
         git add -A ${{inputs.DIRECTORIES}}
         if [[ `git status --porcelain` ]]; then
           git commit -m "Automatically added GitHub issue links to TODOs"
           if [[ "${{inputs.BRANCH_NAME}}" != "" ]]; then
             git push --set-upstream origin ${{inputs.BRANCH_NAME}}
-            gh pr create --base ${{ inputs.PARENT_BRANCH_NAME }} --head ${{inputs.BRANCH_NAME}} --title "Automatically add GitHub issue links to TODOs" --body "Automatically add GitHub issue links to TODOs"
+            gh pr create --base ${{ inputs.PARENT_BRANCH_NAME }} --head ${{inputs.BRANCH_NAME}} --title "${{inputs.BRANCH_NAME}}" --body "${{inputs.BRANCH_NAME}}"
           else
             git push
           fi

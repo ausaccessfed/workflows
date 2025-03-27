@@ -1,10 +1,6 @@
 name: Todo processor
 on:
-  workflow_dispatch:
-  push:
-    branches:
-      - main
-      - master
+  pull_request:
 jobs:
   todo_processor:
     runs-on: ubuntu-latest
@@ -14,4 +10,3 @@ jobs:
       - uses: ausaccessfed/workflows/.github/actions/todo-processor@feature/testing-todo-workflow
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PARENT_BRANCH_NAME: 'main'
