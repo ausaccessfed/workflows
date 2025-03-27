@@ -10,7 +10,7 @@ inputs:
 runs:
   using: 'composite'
   steps:
-    - uses: ausaccessfed/workflows/.github/actions/branch_finder@main
+    - uses: ausaccessfed/workflows/.github/actions/branch_finder@feature/testing-todo-workflow
       id: branch
       with:
         EVENT_NAME: ${{ github.event_name }}
