@@ -14,6 +14,7 @@ This repo contains a directory of files in `.github/workflows/distributions`, Wh
 
 Notes for when adding new files to be bootstrapped, support new repos,
 <!-- TODO: test the pr process and if i change it -->
+     Issue URL: https://github.com/ausaccessfed/workflows/issues/500
      Issue URL: https://github.com/ausaccessfed/workflows/issues/499
 
 * Due to how partials work it may create a pr that removes required lines i.e ordering of gitignore's, simply adjust the PR manually and add these lines BELOW the last untouched line and it should not be an issue moving forward
