@@ -16,6 +16,7 @@ runs:
       with:
         INSERT_ISSUE_URLS: 'true'
         CLOSE_ISSUES: 'true'
+        TOKEN: ${{ inputs.GITHUB_TOKEN }}
     - uses: ausaccessfed/workflows/.github/actions/committer@feature/testing-todo-workflow
       with:
         GITHUB_TOKEN: ${{ inputs.GITHUB_TOKEN }}
