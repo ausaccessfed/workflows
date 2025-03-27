@@ -10,7 +10,7 @@ inputs:
 runs:
   using: 'composite'
   steps:
-    - uses: ausaccessfed/workflows/.github/actions/branch_finder@feature/testing-todo-workflow
+    - uses: ausaccessfed/workflows/.github/actions/branch_finder@main
       id: branch
       with:
         EVENT_NAME: ${{ github.event_name }}
@@ -24,7 +24,7 @@ runs:
         INSERT_ISSUE_URLS: 'true'
         CLOSE_ISSUES: 'true'
         TOKEN: ${{ inputs.GITHUB_TOKEN }}
-    - uses: ausaccessfed/workflows/.github/actions/committer@feature/testing-todo-workflow
+    - uses: ausaccessfed/workflows/.github/actions/committer@main
       with:
         GITHUB_TOKEN: ${{ inputs.GITHUB_TOKEN }}
         GITHUB_ACTOR: Terraform
