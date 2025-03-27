@@ -13,9 +13,8 @@ This repo contains a directory of files in `.github/workflows/distributions`, Wh
 * If a file is removed from `.github/workflows/distributions` a pr is created to remove it
 
 Notes for when adding new files to be bootstrapped, support new repos,
+<!-- TODO: test the pr process -->
 
 * Due to how partials work it may create a pr that removes required lines i.e ordering of gitignore's, simply adjust the PR manually and add these lines BELOW the last untouched line and it should not be an issue moving forward
 
 Once a change is merged to any files in the distributions folder, the action should kick off and create prs. to find those prs for approval simply go [here](https://github.com/search?q=org%3Aausaccessfed++is%3Apr+is%3Aopen++Updating+distribution+files&type=pullrequests&p=1) and action the relevant prs
-
-<!-- TODO: test the pr worksss -->
