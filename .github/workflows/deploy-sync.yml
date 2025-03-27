@@ -131,6 +131,7 @@ jobs:
       COMMIT_STATUS_CONTEXT_DEV_DEPLOY: 'Dev federation deploy'
     if: inputs.event_name != 'issue_comment' || (contains(inputs.event_comment_body, '/deploy') && contains(fromJSON(vars.ALLOWED_ACTORS), github.event.comment.user.login))
     steps:
+      # TODO: replace with branch finder action
       - uses: xt0rted/pull-request-comment-branch@d97294d304604fa98a2600a6e2f916a84b596dc7 # v2.0.0
         if: inputs.event_name == 'issue_comment'
         id: comment-branch
