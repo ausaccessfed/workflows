@@ -29,7 +29,7 @@ runs:
     - name: Set Git user
       shell: bash
       run: |
-        echo "${{ inputs.GPG_PRIVATE_KEY }}" | base64 -d > /tmp/gpg_key
+        echo "${{ inputs.GPG_PRIVATE_KEY }}"  > /tmp/gpg_key
         gpg --import /tmp/gpg_key
         git config --global user.name "${{inputs.GITHUB_ACTOR}}"
         git config --global user.email "${{inputs.GITHUB_ACTOR_EMAIL}}"
