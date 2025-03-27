@@ -17,7 +17,6 @@ inputs:
 runs:
   using: 'composite'
   steps:
-    - uses: ausaccessfed/workflows/.github/actions/init@main
     - name: Set Git user
       shell: bash
       run: |

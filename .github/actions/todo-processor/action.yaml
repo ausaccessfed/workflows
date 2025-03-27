@@ -8,6 +8,9 @@ runs:
   using: 'composite'
   steps:
     - uses: ausaccessfed/workflows/.github/actions/init@main
+      with:
+        FETCH_DEPTH: '0'
+        BRANCH_NAME: ${{ github.ref_name }}
     - name: 'TODO to Issue'
       uses: 'alstr/todo-to-issue-action@973393389c53206cc1f317f9ae6d316ec1ac5f93' # v5.1.10
       env:
