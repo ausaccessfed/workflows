@@ -1,0 +1,20 @@
+name: 'Todo processor'
+description: ''
+inputs:
+  GITHUB_TOKEN:
+    description: 'github token used to auth to api'
+    default: ''
+runs:
+  using: 'composite'
+  steps:
+    - uses: ausaccessfed/workflows/.github/actions/init@main
+    - name: 'TODO to Issue'
+      uses: 'alstr/todo-to-issue-action@973393389c53206cc1f317f9ae6d316ec1ac5f93' # v5.1.10
+      env:
+        INSERT_ISSUE_URLS: 'true'
+        CLOSE_ISSUES: 'true'
+    - uses: ausaccessfed/workflows/.github/actions/committer@feature/testing-todo-workflow
+      with:
+        GITHUB_TOKEN: ${{ inputs.GITHUB_TOKEN }}
+        GITHUB_ACTOR: AAF CI[bot]
+        GITHUB_ACTOR_EMAIL: ci[bot]@aaf.edu.au
