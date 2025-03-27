@@ -1,4 +1,3 @@
-/* eslint-disable no-undef */
 const eslintPluginPrettierRecommended = require('eslint-plugin-prettier/recommended')
 const eslintPluginYml = require('eslint-plugin-yml')
 const eslint = require('@eslint/js')
@@ -26,6 +25,7 @@ const common = [
           props: false
         }
       ],
+      'no-console': ['error', { allow: ['warn', 'error'] }],
       'no-tabs': 'error',
       'no-plusplus': 'off',
       'no-underscore-dangle': 'off',
@@ -51,8 +51,7 @@ const common = [
         }
       ],
       'yml/no-empty-document': 'off'
-    },
-    settings: {}
+    }
   },
   {
     ignores: [
@@ -77,7 +76,8 @@ const common = [
       '**/values.yaml',
       '**/templates/',
       '.github/',
-      '.torba/'
+      '.torba/',
+      'eslint.configs.js'
     ]
   }
 ]
