@@ -15,29 +15,27 @@ inputs:
     default: ''
   STATUS_CONTEXT:
     description: 'context for the commit status to be updated if the verification fails'
-    required: true
+    default: ''
 runs:
   using: 'composite'
   steps:
-    - uses: ausaccessfed/workflows/.github/actions/init@main
-      with:
-        FETCH_DEPTH: '0'
-        BRANCH_NAME: 'main'
-        REPOSITORY: 'ausaccessfed/workflows'
+    - shell: bash
+      run: |
+        mkdir ../temp
+
+        BASE_URL="https://raw.githubusercontent.com/ausaccessfed/workflows/main/trusted_keys"
+        FILE_LIST=$(curl -sSL "$BASE_URL/index.txt")
+        for FILE in "${FILE_LIST[@]}"; do
+          curl -sSL "$BASE_URL/$FILE" -o "../temp/trusted_keys/$FILE"
+        done
+
+        curl -sSL https://raw.githubusercontent.com/ausaccessfed/workflows/main/scripts/verify_commit.sh -o ../temp/verify_commit.sh
 
     - name: Verify user as trusted
       if: inputs.CHECK_TRUSTED == 'true'
       shell: bash
       run: |
         cat trusted_keys/trusted_self_approvers | grep "${{github.actor}}"
-
-    - name: Copy source
-      shell: bash
-      id: copy-source
-      run: |
-        mkdir ../temp
-        cp -r scripts/verify_commit.sh ../temp/verify_commit.sh
-        cp -r trusted_keys ../temp/trusted_keys
 
     - uses: ausaccessfed/workflows/.github/actions/init@main
       with:

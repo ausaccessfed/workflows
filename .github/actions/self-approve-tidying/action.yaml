@@ -1,7 +1,7 @@
 name: Self-approve tidying
 description: 'Will mark prs as auto approve and auto merge given the contexts of callers'
 inputs:
-  REPO_SCOPED_TOKEN:
+  GITHUB_TOKEN:
     description: 'The token to use for the github api'
     required: true
 runs:
@@ -34,7 +34,7 @@ runs:
     - name: Approve and label
       uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
       with:
-        github-token: ${{inputs.REPO_SCOPED_TOKEN}}
+        github-token: ${{inputs.GITHUB_TOKEN}}
         script: |
           const {
               payload: {
