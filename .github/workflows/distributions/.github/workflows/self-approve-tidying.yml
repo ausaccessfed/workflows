@@ -15,4 +15,4 @@ jobs:
     steps:
       - uses: ausaccessfed/workflows/.github/actions/self-approve-tidying@main
         with:
-          REPO_SCOPED_TOKEN: ${{secrets.ALL_REPO_SCOPED_TOKEN_2}}
+          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
