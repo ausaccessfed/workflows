@@ -178,7 +178,7 @@ jobs:
           echo "IS_DEFAULT_DEVELOPMENT_BRANCH_PUSH=$IS_DEFAULT_DEVELOPMENT_BRANCH_PUSH" >> $GITHUB_OUTPUT
 
           if [ "$IS_SLASH_DEPLOY" == "true" ]; then
-            IMAGE_TAG="adhoc-${{steps.comment-branch.outputs.head_ref}}"
+            IMAGE_TAG="adhoc-${{steps.branch.outputs.PR_COMMENT_HEAD_SHA}}"
           else
             if [ "$IS_DEFAULT_BRANCH_PUSH" == "true" ] || [ "$IS_MONTHLY_BUILD" == "true" ]; then
               IMAGE_TAG="stable-${{ github.sha }}"
