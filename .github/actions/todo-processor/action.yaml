@@ -7,6 +7,12 @@ inputs:
   GPG_PRIVATE_KEY:
     description: 'GPG key to sign commits with'
     required: true
+  MANUAL_COMMIT_REF:
+    description: 'The SHA of the commit to get the diff for'
+    required: false
+  MANUAL_BASE_REF:
+    description: 'By default, the commit entered above is compared to the one directly before it; to go back further, enter an earlier SHA here'
+    required: false
 runs:
   using: 'composite'
   steps:
@@ -30,3 +36,5 @@ runs:
         GITHUB_ACTOR: Terraform
         GITHUB_ACTOR_EMAIL: fishwhack9000+terraform@gmail.com
         GPG_PRIVATE_KEY: ${{ inputs.GPG_PRIVATE_KEY }}
+        MANUAL_COMMIT_REF: ${{ inputs.MANUAL_COMMIT_REF }}
+        MANUAL_BASE_REF: ${{ inputs.MANUAL_BASE_REF }}
