@@ -1,0 +1,17 @@
+name: Todo processor
+on:
+  push:
+jobs:
+  todo_processor:
+    runs-on: ubuntu-latest
+    name: 'TODO Processing'
+    permissions:
+      id-token: write
+      contents: write
+      issues: write
+      pull-requests: write
+    steps:
+      - uses: ausaccessfed/workflows/.github/actions/todo-processor@main
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GPG_PRIVATE_KEY: ${{ secrets.RENOVATE_GPG_PRIVATE_KEY }}
