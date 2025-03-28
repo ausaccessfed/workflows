@@ -1,0 +1,28 @@
+name: 'Sync development'
+description: ''
+inputs:
+  ECR_REPOSITORY:
+    required: true
+    description: 'ECR repository to publish to'
+  APP:
+    required: true
+    description: 'App to publish'
+  SHA:
+    required: true
+    description: 'SHA of the commit to publish'
+  ROLE:
+    required: true
+    description: 'AWS role to assume'
+runs:
+  using: 'composite'
+  steps:
+    - uses: ausaccessfed/workflows/.github/actions/publish_app@main
+      with:
+        ROLE: ${{ inputs.ROLE }}
+        ECR_REPOSITORY: ${{ inputs.ECR_REPOSITORY }}
+        PUBLISH_IMAGE_TAG: stable-${{ inputs.SHA }}
+        PUBLISH_APPS: ${{ inputs.APP }}
+        PUBLISH_ENVIRONMENTS: development
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_ACTOR: ${{ github.actor }}
+        IS_ADHOC: 'true'
