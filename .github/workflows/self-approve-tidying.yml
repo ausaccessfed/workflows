@@ -1,0 +1,18 @@
+name: Self-approve tidying
+on:
+  issue_comment:
+    types: [created]
+jobs:
+  all:
+    permissions:
+      id-token: write
+      contents: read
+      statuses: write
+      issues: read
+      pull-requests: write
+    runs-on: ubuntu-latest
+    if: github.event_name == 'issue_comment' && contains(github.event.comment.body, '/tidy') && contains(fromJSON(vars.ALLOWED_ACTORS), github.event.comment.user.login)
+    steps:
+      - uses: ausaccessfed/workflows/.github/actions/self-approve-tidying@main
+        with:
+          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
