@@ -7,11 +7,8 @@ inputs:
   GPG_PRIVATE_KEY:
     description: 'GPG key to sign commits with'
     required: true
-  MANUAL_COMMIT_REF:
-    description: 'The SHA of the commit to get the diff for'
-    required: false
-  MANUAL_BASE_REF:
-    description: 'By default, the commit entered above is compared to the one directly before it; to go back further, enter an earlier SHA here'
+  BACKFILL:
+    description: 'If true, will backfill all TODOs in the repo'
     required: false
 runs:
   using: 'composite'
@@ -24,6 +21,16 @@ runs:
       with:
         FETCH_DEPTH: '0'
         BRANCH_NAME: ${{ steps.branch.outputs.BRANCH_NAME }}
+    - shell: bash
+      if: inputs.BACKFILL == 'true'
+      id: backfill
+      run: |
+        if [ "${{ steps.branch.outputs.BRANCH_NAME }}" = "main" ] || [ "${{ steps.branch.outputs.BRANCH_NAME }}" = "master" ]; then
+          echo "Cannot backfill on main or master"
+          exit 1
+        fi
+        echo "MANUAL_COMMIT_REF=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
+        echo "MANUAL_BASE_REF=$(git rev-list --max-parents=0 HEAD)" >> $GITHUB_OUTPUT
     - name: 'TODO to Issue'
       uses: 'alstr/todo-to-issue-action@973393389c53206cc1f317f9ae6d316ec1ac5f93' # v5.1.10
       with:
@@ -31,8 +38,8 @@ runs:
         CLOSE_ISSUES: 'true'
         TOKEN: ${{ inputs.GITHUB_TOKEN }}
       env:
-        MANUAL_COMMIT_REF: ${{ inputs.MANUAL_COMMIT_REF }}
-        MANUAL_BASE_REF: ${{ inputs.MANUAL_BASE_REF }}
+        MANUAL_COMMIT_REF: ${{ steps.backfill.outputs.MANUAL_COMMIT_REF }}
+        MANUAL_BASE_REF: ${{ steps.backfill.outputs.MANUAL_BASE_REF }}
     - uses: ausaccessfed/workflows/.github/actions/committer@main
       with:
         GITHUB_TOKEN: ${{ inputs.GITHUB_TOKEN }}
