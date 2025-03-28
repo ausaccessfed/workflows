@@ -11,6 +11,9 @@ outputs:
   PR_COMMENT_HEAD_SHA:
     value: ${{ steps.comment-branch.outputs.HEAD_SHA }}
     description: 'The branch name determined by the action'
+  BASE_BRANCH:
+    value: ${{ steps.comment-branch.outputs.base_ref }}
+    description: 'The branch name determined by the action'
 runs:
   using: 'composite'
   steps:
