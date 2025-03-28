@@ -21,7 +21,7 @@ runs:
   steps:
     - shell: bash
       run: |
-        mkdir ../temp
+        mkdir -p ../temp/trusted_keys
 
         BASE_URL="https://raw.githubusercontent.com/ausaccessfed/workflows/main"
         FILE_LIST=($(curl -sSL "$BASE_URL/trusted_keys/index.txt"))
@@ -30,6 +30,7 @@ runs:
         done
 
         curl -sSL "$BASE_URL/scripts/verify_commit.sh" -o ../temp/verify_commit.sh
+        chmod +x ../temp/verify_commit.sh
 
     - name: Verify user as trusted
       if: inputs.CHECK_TRUSTED == 'true'
