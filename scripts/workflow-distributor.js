@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 const CONSTANTS = {
   regex: {
     once: /#ONCE#(\n)*/,
@@ -376,7 +377,8 @@ const createPR = async ({ repo, tree, baseBranch }) => {
       head: CONSTANTS.prBranchName,
       base: baseBranch,
       title: message,
-      body: message
+      body: message,
+      labels: ['workflowDistribution']
     })
   }
 
