@@ -1,5 +1,5 @@
 name: Self-approve tidying
-description: 'Will mark prs as auto approve and auto merge given the contexts of callers'
+description: 'Will mark prs as auto approve and auto merge given the contexts of callers when a comment of /tidy is added'
 inputs:
   GITHUB_TOKEN:
     description: 'The token to use for the github api'
