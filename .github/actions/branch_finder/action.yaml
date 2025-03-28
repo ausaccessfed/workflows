@@ -8,6 +8,9 @@ outputs:
   BRANCH_NAME:
     value: ${{ steps.branch.outputs.BRANCH_NAME }}
     description: 'The branch name determined by the action'
+  PR_COMMENT_HEAD_SHA:
+    value: ${{ steps.comment-branch.outputs.HEAD_SHA }}
+    description: 'The branch name determined by the action'
 runs:
   using: 'composite'
   steps:

@@ -99,7 +99,7 @@ on:
 jobs:
   init:
     outputs:
-      HEAD_SHA: ${{ steps.comment-branch.outputs.HEAD_SHA }}
+      HEAD_SHA: ${{ steps.branch.outputs.PR_COMMENT_HEAD_SHA }}
       IS_SLASH_DEPLOY: ${{ steps.env.outputs.IS_SLASH_DEPLOY }}
       PUBLISH_APP_IMAGE_ID_TAG: ${{ steps.env.outputs.PUBLISH_APP_IMAGE_ID_TAG }}
       IMAGE_TAG: ${{ steps.env.outputs.IMAGE_TAG }}
@@ -131,39 +131,26 @@ jobs:
       COMMIT_STATUS_CONTEXT_DEV_DEPLOY: 'Dev federation deploy'
     if: inputs.event_name != 'issue_comment' || (contains(inputs.event_comment_body, '/deploy') && contains(fromJSON(vars.ALLOWED_ACTORS), github.event.comment.user.login))
     steps:
-      # TODO: replace with branch finder action
-      - uses: xt0rted/pull-request-comment-branch@e8b8daa837e8ea7331c0003c9c316a64c6d8b0b1 # v3.0.0
-        if: inputs.event_name == 'issue_comment'
-        id: comment-branch
+      - uses: ausaccessfed/workflows/.github/actions/branch_finder@main
+        id: branch
+        with:
+          EVENT_NAME: ${{ github.event_name }}
 
       - name: Set commit status as pending
         uses: myrotvorets/set-commit-status-action@3730c0a348a2ace3c110851bed53331bc6406e9f # v2.0.1
         if: inputs.event_name == 'issue_comment'
         with:
-          sha: ${{ steps.comment-branch.outputs.HEAD_SHA }}
+          sha: ${{ steps.branch.outputs.PR_COMMENT_HEAD_SHA }}
           token: ${{ secrets.GITHUB_TOKEN }}
           status: pending
           description: 'testing, building and pushing image'
           context: ${{ env.COMMIT_STATUS_CONTEXT_DEV_DEPLOY }}
 
-      - id: branch
-        name: set envs
-        run: |
-          ## PR comment branch || pr branch || default branch
-          if [ "${{ steps.comment-branch.outputs.head_ref }}" != "" ]; then
-            BRANCH_NAME="${{ steps.comment-branch.outputs.head_ref }}"
-          elif [ "${{ github.head_ref }}" != "" ]; then
-            BRANCH_NAME="${{ github.head_ref }}"
-          else
-            BRANCH_NAME="${{ github.ref_name }}"
-          fi
-          echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_OUTPUT
-
       - uses: ausaccessfed/workflows/.github/actions/validate-gpg-key@main
         if: inputs.event_name == 'issue_comment'
         with:
           BRANCH_NAME: ${{ steps.branch.outputs.BRANCH_NAME }}
-          HEAD_SHA: ${{ steps.comment-branch.outputs.HEAD_SHA }}
+          HEAD_SHA: ${{ steps.branch.outputs.PR_COMMENT_HEAD_SHA }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           STATUS_CONTEXT: ${{ env.COMMIT_STATUS_CONTEXT_DEV_DEPLOY }}
         id: validate_issue_comment
@@ -233,7 +220,7 @@ jobs:
 
           ECR_IMAGE_TAG="$IMAGE_TAG"
           if [ "$IS_SLASH_DEPLOY" == "true" ]; then
-            ECR_IMAGE_TAG="$ECR_IMAGE_TAG-${{steps.comment-branch.outputs.HEAD_SHA}}"
+            ECR_IMAGE_TAG="$ECR_IMAGE_TAG-${{steps.branch.outputs.PR_COMMENT_HEAD_SHA}}"
           fi
 
           echo "ECR_IMAGE_TAG=$ECR_IMAGE_TAG" >> $GITHUB_OUTPUT
