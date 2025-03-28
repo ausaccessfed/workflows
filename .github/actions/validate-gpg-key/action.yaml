@@ -24,7 +24,7 @@ runs:
         mkdir ../temp
 
         BASE_URL="https://raw.githubusercontent.com/ausaccessfed/workflows/main"
-        FILE_LIST=$(curl -sSL "$BASE_URL/trusted_keys/index.txt")
+        FILE_LIST=($(curl -sSL "$BASE_URL/trusted_keys/index.txt"))
         for FILE in "${FILE_LIST[@]}"; do
           curl -sSL "$BASE_URL/trusted_keys/$FILE" -o "../temp/trusted_keys/$FILE"
         done
