@@ -7,7 +7,7 @@ on:
       BACKFILL:
         description: 'If true, will backfill all TODOs in the repo'
         type: boolean
-        required: false
+        required: true
 jobs:
   todo_processor:
     runs-on: ubuntu-latest
