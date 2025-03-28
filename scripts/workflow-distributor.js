@@ -371,7 +371,7 @@ const createPR = async ({ repo, tree, baseBranch }) => {
       sha: newCommitSha
     })
 
-    const { number: issue_number } = await GLOBALS.github.rest.pulls.create({
+    const res = await GLOBALS.github.rest.pulls.create({
       owner: GLOBALS.owner,
       repo,
       head: CONSTANTS.prBranchName,
@@ -380,10 +380,12 @@ const createPR = async ({ repo, tree, baseBranch }) => {
       body: message
     })
 
+    console.dir(res)
+
     await GLOBALS.github.rest.issues.addLabels({
       owner: GLOBALS.owner,
       repo,
-      issue_number,
+      issue_number: res.number,
       labels: ['workflowDistribution']
     });
   }
