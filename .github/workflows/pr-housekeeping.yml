@@ -4,7 +4,7 @@ on:
     inputs:
       AUTO_MERGEABLE_LABELS:
         type: string
-        default: 'development,test,devDependencies,testDependencies,dockerDependencies'
+        default: 'development,test,devDependencies,testDependencies,dockerDependencies,workflowDistribution'
     secrets:
       REPO_SCOPED_TOKEN:
         required: true
