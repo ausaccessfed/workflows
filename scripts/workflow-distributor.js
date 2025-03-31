@@ -7,7 +7,10 @@ const CONSTANTS = {
     repositoryExclusion: /#REPOSITORY_EXCLUSION_MATCH.*#(\n)*/
   },
   cacheFilePath: '.cachedFiles',
-  prBranchName: 'feature/distribution_updates'
+  prBranchName: 'feature/distribution_updates',
+  templateReplacements: {
+    repository: /##REPOSITORY##/
+  }
 }
 
 let GLOBALS = {}
@@ -161,6 +164,72 @@ const deleteBranch = async ({ repo, branch }) => {
   return result
 }
 
+const handleInclusion = ({ prFilePath, newContent, repo }) => {
+  if (CONSTANTS.regex.repositoryMatch.test(newContent)) {
+    // #REPOSITORY_MATCH discovery-service,ecr-retagger #
+    // to
+    // ["discovery-service","ecr-retagger"]
+    const repoSplits = newContent.split('REPOSITORY_MATCH')[1].split('#')[0].trim().split(',')
+    const shouldBeAdded = repoSplits.includes(repo)
+    if (!shouldBeAdded) {
+      //  If repo isnt in list then we dont care
+      console.log(`Not updating ${prFilePath} due to REPOSITORY_MATCH`)
+      return null
+    }
+    return newContent.replace(CONSTANTS.regex.repositoryMatch, '')
+  }
+  return newContent
+}
+
+const handleExclusion = ({ prFilePath, newContent, repo }) => {
+  if (CONSTANTS.regex.repositoryExclusion.test(newContent)) {
+    // #REPOSITORY_EXCLUSION_MATCH discovery-service,ecr-retagger #
+    // to
+    // ["discovery-service","ecr-retagger"]
+    const repoSplits = newContent.split('REPOSITORY_EXCLUSION_MATCH')[1].split('#')[0].trim().split(',')
+    const shouldntBeAdded = repoSplits.includes(repo)
+    if (shouldntBeAdded) {
+      //  If repo is in list then we dont care
+      console.log(`Not updating ${prFilePath} due to REPOSITORY_EXCLUSION_MATCH`)
+      return null
+    }
+    return newContent.replace(CONSTANTS.regex.repositoryExclusion, '')
+  }
+  return newContent
+}
+
+const handleIsOnce = ({ prFilePath, currentContentBase64, newContent }) => {
+  const isOnceFile = CONSTANTS.regex.once.test(newContent)
+  if (isOnceFile) {
+    if (currentContentBase64) {
+      //  If file exists then skip
+      console.log(`Not updating ${prFilePath} due to IS_ONCE_FILE`)
+      return null
+    }
+    return newContent.replace(CONSTANTS.regex.once, '')
+  }
+  return newContent
+}
+
+const handleTemplating = ({ newContent: newContentF, repo }) => {
+  let newContent = newContentF
+
+  for (const [key, regex] of Object.entries(CONSTANTS.templateReplacements)) {
+    if (regex.test(newContent)) {
+      let value = ''
+      switch (key) {
+        case 'repository':
+          value = repo
+          break;
+      }
+      newContent = newContent.replace(regex, value)
+    }
+  }
+
+  return newContent
+}
+
+
 const handlePartial = ({ currentContentBase64, newContent: newContentF }) => {
   let newContent = newContentF
   const isPartial = CONSTANTS.regex.partial.test(newContent)
@@ -254,44 +323,22 @@ const updateFileTreeObject = async ({ baseBranch, repo, parsedFile }) => {
     data: { content: currentContentBase64 }
   } = await getFile({ repo, path: prFilePath, ref: baseBranch })
 
-  if (CONSTANTS.regex.repositoryMatch.test(newContent)) {
-    // #REPOSITORY_MATCH discovery-service,ecr-retagger #
-    // to
-    // ["discovery-service","ecr-retagger"]
-    const repoSplits = newContent.split('REPOSITORY_MATCH')[1].split('#')[0].trim().split(',')
-    const shouldBeAdded = repoSplits.includes(repo)
-    if (!shouldBeAdded) {
-      //  If repo isnt in list then we dont care
-      console.log(`Not updating ${prFilePath} due to REPOSITORY_MATCH`)
-      return null
-    }
-    newContent = newContent.replace(CONSTANTS.regex.repositoryMatch, '')
+  newContent = handleInclusion({ prFilePath, newContent, repo })
+  if (!newContent) {
+    return null
   }
 
-  if (CONSTANTS.regex.repositoryExclusion.test(newContent)) {
-    // #REPOSITORY_EXCLUSION_MATCH discovery-service,ecr-retagger #
-    // to
-    // ["discovery-service","ecr-retagger"]
-    const repoSplits = newContent.split('REPOSITORY_EXCLUSION_MATCH')[1].split('#')[0].trim().split(',')
-    const shouldntBeAdded = repoSplits.includes(repo)
-    if (shouldntBeAdded) {
-      //  If repo is in list then we dont care
-      console.log(`Not updating ${prFilePath} due to REPOSITORY_EXCLUSION_MATCH`)
-      return null
-    }
-    newContent = newContent.replace(CONSTANTS.regex.repositoryExclusion, '')
+  newContent = handleExclusion({ prFilePath, newContent, repo })
+  if (!newContent) {
+    return null
   }
 
-  const isOnceFile = CONSTANTS.regex.once.test(newContent)
-  if (isOnceFile) {
-    if (currentContentBase64) {
-      //  If file exists then skip
-      console.log(`Not updating ${prFilePath} due to IS_ONCE_FILE`)
-      return null
-    }
-    newContent = newContent.replace(CONSTANTS.regex.once, '')
+  newContent = handleIsOnce({ prFilePath, currentContentBase64, newContent })
+  if (!newContent) {
+    return null
   }
 
+  newContent = handleTemplating({ repo, newContent })
   newContent = handlePartial({ currentContentBase64, newContent })
 
   if (currentContentBase64 != undefined) {
