@@ -9,7 +9,8 @@ const CONSTANTS = {
   cacheFilePath: '.cachedFiles',
   prBranchName: 'feature/distribution_updates',
   templateReplacements: {
-    repository: /##REPOSITORY##/
+    repository: /##REPOSITORY##/,
+    repository_uppercase: /##REPOSITORY_UPPERCASE##/
   }
 }
 
@@ -220,6 +221,9 @@ const handleTemplating = ({ newContent: newContentF, repo }) => {
       switch (key) {
         case 'repository':
           value = repo
+          break;
+        case 'repository_uppercase':
+          value = repo.toUpperCase()
           break;
       }
       newContent = newContent.replace(regex, value)
