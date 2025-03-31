@@ -36,6 +36,8 @@ runs:
         git config --global commit.gpgsign "1"
     - name: Commit and Push Changes
       shell: bash
+      env:
+        GITHUB_TOKEN: ${{ inputs.GITHUB_TOKEN }}
       run: |
         if [[ "${{inputs.BRANCH_NAME}}" != "" ]]; then
           git checkout -b ${{inputs.BRANCH_NAME}}
