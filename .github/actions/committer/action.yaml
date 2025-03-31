@@ -34,10 +34,11 @@ runs:
         git config --global user.name "${{inputs.GITHUB_ACTOR}}"
         git config --global user.email "${{inputs.GITHUB_ACTOR_EMAIL}}"
         git config --global commit.gpgsign "1"
+        git config --global --add url."https://${{ inputs.GITHUB_TOKEN }}:x-oauth-basic@github".insteadOf ssh://git@github
+        git config --global --add url."https://${{ inputs.GITHUB_TOKEN }}:x-oauth-basic@github".insteadOf https://github
+        git config --global --add url."https://${{ inputs.GITHUB_TOKEN }}:x-oauth-basic@github".insteadOf git@github
     - name: Commit and Push Changes
       shell: bash
-      env:
-        GITHUB_TOKEN: ${{ inputs.GITHUB_TOKEN }}
       run: |
         if [[ "${{inputs.BRANCH_NAME}}" != "" ]]; then
           git checkout -b ${{inputs.BRANCH_NAME}}
