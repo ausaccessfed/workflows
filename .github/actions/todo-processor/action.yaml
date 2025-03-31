@@ -21,6 +21,7 @@ runs:
       with:
         FETCH_DEPTH: '0'
         BRANCH_NAME: ${{ steps.branch.outputs.BRANCH_NAME }}
+        GITHUB_TOKEN: ${{ inputs.GITHUB_TOKEN }}
     - shell: bash
       if: inputs.BACKFILL == 'true'
       id: backfill
