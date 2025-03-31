@@ -21,15 +21,16 @@ runs:
   steps:
     - shell: bash
       run: |
-        mkdir ../temp
+        mkdir -p ../temp/trusted_keys
 
-        BASE_URL="https://raw.githubusercontent.com/ausaccessfed/workflows/main/trusted_keys"
-        FILE_LIST=$(curl -sSL "$BASE_URL/index.txt")
+        BASE_URL="https://raw.githubusercontent.com/ausaccessfed/workflows/main"
+        FILE_LIST=($(curl -sSL "$BASE_URL/trusted_keys/index.txt"))
         for FILE in "${FILE_LIST[@]}"; do
-          curl -sSL "$BASE_URL/$FILE" -o "../temp/trusted_keys/$FILE"
+          curl -sSL "$BASE_URL/trusted_keys/$FILE" -o "../temp/trusted_keys/$FILE"
         done
 
-        curl -sSL https://raw.githubusercontent.com/ausaccessfed/workflows/main/scripts/verify_commit.sh -o ../temp/verify_commit.sh
+        curl -sSL "$BASE_URL/scripts/verify_commit.sh" -o ../temp/verify_commit.sh
+        chmod +x ../temp/verify_commit.sh
 
     - name: Verify user as trusted
       if: inputs.CHECK_TRUSTED == 'true'

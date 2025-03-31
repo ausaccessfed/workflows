@@ -1,5 +1,5 @@
 #PARTIAL#
-#REPOSITORY_MATCH discovery-service,federationmanager,oidc_relying_party_example,rapid-connector,rapid-idp-manager,reporting-service,shib-sp,validator-service,verifid #
+#REPOSITORY_MATCH discovery-service,federationmanager,oidc_relying_party_example,rapid-connector,rapid-idp-manager,reporting-service,shib-sp,validator-service,verifid,puppeteer-tester,mysql-image #
 name: Sync development
 on:
   workflow_dispatch:
@@ -15,5 +15,10 @@ jobs:
       id-token: write
       contents: read
       packages: read
-    uses: ausaccessfed/workflows/.github/workflows/sync-development.yml@main
-    with:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: ausaccessfed/workflows/.github/actions/sync-development@main
+        with:
+          SHA: ${{ github.sha }}
+          ROLE: ${{ secrets.ROLE }}
+          APP: ##REPOSITORY##

@@ -1,92 +1,16 @@
-name: PR housekeeping
+name: PR Housekeeping
 on:
-  workflow_call:
-    inputs:
-      AUTO_MERGEABLE_LABELS:
-        type: string
-        default: 'development,test,devDependencies,testDependencies,dockerDependencies,workflowDistribution'
-    secrets:
-      REPO_SCOPED_TOKEN:
-        required: true
+  pull_request:
+    types: [opened, reopened]
 jobs:
   pr_housekeeping:
+    name: 'PR Housekeeping'
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
     runs-on: ubuntu-latest
-    env:
-      GITHUB_TOKEN: ${{secrets.REPO_SCOPED_TOKEN}}
-    name: 'PR housekeeping'
     steps:
-      - uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+      - uses: ausaccessfed/workflows/.github/actions/pr-housekeeping@main
         with:
-          github-token: ${{secrets.REPO_SCOPED_TOKEN}}
-          script: |
-            const {
-                payload: {
-                    pull_request: {
-                        number: pull_number,
-                        user: { login: actor, id: actor_id },
-                        labels,
-                        title,
-                        node_id
-                    },
-                },
-                repo: {
-                    owner,
-                    repo
-                }
-            } = context
-
-            // Assign to author
-            await github.rest.issues.addAssignees({
-                owner,
-                repo,
-                issue_number: pull_number,
-                assignees: [actor]
-            });
-
-            const titleRegex = new RegExp(/.*upgrade|updating.*/,"i")
-            if (actor_id == "118229371" && actor == "aaf-terraform" && titleRegex.test(title)) {
-                // Sadly the rest api does not support enableAutomerge
-                const mutation = `mutation($pullRequestId:ID!, $mergeMethod:PullRequestMergeMethod) {
-                    enablePullRequestAutoMerge(input: {pullRequestId: $pullRequestId, mergeMethod: $mergeMethod}) {
-                        clientMutationId
-                    }
-                }`
-                // Automerge
-                await github.graphql(mutation, {
-                    pullRequestId: node_id, mergeMethod: "SQUASH"
-                })
-
-                let labelNames = labels.map(x => x.name)
-                if (labelNames.length == 0) {
-                  // We occasionally hit this case because labels aren't always present the instant the PR is created.
-                  // Let's try fetching them again for up to 50 seconds. We can trust the labels will eventually appear
-                  // because we know this is a Renovate PR, and Renovate always adds labels.
-                  const maxWaitTime = 50000
-                  let currentWaitTime = 1000
-                  let totalWaitTime = 0
-
-                  while (labelNames.length == 0 && totalWaitTime < maxWaitTime) {
-                    await new Promise(resolve => setTimeout(resolve, currentWaitTime))
-                    totalWaitTime += currentWaitTime
-                    currentWaitTime *= 2 // Back-off exponentially
-
-                    const { data: pullRequest } = await github.rest.pulls.get({
-                        owner,
-                        repo,
-                        pull_number
-                    })
-                    labelNames = pullRequest.labels.map(x => x.name)
-                  }
-                }
-
-                const allowedLabels = "${{inputs.AUTO_MERGEABLE_LABELS}}".split(",")
-                if (labelNames.some(item => allowedLabels.includes(item))) {
-                    // Autoapprove
-                    await github.rest.pulls.createReview({
-                        owner,
-                        repo,
-                        pull_number,
-                        event: "APPROVE"
-                    })
-                }
-            }
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
