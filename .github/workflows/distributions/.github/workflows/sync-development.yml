@@ -15,5 +15,9 @@ jobs:
       id-token: write
       contents: read
       packages: read
-    uses: ausaccessfed/workflows/.github/workflows/sync-development.yml@main
-    with:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: ausaccessfed/workflows/.github/actions/sync-development@main
+        with:
+          SHA: ${{ github.sha }}
+          ROLE: ${{ secrets.ROLE }}
