@@ -36,7 +36,7 @@ runs:
       with:
         INSERT_ISSUE_URLS: 'true'
         CLOSE_ISSUES: 'true'
-        GITHUB_TOKEN: ${{ inputs.GITHUB_TOKEN }}
+        TOKEN: ${{ inputs.GITHUB_TOKEN }}
       env:
         MANUAL_COMMIT_REF: ${{ steps.backfill.outputs.MANUAL_COMMIT_REF }}
         MANUAL_BASE_REF: ${{ steps.backfill.outputs.MANUAL_BASE_REF }}
