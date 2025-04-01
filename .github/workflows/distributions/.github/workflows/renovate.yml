@@ -1,4 +1,4 @@
-name: 'Renovate'
+name: 'Renovate Dependency Check'
 on:
   workflow_dispatch:
     inputs:
