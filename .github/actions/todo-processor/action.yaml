@@ -40,10 +40,10 @@ runs:
         TOKEN: ${{ inputs.GITHUB_TOKEN }}
         IDENTIFIERS: |
           [
-            { 'name': 'TODO', 'labels': ['todo'] },
-            { 'name': 'BUG', 'labels': ['bug'] },
-            { 'name': 'ENHANCEMENT', 'labels': ['enhancement'] },
-            { 'name': 'PROPOSAL', 'labels': ['proposal'] }
+            { "name": "TODO", "labels": ["todo"] },
+            { "name": "BUG", "labels": ["bug"] },
+            { "name": "ENHANCEMENT", "labels": ["enhancement"] },
+            { "name": "PROPOSAL", "labels": ["proposal"] }
           ]
       env:
         MANUAL_COMMIT_REF: ${{ steps.backfill.outputs.MANUAL_COMMIT_REF }}
