@@ -223,7 +223,7 @@ const handleTemplating = ({ newContent: newContentF, repo }) => {
           value = repo
           break;
         case 'repository_uppercase':
-          value = repo.toUpperCase()
+          value = repo.toUpperCase().replace(/-/g, '_')
           break;
       }
       newContent = newContent.replace(regex, value)
