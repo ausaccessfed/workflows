@@ -1,4 +1,4 @@
-name: 'Validate gpg key'
+name: 'Renovate Dependency Check'
 description: ''
 inputs:
   FORCE_RECREATE:
