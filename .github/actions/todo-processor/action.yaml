@@ -38,6 +38,13 @@ runs:
         INSERT_ISSUE_URLS: 'true'
         CLOSE_ISSUES: 'true'
         TOKEN: ${{ inputs.GITHUB_TOKEN }}
+        IDENTIFIERS:
+          [
+            { 'name': 'TODO', 'labels': ['todo'] },
+            { 'name': 'BUG', 'labels': ['bug'] },
+            { 'name': 'ENHANCEMENT', 'labels': ['enhancement'] },
+            { 'name': 'PROPOSAL', 'labels': ['proposal'] }
+          ]
       env:
         MANUAL_COMMIT_REF: ${{ steps.backfill.outputs.MANUAL_COMMIT_REF }}
         MANUAL_BASE_REF: ${{ steps.backfill.outputs.MANUAL_BASE_REF }}
