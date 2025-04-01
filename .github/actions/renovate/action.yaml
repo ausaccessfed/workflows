@@ -20,9 +20,14 @@ inputs:
 runs:
   using: 'composite'
   steps:
+    - uses: ausaccessfed/workflows/.github/actions/branch_finder@main
+      id: branch
+      with:
+        EVENT_NAME: ${{ github.event_name }}
     - uses: ausaccessfed/workflows/.github/actions/init@main
       with:
         ROLE: ${{ inputs.ROLE }}
+        BRANCH_NAME: ${{ steps.branch.outputs.BRANCH_NAME }}
 
     - name: vars
       shell: bash
