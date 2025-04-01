@@ -1,0 +1,41 @@
+name: 'Renovate Dependency Check'
+description: ''
+inputs:
+  FORCE_RECREATE:
+    description: 'If you should recreate all prs (this is break glass)'
+    required: false
+    default: 'false'
+  LOG_LEVEL:
+    description: 'Log level'
+    default: 'info'
+  ROLE:
+    description: 'AWS role to assume'
+    required: true
+  GITHUB_TOKEN:
+    description: 'GitHub token'
+    required: true
+runs:
+  using: 'composite'
+  steps:
+    - uses: ausaccessfed/workflows/.github/actions/init@main
+      with:
+        ROLE: ${{ inputs.ROLE }}
+
+    - name: vars
+      shell: bash
+      id: vars
+      run: |
+        RECREATE_PRS=$([ "${{ inputs.FORCE_RECREATE }}" == "true" ] && echo "always" || echo "auto")
+        echo "RECREATE_PRS=$RECREATE_PRS" >> $GITHUB_OUTPUT
+
+    - name: Renovate
+      uses: renovatebot/github-action@cf5954a2aac7999882d3de4e462499adde159d04 # v41.0.17
+      with:
+        configurationFile: .github/renovate-config.js
+        token: ${{ secrets.GITHUB_TOKEN }}
+        env-regex: ^(?:RENOVATE_\w+|AWS_\w+|LOG_LEVEL|GITHUB_COM_TOKEN|NODE_OPTIONS|(?:HTTPS?|NO)_PROXY|(?:https?|no)_proxy)$
+      env:
+        LOG_LEVEL: '${{ inputs.LOG_LEVEL }}'
+        RENOVATE_GIT_PRIVATE_KEY: ${{ inputs.GPG_PRIVATE_KEY }}
+        RENOVATE_RECREATE_WHEN: '${{ steps.vars.outputs.RECREATE_PRS }}'
+        RENOVATE_REPOSITORIES: '${{ github.repository }}'
