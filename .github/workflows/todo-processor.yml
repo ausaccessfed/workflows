@@ -17,7 +17,7 @@ jobs:
       issues: write
       pull-requests: write
     steps:
-      - uses: ausaccessfed/workflows/.github/actions/todo-processor@feature/update-distribution-template-to-replace-hypen
+      - uses: ausaccessfed/workflows/.github/actions/todo-processor@main
         with:
           GPG_PRIVATE_KEY: ${{ secrets.RENOVATE_GPG_PRIVATE_KEY }}
           BACKFILL: ${{ inputs.BACKFILL }}
