@@ -13,6 +13,9 @@ inputs:
   ROLE:
     required: true
     description: 'AWS role to assume'
+  GITHUB_TOKEN:
+    required: true
+    description: 'GitHub token'
 runs:
   using: 'composite'
   steps:
@@ -23,6 +26,6 @@ runs:
         PUBLISH_IMAGE_TAG: stable-${{ inputs.SHA }}
         PUBLISH_APPS: ${{ inputs.APP }}
         PUBLISH_ENVIRONMENTS: development
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_TOKEN: ${{ inputs.GITHUB_TOKEN }}
         GITHUB_ACTOR: ${{ github.actor }}
         IS_ADHOC: 'true'

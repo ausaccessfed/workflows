@@ -21,4 +21,5 @@ jobs:
         with:
           SHA: ${{ github.sha }}
           ROLE: ${{ secrets.ROLE }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           APP: ##REPOSITORY##
