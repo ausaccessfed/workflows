@@ -36,6 +36,7 @@ runs:
       if: inputs.CHECK_TRUSTED == 'true'
       shell: bash
       run: |
+        cp -r ../temp/trusted_keys trusted_keys
         cat trusted_keys/trusted_self_approvers | grep "${{github.actor}}"
 
     - uses: ausaccessfed/workflows/.github/actions/init@main
