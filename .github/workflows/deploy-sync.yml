@@ -261,8 +261,6 @@ jobs:
           echo "PROJECTS=$PROJECTS" >> $GITHUB_OUTPUT
 
           # Note this assumes runners exist given the naming ARCH-NUM_CORES-cores
-          # TODO: make this work for more than intel and arm? maybe we dont need anything else
-          # Issue URL: https://github.com/ausaccessfed/workflows/issues/566
           INTEL_RUNNER=amd64-${{inputs.runner_cores}}-cores
           if [ "${{inputs.runner_cores}}" == "2" ]; then
             INTEL_RUNNER=ubuntu-latest
@@ -446,8 +444,6 @@ jobs:
     env:
       DOCKLE_HOST: 'unix:///var/run/docker.sock'
     name: Image scans
-    # TODO: can we have custom commit statuses to link back to the run step?
-    # Issue URL: https://github.com/ausaccessfed/workflows/issues/565
     steps:
       - uses: ausaccessfed/workflows/.github/actions/image_scanner@main
         name: 'Trivy Repo Scan'
