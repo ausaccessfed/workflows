@@ -1,3 +1,4 @@
+#PARTIAL#
 name: 'Renovate Dependency Check'
 on:
   workflow_dispatch:
