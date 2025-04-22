@@ -17,6 +17,7 @@ runs:
         BRANCH_NAME: ${{ steps.branch.outputs.BRANCH_NAME }}
         CHECK_TRUSTED: true
         STATUS_CONTEXT: 'Self-approve tidying'
+        GITHUB_TOKEN: ${{ inputs.GITHUB_TOKEN }}
       id: validate_issue_comment
 
     - name: Check no reserved files changed
