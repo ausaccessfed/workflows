@@ -9,4 +9,4 @@ jobs:
     steps:
       - uses: ausaccessfed/workflows/.github/actions/pr-housekeeping@main
         with:
-          GITHUB_TOKEN: ${{ secrets.##REPOSITORY_UPPERCASE##_REPO_SCOPED_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.ANSIBLE_REPO_SCOPED_TOKEN }}
