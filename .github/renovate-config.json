@@ -119,6 +119,15 @@
             "groupName": "aws"
         },
         {
+            "matchDatasources": [
+                "rubygems"
+            ],
+            "matchPackageNames": [
+                "/rubocop/i"
+            ],
+            "groupName": "rubocop"
+        },
+        {
             "groupName": "lint",
             "addLabels": [
                 "devDependencies"
