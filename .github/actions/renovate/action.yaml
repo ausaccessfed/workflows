@@ -39,7 +39,7 @@ runs:
         echo "RECREATE_PRS=$RECREATE_PRS" >> $GITHUB_OUTPUT
 
     - name: Renovate
-      uses: renovatebot/github-action@fdbe2b88946ea8b6fb5785a5267b46677d13a4d2 # v41.0.21
+      uses: renovatebot/github-action@e3c9b63dabe11d616d9a5e9c19064ec6560369c0 # v43.0.6
       with:
         configurationFile: .github/renovate-config.js
         token: ${{ inputs.GITHUB_TOKEN }}
