@@ -60,7 +60,6 @@
 
     // git
     "qezhu.gitlink",
-    "eamodio.gitlens",
 
     // terraform
     "hashicorp.terraform",
