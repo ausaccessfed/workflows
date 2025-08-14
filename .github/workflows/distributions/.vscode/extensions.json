@@ -36,9 +36,6 @@
     // coverage
     "ryanluker.vscode-coverage-gutters",
 
-    //env
-    "mikestead.dotenv",
-
     // ruby
     "rubocop.vscode-rubocop",
     "Shopify.ruby-lsp",
