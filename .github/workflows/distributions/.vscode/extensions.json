@@ -39,9 +39,6 @@
     //env
     "mikestead.dotenv",
 
-    // editorconfig
-    "EditorConfig.EditorConfig",
-
     // ruby
     "rubocop.vscode-rubocop",
     "Shopify.ruby-lsp",
@@ -65,11 +62,8 @@
 
     //github
     "github.vscode-github-actions",
-    "GitHub.copilot",
-    "GitHub.copilot-chat",
 
     // git
-    "codezombiech.gitignore",
     "qezhu.gitlink",
     "eamodio.gitlens",
 
