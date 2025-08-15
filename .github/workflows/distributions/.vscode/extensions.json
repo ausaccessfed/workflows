@@ -7,9 +7,6 @@
     "ecmel.vscode-html-css",
     "redhat.vscode-xml",
 
-    // shell
-    "foxundermoon.shell-format",
-
     // css
     "mrmlnc.vscode-scss",
     "stylelint.vscode-stylelint",
