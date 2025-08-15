@@ -1,7 +1,6 @@
 {
   "recommendations": [
     //html
-    "formulahendry.auto-close-tag",
     "ecmel.vscode-html-css",
     "redhat.vscode-xml",
 
