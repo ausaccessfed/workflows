@@ -20,7 +20,6 @@
     "christian-kohler.npm-intellisense",
 
     // linting
-    "dbaeumer.vscode-eslint",
     "rvest.vs-code-prettier-eslint",
 
     //jinja
