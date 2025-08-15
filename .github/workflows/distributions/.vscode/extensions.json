@@ -11,7 +11,6 @@
     "mrmlnc.vscode-scss",
 
     // js
-    "steoates.autoimport",
     "mgmcdermott.vscode-language-babel",
     "dbaeumer.vscode-eslint",
     "Orta.vscode-jest",
