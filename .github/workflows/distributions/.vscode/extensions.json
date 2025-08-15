@@ -32,13 +32,10 @@
     "KoichiSasada.vscode-rdbg",
 
     // random
-    "ue.alphabetical-sorter",
     "kisstkondoros.vscode-gutter-preview",
     "christian-kohler.path-intellisense",
-    "alefragnani.project-manager",
     "wayou.vscode-todo-highlight",
     "aaron-bond.better-comments",
-    "tomoki1207.pdf",
 
     //test
     "ms-vscode.test-adapter-converter",
