@@ -9,7 +9,6 @@
 
     // css
     "mrmlnc.vscode-scss",
-    "stylelint.vscode-stylelint",
 
     // js
     "steoates.autoimport",
