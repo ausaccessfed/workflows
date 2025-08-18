@@ -36,11 +36,6 @@
     "christian-kohler.path-intellisense",
     "aaron-bond.better-comments",
 
-    //test
-    "ms-vscode.test-adapter-converter",
-    "hbenl.vscode-test-explorer",
-    "connorshea.vscode-ruby-test-adapter",
-
     //github
     "github.vscode-pull-request-github",
     "github.vscode-github-actions",
