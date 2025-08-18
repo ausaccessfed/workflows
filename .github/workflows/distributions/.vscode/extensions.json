@@ -27,7 +27,6 @@
     "ryanluker.vscode-coverage-gutters",
 
     // ruby
-    "rubocop.vscode-rubocop",
     "Shopify.ruby-lsp",
     "KoichiSasada.vscode-rdbg",
 
