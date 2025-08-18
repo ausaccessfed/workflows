@@ -42,10 +42,8 @@
     "connorshea.vscode-ruby-test-adapter",
 
     //github
+    "github.vscode-pull-request-github",
     "github.vscode-github-actions",
-
-    // git
-    "qezhu.gitlink",
 
     // terraform
     "hashicorp.terraform",
