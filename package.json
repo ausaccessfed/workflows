@@ -19,5 +19,6 @@
   },
   "scripts": {
     "lint": "eslint . --ignore-path .eslintignore --quiet"
-  }
+  },
+  "packageManager": "yarn@4.9.4"
 }

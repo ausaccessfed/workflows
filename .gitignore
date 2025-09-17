@@ -12,3 +12,4 @@ dump.rdb
 !**/*vscode/extensions.json
 node_modules
 #EOF_DISTRIBUTION
+.yarn
