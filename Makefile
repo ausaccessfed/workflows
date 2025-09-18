@@ -1,4 +1,5 @@
--include .env
+-include .env # Applies to every target in the file!
+-include ../aaf-terraform/Makefile
 
 run-distribution:
 	@export GITHUB_AUTH=${GITHUB_AUTH} && export REPOS=${REPOS} && node ./scripts/local-distribution.js
