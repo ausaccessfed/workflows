@@ -128,8 +128,8 @@ jobs:
     name: init
     runs-on: ubuntu-latest
     env:
-      COMMIT_STATUS_CONTEXT_DEV_DEPLOY: 'Dev federation deploy'
-    if: inputs.event_name != 'issue_comment' || (contains(inputs.event_comment_body, '/deploy') && contains(fromJSON(vars.ALLOWED_ACTORS), github.event.comment.user.login))
+      COMMIT_STATUS_CONTEXT_DEV_DEPLOY: "Dev federation deploy"
+    if: inputs.event_name != 'issue_comment' || (inputs.event_comment_body == '/deploy' && contains(fromJSON(vars.ALLOWED_ACTORS), github.event.comment.user.login))
     steps:
       - uses: ausaccessfed/workflows/.github/actions/branch_finder@main
         id: branch
@@ -165,7 +165,7 @@ jobs:
       - name: set more envs
         id: env
         run: |
-          IS_SLASH_DEPLOY=$(([ "${{ inputs.event_name }}" == "issue_comment" ] && [ "${{contains(inputs.event_comment_body, '/deploy')}}" == "true" ] && echo "true") || echo "false")
+          IS_SLASH_DEPLOY=$(([ "${{ inputs.event_name }}" == "issue_comment" ] && [ "${{ inputs.event_comment_body }}" == "/deploy" ] && echo "true") || echo "false")
           echo "IS_SLASH_DEPLOY=$IS_SLASH_DEPLOY" >> $GITHUB_OUTPUT
 
           IS_MONTHLY_BUILD=$([ "${{ inputs.event_name }}" == "schedule" ] && echo "true" || echo "false")
