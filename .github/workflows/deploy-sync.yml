@@ -27,10 +27,6 @@ on:
       default_branch_for_caching:
         default: ''
         type: string
-      ## if not set defaults to default_branch
-      default_develop_branch:
-        default: ''
-        type: string
       version_command:
         default: 'cat .ruby-version'
         type: string
@@ -104,7 +100,6 @@ jobs:
       PUBLISH_APP_IMAGE_ID_TAG: ${{ steps.env.outputs.PUBLISH_APP_IMAGE_ID_TAG }}
       IMAGE_TAG: ${{ steps.env.outputs.IMAGE_TAG }}
       PROJECTS: ${{ steps.env.outputs.PROJECTS }}
-      IS_DEFAULT_DEVELOPMENT_BRANCH_PUSH: ${{ steps.env.outputs.IS_DEFAULT_DEVELOPMENT_BRANCH_PUSH }}
       IS_MONTHLY_BUILD: ${{ steps.env.outputs.IS_MONTHLY_BUILD }}
       IS_DEFAULT_BRANCH_PUSH: ${{ steps.env.outputs.IS_DEFAULT_BRANCH_PUSH }}
       BRANCH_NAME: ${{ steps.branch.outputs.BRANCH_NAME }}
@@ -174,9 +169,6 @@ jobs:
           IS_DEFAULT_BRANCH_PUSH=$(([ "${{ inputs.event_name }}" == "push" ] && [ "${{steps.branch.outputs.BRANCH_NAME}}" == "${{ inputs.default_branch }}" ]) && echo "true" || echo "false")
           echo "IS_DEFAULT_BRANCH_PUSH=$IS_DEFAULT_BRANCH_PUSH" >> $GITHUB_OUTPUT
 
-          IS_DEFAULT_DEVELOPMENT_BRANCH_PUSH=$(([ "${{ inputs.event_name }}" == "push" ] && [ "${{steps.branch.outputs.BRANCH_NAME}}" == "${{ inputs.default_develop_branch }}" ]) && echo "true" || echo "false")
-          echo "IS_DEFAULT_DEVELOPMENT_BRANCH_PUSH=$IS_DEFAULT_DEVELOPMENT_BRANCH_PUSH" >> $GITHUB_OUTPUT
-
           if [ "$IS_SLASH_DEPLOY" == "true" ]; then
             IMAGE_TAG="adhoc-${{steps.branch.outputs.PR_COMMENT_HEAD_SHA}}"
           else
@@ -193,8 +185,6 @@ jobs:
             "$IS_DEFAULT_BRANCH_PUSH" == "true" \
             -o \
             "$IS_SLASH_DEPLOY" == "true" \
-            -o \
-            "$IS_DEFAULT_DEVELOPMENT_BRANCH_PUSH" == "true" \
             -o \
             "$IS_MONTHLY_BUILD" == "true" \
           ] && echo "true" || echo "false")
