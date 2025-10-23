@@ -6,7 +6,7 @@ on:
         required: true
         type: string
       base_image_repository:
-        default: 'ruby-base'
+        default: 'ghcr.io/ausaccessfed/ruby-base'
         type: string
       dev_url:
         default: ''
@@ -200,7 +200,7 @@ jobs:
 
           IMAGE_VERSION=$(${{ inputs.version_command }})
           echo "IMAGE_VERSION=$IMAGE_VERSION" >> $GITHUB_OUTPUT
-          BASE_IMAGE="$GITHUB_REGISTRY_ROOT_REF/${{ inputs.base_image_repository }}:${IMAGE_VERSION}"
+          BASE_IMAGE="${{ inputs.base_image_repository }}:${IMAGE_VERSION}"
           echo "BASE_IMAGE=$BASE_IMAGE" >> $GITHUB_OUTPUT
 
           # Strip git ref prefix from version
