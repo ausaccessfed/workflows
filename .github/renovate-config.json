@@ -70,6 +70,17 @@
                 "Dockerfile"
             ],
             "matchStrings": [
+                "#\\s*renovate:\\s*?(suite=(?<suite>.*?))?\\s*depName=(?<depName>.*?)?\\sARG .*?_VERSION=\"(?<currentValue>.*)\""
+            ],
+            "registryUrlTemplate": "https://deb.debian.org/debian?suite={{#if suite }}{{suite}}{{else}}stable{{/if}}&components=main,contrib,non-free&binaryArch=arm64",
+            "datasourceTemplate": "deb"
+        },
+        {
+            "customType": "regex",
+            "fileMatch": [
+                "Dockerfile"
+            ],
+            "matchStrings": [
                 "\\s*#\\s*renovate:\\s*datasource=(?<datasource>[^\\s]+)\\s+depName=(?<depName>[^\\s]+)\\s+versioning=(?<versioning>[^\\s]+).*\n.*=(?<currentValue>.*)"
             ]
         }
