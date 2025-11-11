@@ -287,7 +287,7 @@ jobs:
       - uses: ausaccessfed/workflows/.github/actions/notify_slack_webhook@main
         if: steps.env.outputs.IS_SLASH_DEPLOY == 'true'
         with:
-          MESSAGE: '*${{ github.repository }}* is being deployed to development by *${{ github.actor }}* via *${{ github.sha }}*'
+          MESSAGE: "*${{ github.repository }}* is being deployed to development by *${{ github.actor }}* via *${{ github.sha }}* (<${{ github.event.comment.html_url }}|${{ steps.branch.outputs.BRANCH_NAME }}>)"
           WEBHOOK_URL: ${{ secrets.SLACK_DEPLOYMENTS_WEBHOOK_URL }}
 
   build-test:
