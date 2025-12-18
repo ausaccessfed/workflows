@@ -15,7 +15,7 @@ on:
           - info
           - debug
   schedule:
-    - cron: '0 */6 * * *' # Every six hours
+    - cron: '30 22 * * 2' # Wednesday 8:30am AEST (Brisbane time.)
 jobs:
   renovate:
     runs-on: ubuntu-latest
