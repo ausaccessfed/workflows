@@ -73,7 +73,8 @@
                 "#\\s*renovate:\\s*?(suite=(?<suite>.*?))?\\s*depName=(?<depName>.*?)?\\sARG .*?_VERSION=\"(?<currentValue>.*)\""
             ],
             "registryUrlTemplate": "https://deb.debian.org/debian?suite={{#if suite }}{{suite}}{{else}}stable{{/if}}&components=main,contrib,non-free&binaryArch=arm64",
-            "datasourceTemplate": "deb"
+            "datasourceTemplate": "deb",
+            "depTypeTemplate": "debian"
         },
         {
             "customType": "regex",
@@ -115,6 +116,18 @@
                 "yum"
             ],
             "groupName": "yum",
+            "addLabels": [
+                "dockerDependencies"
+            ]
+        },
+        {
+            "matchFileNames": [
+                "Dockerfile"
+            ],
+            "matchDepTypes": [
+                "debian"
+            ],
+            "groupName": "debian",
             "addLabels": [
                 "dockerDependencies"
             ]
