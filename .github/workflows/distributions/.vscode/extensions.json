@@ -21,7 +21,6 @@
 
     // ruby
     "Shopify.ruby-lsp",
-    "KoichiSasada.vscode-rdbg",
 
     // random
     "kisstkondoros.vscode-gutter-preview",
