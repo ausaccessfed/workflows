@@ -8,7 +8,6 @@
     "mrmlnc.vscode-scss",
 
     // js
-    "mgmcdermott.vscode-language-babel",
     "dbaeumer.vscode-eslint",
     "leizongmin.node-module-intellisense",
     "christian-kohler.npm-intellisense",
