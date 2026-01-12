@@ -89,6 +89,12 @@
     "packageRules": [
         {
             "matchPackageNames": [
+                "bootsnap"
+            ],
+            "sourceUrl": "https://github.com/rails/bootsnap"
+        },
+        {
+            "matchPackageNames": [
                 "puma"
             ],
             "sourceUrl": "https://github.com/puma/puma"
