@@ -101,6 +101,12 @@
         },
         {
             "matchPackageNames": [
+                "mysql2"
+            ],
+            "sourceUrl": "https://github.com/brianmario/mysql2"
+        },
+        {
+            "matchPackageNames": [
                 "puma"
             ],
             "sourceUrl": "https://github.com/puma/puma"
