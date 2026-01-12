@@ -89,6 +89,12 @@
     "packageRules": [
         {
             "matchPackageNames": [
+                "bcrypt"
+            ],
+            "sourceUrl": "https://github.com/bcrypt-ruby/bcrypt-ruby"
+        },
+        {
+            "matchPackageNames": [
                 "bootsnap"
             ],
             "sourceUrl": "https://github.com/rails/bootsnap"
