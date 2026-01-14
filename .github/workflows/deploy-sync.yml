@@ -498,7 +498,7 @@ jobs:
       matrix:
         arch: ${{ fromJSON(inputs.all_platforms) }}
     runs-on: ${{ (matrix.arch == 'linux/amd64' && needs.init.outputs.INTEL_RUNNER_CHEAP) || needs.init.outputs.ARM_RUNNER_CHEAP }}
-    name: Pushing images to ecr
+    name: Push images to ecr
     steps:
       - id: image-check
         run: |
@@ -527,13 +527,13 @@ jobs:
           JOB_INDEX: ${{ strategy.job-index }}
           JOB_ID: ${{inputs.workflow_id}}-push-to-ecr
 
-  update-production-manifests:
+  update-container-registries-manifests:
     needs: [push-to-ecr, init]
-    name: 'Update production manifests'
+    name: "Update container registries' manifests"
     runs-on: ${{needs.init.outputs.INTEL_RUNNER_CHEAP}}
     steps:
       - uses: ausaccessfed/workflows/.github/actions/publish_manifest@main
-        name: Updating GHCR manifests
+        name: Update GHCR manifests
         with:
           BRANCH_NAME: ${{ needs.init.outputs.BRANCH_NAME }}
           ECR_REPOSITORY: ${{ inputs.ecr_repository }}
@@ -552,7 +552,7 @@ jobs:
           echo "ECR_LINK_TAGS=$ECR_LINK_TAGS" >> $GITHUB_OUTPUT
 
       - uses: ausaccessfed/workflows/.github/actions/publish_manifest@main
-        name: Updating ECR manifests
+        name: Update ECR manifests
         if: inputs.is_lambda == 'false'
         with:
           BRANCH_NAME: ${{ needs.init.outputs.BRANCH_NAME }}
@@ -563,7 +563,7 @@ jobs:
           JOB_ID: ${{inputs.workflow_id}}-push-to-ecr
 
   update-terraform-manifests:
-    needs: [update-production-manifests, init]
+    needs: [update-container-registries-manifests, init]
     name: 'Update terraform manifests'
     runs-on: ${{needs.init.outputs.INTEL_RUNNER_CHEAP}}
     steps:
@@ -604,7 +604,7 @@ jobs:
         production-image-commands,
         image-scans,
         push-to-ecr,
-        update-production-manifests,
+        update-container-registries-manifests,
         update-terraform-manifests
       ]
     name: 'update-comments'
@@ -672,7 +672,7 @@ jobs:
         production-image-commands,
         image-scans,
         push-to-ecr,
-        update-production-manifests,
+        update-container-registries-manifests,
         update-terraform-manifests
       ]
     if: always() && needs.init.result != 'skipped'
@@ -681,5 +681,5 @@ jobs:
     steps:
       - name: check for failures
         run: |
-          STRING="${{ needs.init.result }}${{ needs.build-test.result }}${{ needs.build-production.result }}${{ needs.test-image-commands.result }}${{ needs.production-image-commands.result }}${{ needs.image-scans.result }}${{ needs.push-to-ecr.result }}${{ needs.update-production-manifests.result }}${{ needs.update-terraform-manifests.result }}"
+          STRING="${{ needs.init.result }}${{ needs.build-test.result }}${{ needs.build-production.result }}${{ needs.test-image-commands.result }}${{ needs.production-image-commands.result }}${{ needs.image-scans.result }}${{ needs.push-to-ecr.result }}${{ needs.update-container-registries-manifests.result }}${{ needs.update-terraform-manifests.result }}"
           echo "$STRING" | grep -E '^(success|skipped)+$'
