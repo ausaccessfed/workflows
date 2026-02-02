@@ -188,7 +188,8 @@
             ],
             "matchPackageNames": [
                 "/eslint/i",
-                "/prettier/i"
+                "/prettier/i",
+                "globals"
             ]
         },
         {
