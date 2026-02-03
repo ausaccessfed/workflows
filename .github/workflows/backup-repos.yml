@@ -22,7 +22,7 @@ jobs:
           ROLE: ${{ secrets.ROLE }}
 
       - name: restore backup directory
-        uses: actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb # v5.0.1
+        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
         with:
           path: tmp
           key: ${{ runner.os }}-backup-${{ hashFiles('**') }}
@@ -34,7 +34,7 @@ jobs:
           bash ./scripts/copy-repos.sh "${{ secrets.ALL_REPO_SCOPED_TOKEN }}" 2>&1 | tee /tmp/output.txt
 
       - name: Cache backup directory
-        uses: actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb # v5.0.1
+        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
         with:
           path: tmp
           key: ${{ runner.os }}-backup-${{ hashFiles('**') }}
