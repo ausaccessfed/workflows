@@ -7,7 +7,7 @@ const CONSTANTS = {
     repositoryExclusion: /#REPOSITORY_EXCLUSION_MATCH.*#(\n)*/
   },
   cacheFilePath: '.cachedFiles',
-  prBranchName: 'feature/distribution_updates',
+  prBranchName: 'chore/distribution_updates',
   templateReplacements: {
     repository: /##REPOSITORY##/,
     repository_uppercase: /##REPOSITORY_UPPERCASE##/
@@ -411,7 +411,7 @@ const createPR = async ({ repo, tree, baseBranch }) => {
     }
   } = await getBranch({ repo, branch: baseBranch })
 
-  const message = 'Updating distribution files'
+  const message = 'Update distributed files from ausaccessfed/workflows'
   const { newCommitSha, isDiff } = await createCommit({ repo, tree, baseSha, message })
 
   if (isDiff) {
@@ -427,8 +427,7 @@ const createPR = async ({ repo, tree, baseBranch }) => {
       repo,
       head: CONSTANTS.prBranchName,
       base: baseBranch,
-      title: message,
-      body: message
+      title: message
     })
 
     await GLOBALS.github.rest.issues.addLabels({
