@@ -35,7 +35,7 @@ runs:
               assignees: [actor]
           });
 
-          const titleRegex = new RegExp(/.*upgrade|updating.*/,"i")
+          const titleRegex = new RegExp(/.*upgrade|update.*/,"i")
           if (actor_id == "118229371" && actor == "aaf-terraform" && titleRegex.test(title)) {
               // Sadly the rest api does not support enableAutomerge
               const mutation = `mutation($pullRequestId:ID!, $mergeMethod:PullRequestMergeMethod) {
